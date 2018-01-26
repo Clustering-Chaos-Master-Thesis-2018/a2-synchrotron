@@ -653,17 +653,21 @@ chaos_round(const uint16_t round_number, const uint8_t app_id, const uint8_t* co
 
     /* Clustering time*/
   #if CHAOS_CLUSTER
-    if(rx_header->cluster_id == 0) {
-      COOJA_DEBUG_PRINTF("BAD, cluster, cluster_id: %d, slot_nbr: %d, round: %d\n", rx_header->cluster_id, rx_header->slot_number, rx_header->round_number); 
-    } else {
-      if (rx_header->cluster_id % 2 != node_id % 2) { 
-        COOJA_DEBUG_PRINTF("NO, not my cluster, cluster_id: %d, slot_nbr: %d, round: %d\n", rx_header->cluster_id, rx_header->slot_number, rx_header->round_number); 
-        slot_number++;
-        LEDS_OFF(LEDS_BLUE);
-        continue;
-      } else { 
-        COOJA_DEBUG_PRINTF("YES, my cluster, cluster_id: %d, slot_nbr: %d, round: %d\n", rx_header->cluster_id, rx_header->slot_number, rx_header->round_number);     
+    if(chaos_slot_status == CHAOS_TXRX_OK) {
+      if(rx_header->cluster_id == 0) {
+        COOJA_DEBUG_PRINTF("BAD, cluster, cluster_id: %d, slot_nbr: %d, round: %d\n", rx_header->cluster_id, rx_header->slot_number, rx_header->round_number); 
+      } else {
+        if (rx_header->cluster_id % 2 != node_id % 2) { 
+          COOJA_DEBUG_PRINTF("NO, not my cluster, cluster_id: %d, slot_nbr: %d, round: %d\n", rx_header->cluster_id, rx_header->slot_number, rx_header->round_number); 
+          slot_number++;
+          LEDS_OFF(LEDS_BLUE);
+          continue;
+        } else { 
+          COOJA_DEBUG_PRINTF("YES, my cluster, cluster_id: %d, slot_nbr: %d, round: %d\n", rx_header->cluster_id, rx_header->slot_number, rx_header->round_number);     
+        }
       }
+    } else {
+      COOJA_DEBUG_PRINTF("Slot status is not OK, it is: %s", CHAOS_RX_STATE_TO_STRING(chaos_slot_status));
     }
   #endif /* CHAOS_CLUSTER */
      
@@ -943,15 +947,12 @@ uint8_t chaos_associate(rtimer_clock_t* t_sfd_actual_rtimer_ptr, uint16_t *round
       do {
         /* try to get get a valid packet */
         rx_status = chaos_rx_slot(&sfd_vht, 0, 0, 1);
-      #if CHAOS_CLUSTER
-        if(rx_header->cluster_id % 2 != node_id % 2) {
-          slot_number++;
-          watchdog_periodic(); /* association could take a long time */
-          continue;
-        }
-      #endif /* CHAOS_CLUSTER */
         *t_sfd_actual_rtimer_ptr = VHT_TO_RTIMER(sfd_vht);
+      #if CHAOS_CLUSTER
+        associated += (rx_status == CHAOS_TXRX_OK) && (rx_header->cluster_id % 2 == node_id % 2);
+      #else
         associated += (rx_status == CHAOS_TXRX_OK);
+      #endif /* CHAOS_CLUSTER */
         watchdog_periodic(); /* association could take a long time */
         /* hop channel after a number of slots without a successful association */
         if(++association_counter > CHAOS_ASSOCIATION_HOP_CHANNEL_THERSHOLD) {
