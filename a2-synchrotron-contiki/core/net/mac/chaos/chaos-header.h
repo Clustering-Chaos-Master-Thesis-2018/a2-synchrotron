@@ -101,6 +101,9 @@ typedef struct __attribute__((packed)) chaos_header {
   unsigned int channels_black_list_committed;
   unsigned int channels_black_list_collected;
 #endif /* CHAOS_MULTI_CHANNEL_ADAPTIVE */
+#if CHAOS_CLUSTER
+  uint8_t cluster_id;
+#endif /* CHAOS_CLUSTER */
   uint8_t payload[];
 } chaos_header_t;
 

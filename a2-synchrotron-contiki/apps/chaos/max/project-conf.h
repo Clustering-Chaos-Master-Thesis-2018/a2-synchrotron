@@ -91,6 +91,9 @@
 #undef CHAOS_RF_CHANNEL
 #define CHAOS_RF_CHANNEL _param_ch
 
+#undef CHAOS_CLUSTER
+#define CHAOS_CLUSTER _param_cluster
+
 #undef CHAOS_MULTI_CHANNEL
 #define CHAOS_MULTI_CHANNEL _param_mch
 

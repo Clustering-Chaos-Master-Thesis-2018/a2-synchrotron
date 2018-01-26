@@ -599,6 +599,9 @@ chaos_round(const uint16_t round_number, const uint8_t app_id, const uint8_t* co
       tx_header->src_rank = chaos_rank;
       //tx_header->src_time_rank = chaos_time_rank;
 #endif
+#if CHAOS_CLUSTER
+      tx_header->cluster_id = node_id % 2 == 0 ? 4 : 3;
+#endif
 #if CHAOS_HW_SECURITY
       //tx_header->src_node_id = node_id;
 //        tx_header->chaos_security_frame_counter.round_number = round_number;
@@ -647,6 +650,25 @@ chaos_round(const uint16_t round_number, const uint8_t app_id, const uint8_t* co
         chaos_slot_timing_log_max[RX] = MAX(chaos_slot_timing_log_current[RX], chaos_slot_timing_log_max[RX]);
         chaos_slot_timing_log_min[RX] = MIN(chaos_slot_timing_log_current[RX], chaos_slot_timing_log_min[RX]);
       }
+
+    /* Clustering time*/
+  #if CHAOS_CLUSTER
+    if(rx_header->cluster_id == 0) {
+      COOJA_DEBUG_PRINTF("BAD, cluster, cluster_id: %d, slot_nbr: %d, round: %d\n", rx_header->cluster_id, rx_header->slot_number, rx_header->round_number); 
+    } else {
+      if (rx_header->cluster_id % 2 != node_id % 2) { 
+        COOJA_DEBUG_PRINTF("NO, not my cluster, cluster_id: %d, slot_nbr: %d, round: %d\n", rx_header->cluster_id, rx_header->slot_number, rx_header->round_number); 
+        slot_number++;
+        LEDS_OFF(LEDS_BLUE);
+        continue;
+      } else { 
+        COOJA_DEBUG_PRINTF("YES, my cluster, cluster_id: %d, slot_nbr: %d, round: %d\n", rx_header->cluster_id, rx_header->slot_number, rx_header->round_number);     
+      }
+    }
+  #endif /* CHAOS_CLUSTER */
+     
+    
+
 
       /* it could be a valid packet but an unexpected app id.
        * Shall we use it for synchronization anyway?
