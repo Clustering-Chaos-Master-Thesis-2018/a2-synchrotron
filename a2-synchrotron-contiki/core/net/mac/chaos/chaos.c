@@ -943,6 +943,13 @@ uint8_t chaos_associate(rtimer_clock_t* t_sfd_actual_rtimer_ptr, uint16_t *round
       do {
         /* try to get get a valid packet */
         rx_status = chaos_rx_slot(&sfd_vht, 0, 0, 1);
+      #if CHAOS_CLUSTER
+        if(rx_header->cluster_id % 2 != node_id % 2) {
+          slot_number++;
+          watchdog_periodic(); /* association could take a long time */
+          continue;
+        }
+      #endif /* CHAOS_CLUSTER */
         *t_sfd_actual_rtimer_ptr = VHT_TO_RTIMER(sfd_vht);
         associated += (rx_status == CHAOS_TXRX_OK);
         watchdog_periodic(); /* association could take a long time */
