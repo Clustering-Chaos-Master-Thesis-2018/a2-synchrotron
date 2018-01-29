@@ -162,6 +162,13 @@ ALWAYS_INLINE unsigned int
 
 ALWAYS_INLINE uint16_t
     chaos_multichannel_lookup_channel(uint16_t round_number, uint16_t slot_number) {
+#if CHAOS_CLUSTER
+      if(round_number == 4) {
+        return 16;
+      } else {
+        return 26;
+      }
+#endif /* CHAOS_CLUSTER */
 #if CHAOS_MULTI_CHANNEL
   uint8_t channel_sequence_offset = 0;
 #if CHAOS_MULTI_CHANNEL_PARALLEL_SEQUENCES

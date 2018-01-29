@@ -60,7 +60,11 @@ ALWAYS_INLINE unsigned int chaos_multichannel_get_black_list_committed();
 ALWAYS_INLINE uint16_t chaos_multichannel_get_current_channel();
 ALWAYS_INLINE uint16_t chaos_multichannel_lookup_channel(uint16_t round_number, uint16_t slot_number);
 ALWAYS_INLINE uint16_t chaos_multichannel_update_current_channel(uint16_t round_number, uint16_t slot_number);
+#if CHAOS_CLUSTER 
+#define HOP_CHANNEL(ROUND, SLOT) ( NETSTACK_RADIO_set_channel(chaos_multichannel_update_current_channel(ROUND + (node_id % 2 == 0 ? 7 : 0), SLOT)) )
+#else 
 #define HOP_CHANNEL(ROUND, SLOT) ( NETSTACK_RADIO_set_channel(chaos_multichannel_update_current_channel(ROUND, SLOT)) )
+#endif /* CHAOS_CLUSTER */
 #define CHANNEL_IDX(C) ((C)-RF_FIRST_CHANNEL)
 
 #endif /* CHAOS_MULTICHANNEL_H_ */
