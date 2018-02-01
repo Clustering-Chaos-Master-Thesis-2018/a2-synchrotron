@@ -51,8 +51,8 @@ typedef struct chaos_app{
   uint8_t requires_node_index;
   int (*is_pending)(const uint16_t round_count);
   void (*round_begin)(const uint16_t round_count, const uint8_t id);
-  void (*round_begin_sniffer)(chaos_header_t* header, uint16_t round_number);
-  void (*round_end_sniffer)(const chaos_header_t* header, uint16_t round_number);
+  void (*round_begin_sniffer)(chaos_header_t* header);
+  void (*round_end_sniffer)(const chaos_header_t* header);
 } chaos_app_t;
 
 uint16_t chaos_get_round_number();

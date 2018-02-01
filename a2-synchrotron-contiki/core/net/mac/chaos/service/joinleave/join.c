@@ -143,8 +143,8 @@ static node_id_t joined_nodes_map_tmp[MAX_NODE_COUNT][2] = { {0, 0} };
 
 static void round_begin(const uint16_t round_count, const uint8_t id);
 static int is_pending(const uint16_t round_count);
-static void round_begin_sniffer(chaos_header_t* header, uint16_t round_number);
-static void round_end_sniffer(const chaos_header_t* header, uint16_t round_number);
+static void round_begin_sniffer(chaos_header_t* header);
+static void round_end_sniffer(const chaos_header_t* header);
 static int binary_search( uint16_t array[][2], int size, uint16_t search_id );
 static void merge_sort( uint16_t a[][2], uint16_t aux[][2], int hi, int lo );
 
@@ -632,14 +632,14 @@ static void round_begin( const uint16_t round_number, const uint8_t app_id ){
   chaos_round(round_number, app_id, (const uint8_t const*)&join_data, sizeof(join_data), JOIN_SLOT_LEN_DCO, JOIN_ROUND_MAX_SLOTS, get_flags_length(), process);
 }
 
-static void round_begin_sniffer(chaos_header_t* header, uint16_t round_number){
+static void round_begin_sniffer(chaos_header_t* header){
   header->join = !chaos_has_node_index /*&& !is_join_round*/;
   if( IS_DYNAMIC_INITIATOR(round_number) ){
     header->join |= pending /*&& !is_join_round*/;
   }
 }
 
-static void round_end_sniffer(const chaos_header_t* header, uint16_t round_number){
+static void round_end_sniffer(const chaos_header_t* header){
   pending |= IS_DYNAMIC_INITIATOR(round_number) && ( header->join || chaos_node_count < 2);
   is_join_round = 0;
   //TODO remove me later

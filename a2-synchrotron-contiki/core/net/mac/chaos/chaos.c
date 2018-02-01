@@ -527,7 +527,7 @@ chaos_round(const uint16_t round_number, const uint8_t app_id, const uint8_t* co
   int i;
   for(i = 0; i < chaos_app_count; i++){
     if( chaos_apps[i]->round_begin_sniffer != NULL ){
-      chaos_apps[i]->round_begin_sniffer(tx_header, round_number);
+      chaos_apps[i]->round_begin_sniffer(tx_header);
     }
   }
 
@@ -923,7 +923,7 @@ chaos_round(const uint16_t round_number, const uint8_t app_id, const uint8_t* co
   off();
   for(i = 0; i < chaos_app_count; i++){
     if( chaos_apps[i]->round_end_sniffer != NULL ){
-      chaos_apps[i]->round_end_sniffer(tx_header, round_number);
+      chaos_apps[i]->round_end_sniffer(tx_header);
     }
   }
   CHAOS_LOG_ADD_MSG("{I}GT s%u r%u", RX_GUARD_TIME, ROUND_GUARD_TIME);
