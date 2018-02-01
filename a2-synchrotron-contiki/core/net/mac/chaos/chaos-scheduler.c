@@ -80,7 +80,7 @@ void scheduler_init(){
 const chaos_app_t* scheduler_round_begin(const uint16_t round_count, uint8_t* app_id_ptr){
   current_app = next_app;
   current_app_id = next_app_id;
-  if( IS_INITIATOR() && chaos_app_count > 0 ){
+  if( IS_DYNAMIC_INITIATOR(round_count) && chaos_app_count > 0 ){
     int i;
     for(i = 0; i < chaos_app_count; i++){
       if( chaos_apps[i]->is_pending(round_count + 1) ){
