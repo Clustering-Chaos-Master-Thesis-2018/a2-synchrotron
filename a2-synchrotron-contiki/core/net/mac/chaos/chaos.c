@@ -467,7 +467,7 @@ chaos_round(const uint16_t round_number, const uint8_t app_id, const uint8_t* co
   RTIMER_DCO_SYNC();
 
 #if CHAOS_CLUSTER
-  if(!IS_CLUSTER_HEAD() && IS_CLUSTER_ROUND(round_number)) {
+  if(!IS_CLUSTER_HEAD() && IS_CLUSTER_ROUND()) {
     /* Cluster head time, normal nodes keep quiet */
     return 1;
   }
@@ -566,7 +566,7 @@ chaos_round(const uint16_t round_number, const uint8_t app_id, const uint8_t* co
 
 #if CHAOS_CLUSTER
   /* Cluster head time, normal nodes keep quiet */
-  if(IS_CLUSTER_HEAD() && IS_CLUSTER_ROUND(round_number)) {
+  if(IS_CLUSTER_HEAD() && IS_CLUSTER_ROUND()) {
     HOP_CHANNEL_CLUSTER_HEAD(round_number, slot_number);  
   } else {
     HOP_CHANNEL(round_number, slot_number);
@@ -676,7 +676,7 @@ chaos_round(const uint16_t round_number, const uint8_t app_id, const uint8_t* co
       if(rx_header->cluster_id == 0) {
         COOJA_DEBUG_PRINTF("BAD, cluster, cluster_id: %d, slot_nbr: %d, round: %d\n", rx_header->cluster_id, rx_header->slot_number, rx_header->round_number); 
 
-      } else if (!IS_SAME_CLUSTER(rx_header->cluster_id, node_id) && !IS_CLUSTER_ROUND(round_number)) {
+      } else if (!IS_SAME_CLUSTER(rx_header->cluster_id, node_id) && !IS_CLUSTER_ROUND()) {
         COOJA_DEBUG_PRINTF("NO, not my cluster, cluster_id: %d, slot_nbr: %d, round: %d\n", rx_header->cluster_id, rx_header->slot_number, rx_header->round_number); 
         slot_number++;
         LEDS_OFF(LEDS_BLUE);
@@ -878,7 +878,7 @@ chaos_round(const uint16_t round_number, const uint8_t app_id, const uint8_t* co
     slot_number++;
     /* change channel */
   #if CHAOS_CLUSTER
-    if(IS_CLUSTER_HEAD() && IS_CLUSTER_ROUND(round_number)) {
+    if(IS_CLUSTER_HEAD() && IS_CLUSTER_ROUND()) {
       HOP_CHANNEL_CLUSTER_HEAD(round_number, slot_number);  
     } else {
       HOP_CHANNEL(round_number, slot_number);

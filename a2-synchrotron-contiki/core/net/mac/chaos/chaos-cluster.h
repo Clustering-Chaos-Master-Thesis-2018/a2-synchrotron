@@ -3,17 +3,18 @@
 #define CHAOS_CLUSTER_H_
 
 #include "contiki.h"
+#include "chaos-control.h";
 
-#define IS_CLUSTER_ROUND(ROUND)              (ROUND % 3 == 0)
-#define IS_SAME_CLUSTER(CLUSTER_ID, NODE_ID) (CLUSTER_ID % 2 == NODE_ID % 2)
 
 #if CHAOS_CLUSTER
+    #define IS_CLUSTER_ROUND()                   (chaos_get_round_number() % 3 == 0)
+    #define IS_SAME_CLUSTER(CLUSTER_ID, NODE_ID) (CLUSTER_ID % 2 == NODE_ID % 2)
     #define IS_MAJOR_CLUSTER_HEAD()          (node_id == 1)
     #define IS_CLUSTER_HEAD()                (node_id == 1 || node_id == 2)
-    #define IS_DYNAMIC_INITIATOR(ROUND)      ((IS_CLUSTER_HEAD() && !IS_CLUSTER_ROUND(ROUND)) \
-                                           || (IS_MAJOR_CLUSTER_HEAD() && IS_CLUSTER_ROUND(ROUND)))
+    #define IS_DYNAMIC_INITIATOR()      ((IS_CLUSTER_HEAD() && !IS_CLUSTER_ROUND()) \
+                                           || (IS_MAJOR_CLUSTER_HEAD() && IS_CLUSTER_ROUND()))
 #else
-    #define IS_DYNAMIC_INITIATOR(ROUND)      IS_INITIATOR()
+    #define IS_DYNAMIC_INITIATOR()      IS_INITIATOR()
 
 #endif /* CHAOS_CLUSTER */
 

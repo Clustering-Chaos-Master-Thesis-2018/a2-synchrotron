@@ -191,7 +191,7 @@ void join_init(){
   //initiator management
   memset(&joined_nodes_map, 0, sizeof(joined_nodes_map));
   memset(&joined_nodes_map_tmp, 0, sizeof(joined_nodes_map_tmp));
-  if( IS_DYNAMIC_INITIATOR(1) ){
+  if( IS_DYNAMIC_INITIATOR() ){
     chaos_has_node_index = 1;
     chaos_node_index = 0;
     joined_nodes[0] = node_id;
@@ -361,7 +361,7 @@ static chaos_state_t process(uint16_t round_count, uint16_t slot,
 
     //not yet committed
     if (join_tx->commit == 0 && join_rx->commit == 0) {
-      if( IS_DYNAMIC_INITIATOR(round_count) || slot < JOIN_MAX_COMMIT_SLOT) {
+      if( IS_DYNAMIC_INITIATOR() || slot < JOIN_MAX_COMMIT_SLOT) {
         // not late and definitely still in collect phase
         //merge flags
         int i;
@@ -384,7 +384,7 @@ static chaos_state_t process(uint16_t round_count, uint16_t slot,
         delta = 0;
       }
       //all flags are set?
-      if( flag_sum >= FLAG_SUM(join_rx->node_count) && IS_DYNAMIC_INITIATOR(round_count)){
+      if( flag_sum >= FLAG_SUM(join_rx->node_count) && IS_DYNAMIC_INITIATOR()){
         if(!complete){
           complete_slot = slot;
         }
@@ -450,11 +450,11 @@ static chaos_state_t process(uint16_t round_count, uint16_t slot,
 
   /* decide next chaos state */
   chaos_state_t next_state = CHAOS_RX;
-  if ( IS_DYNAMIC_INITIATOR(round_count) && current_state == CHAOS_INIT ){
+  if ( IS_DYNAMIC_INITIATOR() && current_state == CHAOS_INIT ){
     next_state = CHAOS_TX; //for the first tx of the initiator: no increase of tx_count here
     tx_timeout_enabled = 1;
 
-  } else if( IS_DYNAMIC_INITIATOR(round_count) && join_tx->commit == 0 &&
+  } else if( IS_DYNAMIC_INITIATOR() && join_tx->commit == 0 &&
       ( (!delta && slot == delta_at_slot + COMMIT_THRESHOLD) /* no delta for some time */
           || join_tx->slot_count == NODE_LIST_LEN /* join list is full */
           || (slot >= JOIN_MAX_COMMIT_SLOT /* time to switch to commit phase */
@@ -534,7 +534,7 @@ static chaos_state_t process(uint16_t round_count, uint16_t slot,
   }
 #endif
   int end = (slot >= JOIN_ROUND_MAX_SLOTS - 2) || (next_state == CHAOS_OFF);
-  if(IS_DYNAMIC_INITIATOR(round_count) && end){
+  if(IS_DYNAMIC_INITIATOR() && end){
     //sort joined_nodes_map to speed up search (to enable the use of binary search) when adding new nodes
     do_sort_joined_nodes_map();
   }
@@ -616,7 +616,7 @@ static void round_begin( const uint16_t round_number, const uint8_t app_id ){
   memset(&chaos_join_commit_log, 0, sizeof(chaos_join_commit_log));
 #endif
 
-  if( IS_DYNAMIC_INITIATOR(round_number) ){
+  if( IS_DYNAMIC_INITIATOR() ){
     join_data.node_count = chaos_node_count;
     unsigned int array_index = chaos_node_index / 8;
     unsigned int array_offset = chaos_node_index % 8;
@@ -634,13 +634,13 @@ static void round_begin( const uint16_t round_number, const uint8_t app_id ){
 
 static void round_begin_sniffer(chaos_header_t* header){
   header->join = !chaos_has_node_index /*&& !is_join_round*/;
-  if( IS_DYNAMIC_INITIATOR(round_number) ){
+  if( IS_DYNAMIC_INITIATOR() ){
     header->join |= pending /*&& !is_join_round*/;
   }
 }
 
 static void round_end_sniffer(const chaos_header_t* header){
-  pending |= IS_DYNAMIC_INITIATOR(round_number) && ( header->join || chaos_node_count < 2);
+  pending |= IS_DYNAMIC_INITIATOR() && ( header->join || chaos_node_count < 2);
   is_join_round = 0;
   //TODO remove me later
 #if JOIN_STRESS_TEST
@@ -648,7 +648,7 @@ static void round_end_sniffer(const chaos_header_t* header){
   if( header->round_number % JOIN_TEST_LEAVE_THRESHOLD == 0 ){
     //drop slots -> leave ->rejoin
     join_init();
-    pending=IS_DYNAMIC_INITIATOR(round_number);
+    pending=IS_DYNAMIC_INITIATOR();
   }
 #endif
 }
