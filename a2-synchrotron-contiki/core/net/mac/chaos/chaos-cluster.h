@@ -13,6 +13,8 @@
     #define IS_CLUSTER_HEAD()                    (node_id == 1 || node_id == 2)
     #define IS_DYNAMIC_INITIATOR()               ((IS_CLUSTER_HEAD() && !IS_CLUSTER_ROUND()) \
                                                  || (IS_MAJOR_CLUSTER_HEAD() && IS_CLUSTER_ROUND()))
+
+    extern node_id_t cluster_id;
 #else
     #define IS_DYNAMIC_INITIATOR()               IS_INITIATOR()
 
