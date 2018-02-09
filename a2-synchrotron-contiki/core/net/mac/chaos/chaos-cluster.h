@@ -1,10 +1,12 @@
 
-#ifndef  CHAOS_CLUSTER_H_
-#define CHAOS_CLUSTER_H_
+#ifndef _CHAOS_CLUSTER_H_
+#define _CHAOS_CLUSTER_H_
 
 #include "contiki.h"
-#include "chaos-control.h";
+#include "chaos-control.h"
 
+typedef uint16_t node_id_t;
+typedef uint8_t node_index_t;
 
 #if CHAOS_CLUSTER
     #define IS_CLUSTER_ROUND()                   (chaos_get_round_number() % 3 == 0)
@@ -23,4 +25,4 @@
 void chaos_cluster_init(void);
 ALWAYS_INLINE void chaos_cluster_round_init(uint8_t is_initiator, chaos_header_t* const tx_header);
 
-#endif /* CHAOS_CLUSTER_H_ */
+#endif /* _CHAOS_CLUSTER_H_ */
