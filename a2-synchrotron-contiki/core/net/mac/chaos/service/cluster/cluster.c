@@ -105,23 +105,27 @@ static chaos_state_t process_cluster_head(uint16_t round_count, uint16_t slot,
 static chaos_state_t process_cluster_node(uint16_t round_count, uint16_t slot,
     chaos_state_t current_state, int chaos_txrx_success, size_t payload_length,
     cluster_t* rx_payload, cluster_t* tx_payload, uint8_t** app_flags) {
+    uint8_t delta = 0;
     
     if (current_state == CHAOS_RX) {
         tentative_cluster_id = pick_best_cluster(rx_payload->cluster_head_list, rx_payload->cluster_head_count);
+        delta = tx_payload->cluster_head_count != rx_payload->cluster_head_count;
         memcpy(tx_payload, rx_payload, sizeof(cluster_t));
-        return CHAOS_RX;
     } else if (current_state == CHAOS_TX) {
         return CHAOS_RX;
-    } else {
-        /* idunno */
-        // COOJA_DEBUG_PRINTF("cluster round not in txrx state\n");
-        return CHAOS_RX;
     }
+
+    return delta ? CHAOS_TX : CHAOS_RX;
 }
 
 static void round_begin(const uint16_t round_count, const uint8_t app_id) {
     cluster_t cluster_data;
     memset(&cluster_data, 0, sizeof(cluster_t));
+
+    if(IS_CLUSTER_HEAD()) {
+        cluster_data.cluster_head_list[0] = node_id;
+        cluster_data.cluster_head_count++;
+    }
 
     invalid_rx_count = 0;
     restart_threshold = generate_restart_threshold();
@@ -164,9 +168,9 @@ static void round_begin_sniffer(chaos_header_t* header){
 static void round_end_sniffer(const chaos_header_t* header){
     cluster_t* const cluster_tx = (cluster_t*) header->payload;
     if(IS_CLUSTER_HEAD()) {
-      cluster_id = node_id;
+        cluster_id = node_id;
     } else {
-      cluster_id = tentative_cluster_id;
+        cluster_id = tentative_cluster_id;
     }
     COOJA_DEBUG_PRINTF("cluster: round_end_sniffer cluster_head_count: %u, list[0]: %u, list[1]: %u, picked cluster: %u\n",
                         cluster_tx->cluster_head_count, cluster_tx->cluster_head_list[0], cluster_tx->cluster_head_list[1], cluster_id);
