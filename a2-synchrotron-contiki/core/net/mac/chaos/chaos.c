@@ -1007,6 +1007,13 @@ uint8_t chaos_associate(rtimer_clock_t* t_sfd_actual_rtimer_ptr, uint16_t *round
       round_synced = 1;
       next_round_begin = rx_header->next_round_start;
       next_round_id = rx_header->next_round_id;
+      #ifdef CHAOS_CLUSTER
+        //If we associate with a node that is already assigned to a CH then we should just join that cluster for now.
+        cluster_id = rx_header->cluster_id;
+        if(cluster_id != 0) {
+          COOJA_DEBUG_PRINTF("cluster: associated with a clustered node, joining cluster: %u\n", cluster_id);
+        }
+      #endif /* CHAOS_CLUSTER */
       off();
       slot_number++; //for logging to be similar to after association
     }
