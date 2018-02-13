@@ -467,7 +467,7 @@ chaos_round(const uint16_t round_number, const uint8_t app_id, const uint8_t* co
   RTIMER_DCO_SYNC();
 
 #if CHAOS_CLUSTER
-  if(!IS_CLUSTER_HEAD() && IS_CLUSTER_ROUND()) {
+  if(!IS_CLUSTER_HEAD() && IS_CLUSTER_ROUND() && HAS_CLUSTER_ID()) {
     /* Cluster head time, normal nodes keep quiet */
     return 1;
   }
@@ -566,7 +566,7 @@ chaos_round(const uint16_t round_number, const uint8_t app_id, const uint8_t* co
 
 #if CHAOS_CLUSTER
   /* Cluster head time, normal nodes keep quiet */
-  if(IS_CLUSTER_HEAD() && IS_CLUSTER_ROUND()) {
+  if(IS_CLUSTER_HEAD() && IS_CLUSTER_ROUND() && HAS_CLUSTER_ID()) {
     HOP_CHANNEL_CLUSTER_HEAD(round_number, slot_number);  
   } else {
     HOP_CHANNEL(round_number, slot_number);
@@ -618,7 +618,7 @@ chaos_round(const uint16_t round_number, const uint8_t app_id, const uint8_t* co
       //tx_header->src_time_rank = chaos_time_rank;
 #endif
 #if CHAOS_CLUSTER
-      tx_header->cluster_id = node_id % 2 == 0 ? 2 : 1;
+      tx_header->cluster_id = chaos_get_cluster_id();
 #endif
 #if CHAOS_HW_SECURITY
       //tx_header->src_node_id = node_id;
@@ -669,27 +669,19 @@ chaos_round(const uint16_t round_number, const uint8_t app_id, const uint8_t* co
         chaos_slot_timing_log_min[RX] = MIN(chaos_slot_timing_log_current[RX], chaos_slot_timing_log_min[RX]);
       }
 
-    /* Clustering time*/
+  /* Clustering time*/
   #if CHAOS_CLUSTER
     if(chaos_slot_status == CHAOS_TXRX_OK) {
-
-      if(rx_header->cluster_id == 0) {
-        COOJA_DEBUG_PRINTF("BAD, cluster, cluster_id: %d, slot_nbr: %d, round: %d\n", rx_header->cluster_id, rx_header->slot_number, rx_header->round_number); 
-
-      } else if (!IS_SAME_CLUSTER(rx_header->cluster_id, node_id) && !IS_CLUSTER_ROUND()) {
-        COOJA_DEBUG_PRINTF("NO, not my cluster, cluster_id: %d, slot_nbr: %d, round: %d\n", rx_header->cluster_id, rx_header->slot_number, rx_header->round_number); 
+      if(!IS_SAME_CLUSTER(rx_header->cluster_id)) {
+        COOJA_DEBUG_PRINTF("NO, not my cluster, cluster_id: %d, slot_nbr: %d, round: %d\n", rx_header->cluster_id, rx_header->slot_number, rx_header->round_number);
         slot_number++;
         LEDS_OFF(LEDS_BLUE);
         continue;
       }
-
     } else {
       COOJA_DEBUG_PRINTF("Slot status is not OK, it is: %s", CHAOS_RX_STATE_TO_STRING(chaos_slot_status));
     }
   #endif /* CHAOS_CLUSTER */
-     
-    
-
 
       /* it could be a valid packet but an unexpected app id.
        * Shall we use it for synchronization anyway?
@@ -878,7 +870,7 @@ chaos_round(const uint16_t round_number, const uint8_t app_id, const uint8_t* co
     slot_number++;
     /* change channel */
   #if CHAOS_CLUSTER
-    if(IS_CLUSTER_HEAD() && IS_CLUSTER_ROUND()) {
+    if(IS_CLUSTER_HEAD() && IS_CLUSTER_ROUND() && HAS_CLUSTER_ID()) {
       HOP_CHANNEL_CLUSTER_HEAD(round_number, slot_number);  
     } else {
       HOP_CHANNEL(round_number, slot_number);

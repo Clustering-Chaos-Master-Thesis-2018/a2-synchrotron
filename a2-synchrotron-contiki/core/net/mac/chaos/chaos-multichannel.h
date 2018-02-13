@@ -43,6 +43,7 @@
 #define CHAOS_MULTICHANNEL_H_
 
 #include "contiki.h"
+#include "chaos-cluster.h"
 
 #if CHAOS_MULTI_CHANNEL
 #define CHAOS_HOPPING_SEQUENCE_SIZE (sizeof(CHAOS_HOPPING_SEQUENCE)) /* shall be a power of two, so x % s == x & (s-1) */
@@ -61,12 +62,12 @@ ALWAYS_INLINE uint16_t chaos_multichannel_get_current_channel();
 ALWAYS_INLINE uint16_t chaos_multichannel_lookup_channel(uint16_t round_number, uint16_t slot_number);
 ALWAYS_INLINE uint16_t chaos_multichannel_update_current_channel(uint16_t round_number, uint16_t slot_number);
 
-#if CHAOS_CLUSTER  
-#define HOP_CHANNEL(ROUND, SLOT) ( NETSTACK_RADIO_set_channel(chaos_multichannel_update_current_channel(ROUND + (node_id % 2 == 0 ? 7 : 0), SLOT)) ) 
-#define HOP_CHANNEL_CLUSTER_HEAD(ROUND, SLOT) ( NETSTACK_RADIO_set_channel(chaos_multichannel_update_current_channel(ROUND, SLOT)) ) 
+#if CHAOS_CLUSTER
+#define HOP_CHANNEL(ROUND, SLOT) ( NETSTACK_RADIO_set_channel(chaos_multichannel_update_current_channel(ROUND + (chaos_get_cluster_id() % 2 == 1 ? 7 : 0), SLOT)) )
+#define HOP_CHANNEL_CLUSTER_HEAD(ROUND, SLOT) ( NETSTACK_RADIO_set_channel(chaos_multichannel_update_current_channel(ROUND, SLOT)) )
 #else  
-#define HOP_CHANNEL(ROUND, SLOT) ( NETSTACK_RADIO_set_channel(chaos_multichannel_update_current_channel(ROUND, SLOT)) ) 
-#endif /* CHAOS_CLUSTER */ 
+#define HOP_CHANNEL(ROUND, SLOT) ( NETSTACK_RADIO_set_channel(chaos_multichannel_update_current_channel(ROUND, SLOT)) )
+#endif /* CHAOS_CLUSTER */
 #define CHANNEL_IDX(C) ((C)-RF_FIRST_CHANNEL)
 
 #endif /* CHAOS_MULTICHANNEL_H_ */

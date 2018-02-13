@@ -14,3 +14,7 @@ void chaos_cluster_init(void) {
 ALWAYS_INLINE void chaos_cluster_round_init(uint8_t is_initiator, chaos_header_t* const tx_header) {
     PRINTF("where should this run?");
 }
+
+ALWAYS_INLINE node_id_t chaos_get_cluster_id(void) {
+  return cluster_id;
+}
