@@ -673,7 +673,7 @@ chaos_round(const uint16_t round_number, const uint8_t app_id, const uint8_t* co
   #if CHAOS_CLUSTER
     if(chaos_slot_status == CHAOS_TXRX_OK) {
       if(!IS_SAME_CLUSTER(rx_header->cluster_id)) {
-        COOJA_DEBUG_PRINTF("NO, not my cluster, cluster_id: %d, slot_nbr: %d, round: %d\n", rx_header->cluster_id, rx_header->slot_number, rx_header->round_number);
+        //COOJA_DEBUG_PRINTF("NO, not my cluster, cluster_id: %d, slot_nbr: %d, round: %d\n", rx_header->cluster_id, rx_header->slot_number, rx_header->round_number);
         slot_number++;
         LEDS_OFF(LEDS_BLUE);
         continue;
@@ -1145,4 +1145,3 @@ const struct network_driver chaosnet_driver = {
   chaos_net_init,
   chaos_net_input
 };
-

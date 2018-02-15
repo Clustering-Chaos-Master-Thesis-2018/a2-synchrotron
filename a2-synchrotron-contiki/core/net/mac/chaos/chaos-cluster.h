@@ -9,12 +9,13 @@ typedef uint16_t node_id_t;
 typedef uint8_t node_index_t;
 
 #if CHAOS_CLUSTER
-    #define IS_CLUSTER_ROUND()                   (chaos_get_round_number() % 3 == 0)
-    #define IS_SAME_CLUSTER(CLUSTER_ID)          (CLUSTER_ID == chaos_get_cluster_id() || CLUSTER_ID == 0)
+    #define IS_CLUSTER_ROUND()                   0
+    #define IS_SAME_CLUSTER(RECEIVED_CLUSTER_ID) (RECEIVED_CLUSTER_ID == chaos_get_cluster_id() \
+                                               || RECEIVED_CLUSTER_ID == 0 \
+                                               || chaos_get_cluster_id() == 0)
     #define IS_MAJOR_CLUSTER_HEAD()              (node_id == 1)
     #define IS_CLUSTER_HEAD()                    (node_id == 1 || node_id == 2)
-    #define IS_DYNAMIC_INITIATOR()               ((IS_CLUSTER_HEAD() && !IS_CLUSTER_ROUND()) \
-                                                 || (IS_MAJOR_CLUSTER_HEAD() && IS_CLUSTER_ROUND()))
+    #define IS_DYNAMIC_INITIATOR()               IS_CLUSTER_HEAD()
     #define HAS_CLUSTER_ID()                     (chaos_get_cluster_id() != 0)
     typedef uint16_t node_id_t; //Temporary fix, shold probably not redefine this here.
     extern node_id_t cluster_id;

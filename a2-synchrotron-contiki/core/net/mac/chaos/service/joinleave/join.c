@@ -594,6 +594,7 @@ uint8_t join_is_committed_from_payload( void* payload ){
 }
 
 static void round_begin( const uint16_t round_number, const uint8_t app_id ){
+  COOJA_DEBUG_PRINTF("join round_begin");
 #if FAULTY_NODE_ID
   memset(&join_debug_var, 0, sizeof(join_debug_var));
   memset(rx_pkt_crc_err, 0, sizeof(rx_pkt_crc_err));

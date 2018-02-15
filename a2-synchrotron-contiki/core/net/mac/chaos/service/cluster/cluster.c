@@ -52,6 +52,8 @@ ALWAYS_INLINE static uint32_t generate_restart_threshold() {
 uint32_t restart_threshold = 0;
 uint32_t invalid_rx_count = 0;
 
+uint8_t is_cluster_round = 0;
+
 
 static chaos_state_t process(uint16_t round_count, uint16_t slot,
     chaos_state_t current_state, int chaos_txrx_success, size_t payload_length,
@@ -85,38 +87,49 @@ static chaos_state_t process_cluster_head(uint16_t round_count, uint16_t slot,
     cluster_t* rx_payload, cluster_t* tx_payload, uint8_t** app_flags) {
         
     uint8_t delta = 0;
+    chaos_state_t next_state = CHAOS_RX;
 
-    if(current_state == CHAOS_RX) {
+
+    if (current_state == CHAOS_INIT) {
+        next_state = CHAOS_TX;
+    } else if(current_state == CHAOS_RX) {
         delta = merge_lists(tx_payload, rx_payload);
+        if (delta) {
+            next_state = CHAOS_TX;
+        }
+        
         int node_in_list = index_of(tx_payload->cluster_head_list, tx_payload->cluster_head_count, node_id);
         if(node_in_list == -1) {
             // TODO: Check if list is full. Should we use NODE_LIST_LEN? Do we need to insert, not append?
             tx_payload->cluster_head_list[tx_payload->cluster_head_count++] = node_id;
+            next_state = CHAOS_TX;
         }
-        return delta || !node_in_list ?  CHAOS_TX : CHAOS_RX;
         
-    } else if (current_state == CHAOS_TX) {
-        return CHAOS_RX;
     }
-    return IS_MAJOR_CLUSTER_HEAD() ? CHAOS_TX : CHAOS_RX;
+
+    return next_state;
 }
 
 static chaos_state_t process_cluster_node(uint16_t round_count, uint16_t slot,
     chaos_state_t current_state, int chaos_txrx_success, size_t payload_length,
     cluster_t* rx_payload, cluster_t* tx_payload, uint8_t** app_flags) {
     uint8_t delta = 0;
+    chaos_state_t next_state = CHAOS_RX;
     
     if (current_state == CHAOS_RX) {
         delta = tx_payload->cluster_head_count != rx_payload->cluster_head_count;
+        if (delta) {
+            next_state = CHAOS_TX;
+        }
         memcpy(tx_payload, rx_payload, sizeof(cluster_t));
-    } else if (current_state == CHAOS_TX) {
-        return CHAOS_RX;
     }
 
-    return delta ? CHAOS_TX : CHAOS_RX;
+    return next_state;
 }
 
 static void round_begin(const uint16_t round_count, const uint8_t app_id) {
+    is_cluster_round = 1;
+    COOJA_DEBUG_PRINTF("cluster round begin\n");
     cluster_t cluster_data;
     memset(&cluster_data, 0, sizeof(cluster_t));
 
@@ -132,7 +145,7 @@ static void round_begin(const uint16_t round_count, const uint8_t app_id) {
 }
 
 ALWAYS_INLINE static int is_pending(const uint16_t round_count) {
-    // COOJA_DEBUG_PRINTF("cluster: is_pending {rc %u, pending: %u\n", round_count, round_count < 15);
+    COOJA_DEBUG_PRINTF("cluster: is_pending {rc %u, pending: %u\n", round_count, round_count <= 3);
     return round_count <= 3;
 }
 
@@ -164,15 +177,18 @@ static void round_begin_sniffer(chaos_header_t* header){
 }
 
 static void round_end_sniffer(const chaos_header_t* header){
-    cluster_t* const cluster_tx = (cluster_t*) header->payload;
-    if(IS_CLUSTER_HEAD()) {
-        cluster_id = node_id;
-    } else {
-        cluster_id = pick_best_cluster(cluster_tx->cluster_head_list, cluster_tx->cluster_head_count);
-        COOJA_DEBUG_PRINTF("cluster round is done, normal node picking cluster: %d", cluster_id);
+    if ( is_cluster_round ) {
+        is_cluster_round = 0;
+        cluster_t* const cluster_tx = (cluster_t*) header->payload;
+        if(IS_CLUSTER_HEAD()) {
+            cluster_id = node_id;
+        } else {
+            cluster_id = pick_best_cluster(cluster_tx->cluster_head_list, cluster_tx->cluster_head_count);
+            COOJA_DEBUG_PRINTF("cluster round is done, normal node picking cluster: %d", cluster_id);
+        }
+        COOJA_DEBUG_PRINTF("cluster: round_end_sniffer cluster_head_count: %u, list[0]: %u, list[1]: %u, picked cluster: %u\n",
+                            cluster_tx->cluster_head_count, cluster_tx->cluster_head_list[0], cluster_tx->cluster_head_list[1], cluster_id);
     }
-    COOJA_DEBUG_PRINTF("cluster: round_end_sniffer cluster_head_count: %u, list[0]: %u, list[1]: %u, picked cluster: %u\n",
-                        cluster_tx->cluster_head_count, cluster_tx->cluster_head_list[0], cluster_tx->cluster_head_list[1], cluster_id);
     // int i;
     // char str[80];
     // strcpy(str, "cluster: round_end_sniffer ");
