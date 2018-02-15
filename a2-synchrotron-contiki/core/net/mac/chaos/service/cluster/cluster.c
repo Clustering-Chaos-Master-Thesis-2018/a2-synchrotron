@@ -52,7 +52,6 @@ ALWAYS_INLINE static uint32_t generate_restart_threshold() {
 uint32_t restart_threshold = 0;
 uint32_t invalid_rx_count = 0;
 
-node_id_t tentative_cluster_id = 0;
 
 static chaos_state_t process(uint16_t round_count, uint16_t slot,
     chaos_state_t current_state, int chaos_txrx_success, size_t payload_length,
@@ -108,7 +107,6 @@ static chaos_state_t process_cluster_node(uint16_t round_count, uint16_t slot,
     uint8_t delta = 0;
     
     if (current_state == CHAOS_RX) {
-        tentative_cluster_id = pick_best_cluster(rx_payload->cluster_head_list, rx_payload->cluster_head_count);
         delta = tx_payload->cluster_head_count != rx_payload->cluster_head_count;
         memcpy(tx_payload, rx_payload, sizeof(cluster_t));
     } else if (current_state == CHAOS_TX) {
@@ -170,7 +168,8 @@ static void round_end_sniffer(const chaos_header_t* header){
     if(IS_CLUSTER_HEAD()) {
         cluster_id = node_id;
     } else {
-        cluster_id = tentative_cluster_id;
+        cluster_id = pick_best_cluster(cluster_tx->cluster_head_list, cluster_tx->cluster_head_count);
+        COOJA_DEBUG_PRINTF("cluster round is done, normal node picking cluster: %d", cluster_id);
     }
     COOJA_DEBUG_PRINTF("cluster: round_end_sniffer cluster_head_count: %u, list[0]: %u, list[1]: %u, picked cluster: %u\n",
                         cluster_tx->cluster_head_count, cluster_tx->cluster_head_list[0], cluster_tx->cluster_head_list[1], cluster_id);
