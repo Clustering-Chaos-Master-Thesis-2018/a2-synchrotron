@@ -133,7 +133,7 @@ static void round_begin(const uint16_t round_count, const uint8_t app_id) {
 
 ALWAYS_INLINE static int is_pending(const uint16_t round_count) {
     // COOJA_DEBUG_PRINTF("cluster: is_pending {rc %u, pending: %u\n", round_count, round_count < 15);
-    return round_count > 4 && round_count < 15;
+    return round_count <= 3;
 }
 
 static node_id_t pick_best_cluster(const node_id_t *cluster_head_list, uint8_t size) {
