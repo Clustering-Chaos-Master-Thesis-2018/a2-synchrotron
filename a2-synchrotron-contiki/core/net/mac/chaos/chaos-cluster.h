@@ -15,13 +15,11 @@ typedef uint8_t node_index_t;
                                                || chaos_get_cluster_id() == 0)
     #define IS_MAJOR_CLUSTER_HEAD()              (node_id == 1)
     #define IS_CLUSTER_HEAD()                    (node_id == 1 || node_id == 2)
-    #define IS_DYNAMIC_INITIATOR()               IS_CLUSTER_HEAD()
     #define HAS_CLUSTER_ID()                     (chaos_get_cluster_id() != 0)
+    #define IS_INITIATOR()                      ((IS_CLUSTER_HEAD() && chaos_get_cluster_id() != 0) || node_id == 1)
+    
     typedef uint16_t node_id_t; //Temporary fix, shold probably not redefine this here.
     extern node_id_t cluster_id;
-#else
-    #define IS_DYNAMIC_INITIATOR()               IS_INITIATOR()
-
 #endif /* CHAOS_CLUSTER */
 
 void chaos_cluster_init(void);

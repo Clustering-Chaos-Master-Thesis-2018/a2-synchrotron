@@ -171,7 +171,7 @@ static int index_of(const node_id_t *array, uint8_t size, node_id_t value) {
 
 static void round_begin_sniffer(chaos_header_t* header){
   // header->join = !chaos_get_has_node_index() /*&& !is_join_round*/;
-  // if( IS_DYNAMIC_INITIATOR() ){
+  // if( IS_INITIATOR() ){
   //   header->join |= pending /*&& !is_join_round*/;
   // }
 }
@@ -181,12 +181,12 @@ static void round_end_sniffer(const chaos_header_t* header){
         is_cluster_round = 0;
         cluster_t* const cluster_tx = (cluster_t*) header->payload;
         if(IS_CLUSTER_HEAD()) {
+            init_node_index();
             cluster_id = node_id;
         } else {
             cluster_id = pick_best_cluster(cluster_tx->cluster_head_list, cluster_tx->cluster_head_count);
-            COOJA_DEBUG_PRINTF("cluster round is done, normal node picking cluster: %d", cluster_id);
         }
-        COOJA_DEBUG_PRINTF("cluster: round_end_sniffer cluster_head_count: %u, list[0]: %u, list[1]: %u, picked cluster: %u\n",
+        COOJA_DEBUG_PRINTF("cluster: round_end_sniffer cluster_head_count: %u, list[0]: %u, list[1]: %u, picked cluster head: %u\n",
                             cluster_tx->cluster_head_count, cluster_tx->cluster_head_list[0], cluster_tx->cluster_head_list[1], cluster_id);
     }
     // int i;

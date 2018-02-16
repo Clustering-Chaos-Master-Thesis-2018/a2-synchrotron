@@ -221,9 +221,7 @@ enum {
 #define INITIATOR_NODE_ID ((uint16_t)INITIATOR_NODE)
 #endif
 
-#if CHAOS_CLUSTER
-  #define IS_INITIATOR()                   (node_id == 1)
-#else
+#ifndef CHAOS_CLUSTER
   #define IS_INITIATOR()              (node_id == INITIATOR_NODE_ID)
 #endif
 
