@@ -30,6 +30,9 @@ static node_id_t pick_best_cluster(const node_id_t *cluster_head_list, uint8_t s
 static int index_of(const node_id_t *cluster_head_list, uint8_t size, node_id_t);
 static inline int merge_lists(cluster_t* cluster_tx, cluster_t* cluster_rx);
 
+//The number of consecutive receive states we need to be in before forcing to send again.
+//In order to combat early termination. This should probably be changed to something more robust.
+#define CONSECUTIVE_RECEIVE_THRESHOLD 10
 
 //What is this
 #define FLAGS_LEN(node_count)   ((node_count / 8) + ((node_count % 8) ? 1 : 0))
@@ -82,6 +85,8 @@ static chaos_state_t process(uint16_t round_count, uint16_t slot,
     }
 }
 
+static uint8_t consecutive_rx = 0;
+
 static chaos_state_t process_cluster_head(uint16_t round_count, uint16_t slot,
     chaos_state_t current_state, int chaos_txrx_success, size_t payload_length,
     cluster_t* rx_payload, cluster_t* tx_payload, uint8_t** app_flags) {
@@ -89,12 +94,12 @@ static chaos_state_t process_cluster_head(uint16_t round_count, uint16_t slot,
     uint8_t delta = 0;
     chaos_state_t next_state = CHAOS_RX;
 
-
     if (current_state == CHAOS_INIT) {
         next_state = CHAOS_TX;
     } else if(current_state == CHAOS_RX) {
         delta = merge_lists(tx_payload, rx_payload);
-        if (delta) {
+        consecutive_rx++;
+        if (delta || consecutive_rx == CONSECUTIVE_RECEIVE_THRESHOLD) {
             next_state = CHAOS_TX;
         }
         
@@ -105,6 +110,8 @@ static chaos_state_t process_cluster_head(uint16_t round_count, uint16_t slot,
             next_state = CHAOS_TX;
         }
         
+    } else { /* CHAOS_TX */
+        consecutive_rx = 0;
     }
 
     return next_state;
