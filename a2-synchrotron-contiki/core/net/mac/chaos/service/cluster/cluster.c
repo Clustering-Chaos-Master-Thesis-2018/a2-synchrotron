@@ -185,6 +185,8 @@ static void round_begin_sniffer(chaos_header_t* header){
 
 static void round_end_sniffer(const chaos_header_t* header){
     if ( is_cluster_round ) {
+        char str[200];
+
         is_cluster_round = 0;
         cluster_t* const cluster_tx = (cluster_t*) header->payload;
         if(IS_CLUSTER_HEAD()) {
@@ -193,19 +195,20 @@ static void round_end_sniffer(const chaos_header_t* header){
         } else {
             cluster_id = pick_best_cluster(cluster_tx->cluster_head_list, cluster_tx->cluster_head_count);
         }
-        COOJA_DEBUG_PRINTF("cluster: round_end_sniffer cluster_head_count: %u, list[0]: %u, list[1]: %u, picked cluster head: %u\n",
-                            cluster_tx->cluster_head_count, cluster_tx->cluster_head_list[0], cluster_tx->cluster_head_list[1], cluster_id);
+        char tmp[80];
+        sprintf(tmp, "cluster: round_end_sniffer cluster_head_count: %u, picked_cluster: %u available_clusters: [ ", cluster_tx->cluster_head_count, cluster_id);
+        strcpy(str, tmp);
+        
+        int i;
+        for(i = 0; i < cluster_tx->cluster_head_count; i++) {
+            char tmp[10];
+            sprintf(tmp, (i == cluster_tx->cluster_head_count-1 ? "%u ":"%u, "), cluster_tx->cluster_head_list[i]);
+            strcat(str, tmp);
+        }
+        
+        strcat(str, "]\n");
+        PRINTF(str);
     }
-    // int i;
-    // char str[80];
-    // strcpy(str, "cluster: round_end_sniffer ");
-    // for(i = 0; i < cluster_tx->cluster_head_count; i++) {
-    //     char tmp[10];
-    //     sprintf(tmp, "%u,", cluster_tx->cluster_head_list[i]);
-    //     strcat(str, tmp);
-    // }
-    // strcat(str, "\n");
-    // PRINTF(str);
 }
 
 static inline int merge_lists(cluster_t* cluster_tx, cluster_t* cluster_rx) {
