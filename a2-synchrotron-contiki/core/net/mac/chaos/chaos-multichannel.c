@@ -192,10 +192,16 @@ ALWAYS_INLINE uint16_t
 /* this function has a side effect: updates chaos_current_channel */
 ALWAYS_INLINE uint16_t
     chaos_multichannel_update_current_channel(uint16_t round_number, uint16_t slot_number) {
+    uint16_t next_channel = chaos_multichannel_get_next_channel(round_number, slot_number);
+
+#if CHAOS_CLUSTER
+    next_channel = (next_channel - RF_FIRST_CHANNEL + CLUSTER_HOP_CHANNEL_OFFSET()) % CHAOS_NUMBER_OF_CHANNELS + RF_FIRST_CHANNEL;
+#endif
+
 #if CHAOS_MULTI_CHANNEL
-  return chaos_current_channel = chaos_multichannel_get_next_channel(round_number, slot_number);
+  return chaos_current_channel = next_channel;
 #else
-  return chaos_multichannel_get_next_channel(round_number, slot_number);
+  return next_channel;
 #endif /* CHAOS_MULTI_CHANNEL */
 }
 

@@ -55,7 +55,7 @@ ALWAYS_INLINE static uint32_t generate_restart_threshold() {
 uint32_t restart_threshold = 0;
 uint32_t invalid_rx_count = 0;
 
-uint8_t is_cluster_round = 0;
+uint8_t is_cluster_service_running = 0;
 
 
 static chaos_state_t process(uint16_t round_count, uint16_t slot,
@@ -135,7 +135,7 @@ static chaos_state_t process_cluster_node(uint16_t round_count, uint16_t slot,
 }
 
 static void round_begin(const uint16_t round_count, const uint8_t app_id) {
-    is_cluster_round = 1;
+    is_cluster_service_running = 1;
     COOJA_DEBUG_PRINTF("cluster round begin\n");
     cluster_t cluster_data;
     memset(&cluster_data, 0, sizeof(cluster_t));
@@ -184,10 +184,10 @@ static void round_begin_sniffer(chaos_header_t* header){
 }
 
 static void round_end_sniffer(const chaos_header_t* header){
-    if ( is_cluster_round ) {
+    if ( is_cluster_service_running ) {
         char str[200];
 
-        is_cluster_round = 0;
+        is_cluster_service_running = 0;
         cluster_t* const cluster_tx = (cluster_t*) header->payload;
         if(IS_CLUSTER_HEAD()) {
             init_node_index();

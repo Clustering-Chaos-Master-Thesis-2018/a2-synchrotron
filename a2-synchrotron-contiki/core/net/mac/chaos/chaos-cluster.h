@@ -3,7 +3,7 @@
 #define _CHAOS_CLUSTER_H_
 
 #include "contiki.h"
-#include "chaos-control.h"
+#include "cluster.h"
 
 typedef uint16_t node_id_t;
 typedef uint8_t node_index_t;
@@ -18,6 +18,9 @@ typedef uint8_t node_index_t;
     #define HAS_CLUSTER_ID()                     (chaos_get_cluster_id() != 0)
     #define IS_INITIATOR()                      ((IS_CLUSTER_HEAD() && chaos_get_cluster_id() != 0) || node_id == 1)
     
+    // During cluster service rounds, use no offset
+    #define CLUSTER_HOP_CHANNEL_OFFSET() (is_cluster_service_running ? 0 : chaos_get_cluster_id())
+
     extern node_id_t cluster_id;
 #endif /* CHAOS_CLUSTER */
 
