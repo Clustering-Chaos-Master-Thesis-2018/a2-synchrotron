@@ -56,6 +56,18 @@ extern volatile uint8_t chaos_node_count;  //only valid on initiator
 extern volatile uint8_t chaos_node_index;
 extern volatile uint8_t chaos_has_node_index;
 
+ALWAYS_INLINE uint8_t chaos_get_has_node_index(void);
+ALWAYS_INLINE uint8_t chaos_get_node_count(void);
+ALWAYS_INLINE uint8_t chaos_get_node_index(void);
+
+ALWAYS_INLINE void chaos_set_node_index(uint8_t node_index);
+ALWAYS_INLINE void chaos_set_node_count(uint8_t node_count);
+
+#if CHAOS_CLUSTER
+extern volatile uint8_t chaos_cluster_node_index;
+extern volatile uint8_t chaos_cluster_node_count;
+#endif /* CHAOS_CLUSTER */
+
 #define CHAOS_NODES chaos_node_count
 #else /* NETSTACK_CONF_WITH_CHAOS_NODE_DYNAMIC */
 

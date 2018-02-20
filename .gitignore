@@ -47,3 +47,23 @@ GitHub.sublime-settings
 
 
 # End of https://www.gitignore.io/api/sublimetext
+
+a2-synchrotron-contiki/tools/cooja/apps/cooja-gdbstub
+
+
+# Created by https://www.gitignore.io/api/vim
+
+### Vim ###
+# swap
+.sw[a-p]
+.*.sw[a-p]
+# session
+Session.vim
+# temporary
+.netrwhist
+*~
+# auto-generated tag files
+tags
+
+
+# End of https://www.gitignore.io/api/vim

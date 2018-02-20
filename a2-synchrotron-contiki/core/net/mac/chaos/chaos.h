@@ -52,6 +52,7 @@
 #include "chaos-multichannel.h"
 #include "net/mac/chaos/node/testbed.h"
 #include "chaos-config.h"
+#include "chaos-cluster.h"
 
 //enable the nop delay
 #ifndef CHAOS_CLOCK_DELAY_EXACT
@@ -220,8 +221,11 @@ enum {
 #define INITIATOR_NODE_ID ((uint16_t)INITIATOR_NODE)
 #endif
 
-//#define IS_INITIATOR()              (node_id == INITIATOR_NODE_ID)
-#define IS_INITIATOR()              (node_id == 3 || node_id == 4)
+#if CHAOS_CLUSTER
+  #define IS_INITIATOR()  ((IS_CLUSTER_HEAD() && chaos_get_cluster_id() != 0) || node_id == 1)
+#else
+  #define IS_INITIATOR()    (node_id == INITIATOR_NODE_ID)
+#endif
 
 /* For target Sky and Z1 */
 #define RSSI_CORRECTION_CONSTANT (-45)

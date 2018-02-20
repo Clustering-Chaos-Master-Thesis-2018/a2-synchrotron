@@ -12,6 +12,10 @@ else
 	endif
 endif
 
+ifeq ($(cluster),1)
+	CHAOS_CLUSTER=1
+endif
+
 CFLAGS += -DPROJECT_CONF_H=\"project-conf.h\"
 
 CONTIKI = ../../..

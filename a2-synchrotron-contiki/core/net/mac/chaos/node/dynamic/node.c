@@ -47,8 +47,53 @@ volatile uint8_t chaos_node_index = 0;
 volatile uint8_t chaos_node_count = 0;
 volatile uint8_t chaos_has_node_index = 0;
 
+#if CHAOS_CLUSTER 
+volatile uint8_t chaos_cluster_node_index = 0;
+volatile uint8_t chaos_cluster_node_count = 0;
+#endif /* CHAOS_CLUSTER */
+
 const uint16_t mapping[] = (uint16_t[])TESTBED_MAPPING;
 
 void init_node_index(){
   join_init();
+}
+
+ALWAYS_INLINE uint8_t chaos_get_has_node_index(void) {
+  #if IS_CLUSTER_ROUND
+    return chaos_cluster_node_count != 0;
+  #else
+    return chaos_has_node_index;
+  #endif /* IS_CLUSTER_ROUND */
+}
+
+ALWAYS_INLINE uint8_t chaos_get_node_count(void) {
+  #if IS_CLUSTER_ROUND
+    return chaos_cluster_node_count;
+  #else
+    return chaos_node_count;
+  #endif /* IS_CLUSTER_ROUND */
+}
+
+ALWAYS_INLINE uint8_t chaos_get_node_index(void) {
+  #if IS_CLUSTER_ROUND
+    return chaos_cluster_node_index;
+  #else
+    return chaos_node_index;
+  #endif /* IS_CLUSTER_ROUND */
+}
+
+ALWAYS_INLINE void chaos_set_node_index(uint8_t node_index) {
+  #if IS_CLUSTER_ROUND
+    chaos_cluster_node_index = node_index;
+  #else
+    chaos_node_index = node_index;
+  #endif /* IS_CLUSTER_ROUND */
+}
+
+ALWAYS_INLINE void chaos_set_node_count(uint8_t node_count) {
+ #if IS_CLUSTER_ROUND
+    chaos_cluster_node_count = node_count;
+  #else
+    chaos_node_count = node_count;
+  #endif /* IS_CLUSTER_ROUND */
 }

@@ -63,6 +63,8 @@
 #include "chaos-control.h"
 #include "chaos-random-generator.h"
 
+#include "chaos-cluster.h"
+
 #define CHAOS_TX_RTIMER_GUARD 1
 #define CHAOS_RX_RTIMER_GUARD 1
 
@@ -464,6 +466,13 @@ chaos_round(const uint16_t round_number, const uint8_t app_id, const uint8_t* co
     const uint16_t max_slots,  const uint8_t app_flags_len, process_callback_t process){
   RTIMER_DCO_SYNC();
 
+#if CHAOS_CLUSTER
+  if(!IS_CLUSTER_HEAD() && IS_CLUSTER_ROUND() && HAS_CLUSTER_ID()) {
+    /* Cluster head time, normal nodes keep quiet */
+    return 1;
+  }
+#endif /* CHAOS_CLUSTER */
+
   static vht_clock_t t_round_on = 0;
   round_start = VHT_NOW();
   round_rtimer = chaos_control_get_round_rtimer(); //TODO change all units to VHT
@@ -555,7 +564,16 @@ chaos_round(const uint16_t round_number, const uint8_t app_id, const uint8_t* co
 //  CHAOS_LOG_ADD_MSG("Ini %u id %u hIdx %u nxt %s", IS_INITIATOR(), node_id, chaos_has_node_index, CHAOS_STATE_TO_STRING(next_state));
 //  CHAOS_LOG_ADD_MSG("!n %u g %u d %u l %i", t_round_on, round_rtimer + scheduler_get_next_round_begin(), -((round_rtimer + scheduler_get_next_round_begin()) + t_round_on), too_late);
 
+#if CHAOS_CLUSTER
+  /* Cluster head time, normal nodes keep quiet */
+  if(IS_CLUSTER_HEAD() && IS_CLUSTER_ROUND() && HAS_CLUSTER_ID()) {
+    HOP_CHANNEL_CLUSTER_HEAD(round_number, slot_number);  
+  } else {
+    HOP_CHANNEL(round_number, slot_number);
+  }
+#else
   HOP_CHANNEL(round_number, slot_number);
+#endif /* CHAOS_CLUSTER */
 
 //  CHAOS_LOG_ADD_MSG("rr s %u n %u",
 //      round_start,
@@ -600,7 +618,7 @@ chaos_round(const uint16_t round_number, const uint8_t app_id, const uint8_t* co
       //tx_header->src_time_rank = chaos_time_rank;
 #endif
 #if CHAOS_CLUSTER
-      tx_header->cluster_id = node_id % 2 == 0 ? 4 : 3;
+      tx_header->cluster_id = chaos_get_cluster_id();
 #endif
 #if CHAOS_HW_SECURITY
       //tx_header->src_node_id = node_id;
@@ -651,28 +669,14 @@ chaos_round(const uint16_t round_number, const uint8_t app_id, const uint8_t* co
         chaos_slot_timing_log_min[RX] = MIN(chaos_slot_timing_log_current[RX], chaos_slot_timing_log_min[RX]);
       }
 
-    /* Clustering time*/
+  /* If we get a packet from someone not in our cluster, ignore it. */
   #if CHAOS_CLUSTER
-    if(chaos_slot_status == CHAOS_TXRX_OK) {
-      if(rx_header->cluster_id == 0) {
-        COOJA_DEBUG_PRINTF("BAD, cluster, cluster_id: %d, slot_nbr: %d, round: %d\n", rx_header->cluster_id, rx_header->slot_number, rx_header->round_number); 
-      } else {
-        if (rx_header->cluster_id % 2 != node_id % 2) { 
-          COOJA_DEBUG_PRINTF("NO, not my cluster, cluster_id: %d, slot_nbr: %d, round: %d\n", rx_header->cluster_id, rx_header->slot_number, rx_header->round_number); 
-          slot_number++;
-          LEDS_OFF(LEDS_BLUE);
-          continue;
-        } else { 
-          COOJA_DEBUG_PRINTF("YES, my cluster, cluster_id: %d, slot_nbr: %d, round: %d\n", rx_header->cluster_id, rx_header->slot_number, rx_header->round_number);     
-        }
-      }
-    } else {
-      COOJA_DEBUG_PRINTF("Slot status is not OK, it is: %s", CHAOS_RX_STATE_TO_STRING(chaos_slot_status));
+    if(chaos_slot_status == CHAOS_TXRX_OK && !IS_SAME_CLUSTER(rx_header->cluster_id)) {
+      slot_number++;
+      LEDS_OFF(LEDS_BLUE);
+      continue;
     }
   #endif /* CHAOS_CLUSTER */
-     
-    
-
 
       /* it could be a valid packet but an unexpected app id.
        * Shall we use it for synchronization anyway?
@@ -860,7 +864,15 @@ chaos_round(const uint16_t round_number, const uint8_t app_id, const uint8_t* co
     /* move to next slot */
     slot_number++;
     /* change channel */
+  #if CHAOS_CLUSTER
+    if(IS_CLUSTER_HEAD() && IS_CLUSTER_ROUND() && HAS_CLUSTER_ID()) {
+      HOP_CHANNEL_CLUSTER_HEAD(round_number, slot_number);  
+    } else {
+      HOP_CHANNEL(round_number, slot_number);
+    }
+  #else
     HOP_CHANNEL(round_number, slot_number);
+  #endif /* CHAOS_CLUSTER */
     LEDS_OFF(LEDS_BLUE);
 
 #if BUSYWAIT_UNTIL_SLOT_END
@@ -948,11 +960,7 @@ uint8_t chaos_associate(rtimer_clock_t* t_sfd_actual_rtimer_ptr, uint16_t *round
         /* try to get get a valid packet */
         rx_status = chaos_rx_slot(&sfd_vht, 0, 0, 1);
         *t_sfd_actual_rtimer_ptr = VHT_TO_RTIMER(sfd_vht);
-      #if CHAOS_CLUSTER
-        associated += (rx_status == CHAOS_TXRX_OK) && (rx_header->cluster_id % 2 == node_id % 2);
-      #else
         associated += (rx_status == CHAOS_TXRX_OK);
-      #endif /* CHAOS_CLUSTER */
         watchdog_periodic(); /* association could take a long time */
         /* hop channel after a number of slots without a successful association */
         if(++association_counter > CHAOS_ASSOCIATION_HOP_CHANNEL_THERSHOLD) {
@@ -990,6 +998,13 @@ uint8_t chaos_associate(rtimer_clock_t* t_sfd_actual_rtimer_ptr, uint16_t *round
       round_synced = 1;
       next_round_begin = rx_header->next_round_start;
       next_round_id = rx_header->next_round_id;
+      #if CHAOS_CLUSTER
+        //If we associate with a node that is already assigned to a CH then we should just join that cluster for now.
+        cluster_id = rx_header->cluster_id;
+        if(cluster_id != 0) {
+          COOJA_DEBUG_PRINTF("cluster: associated with a clustered node, joining cluster: %u\n", cluster_id);
+        }
+      #endif /* CHAOS_CLUSTER */
       off();
       slot_number++; //for logging to be similar to after association
     }
@@ -1121,4 +1136,3 @@ const struct network_driver chaosnet_driver = {
   chaos_net_init,
   chaos_net_input
 };
-

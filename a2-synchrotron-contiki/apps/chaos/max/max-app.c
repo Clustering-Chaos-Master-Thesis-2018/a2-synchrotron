@@ -56,10 +56,15 @@ static void round_begin(const uint16_t round_count, const uint8_t id);
 
 CHAOS_APP(chaos_max_app, MAX_SLOT_LEN, MAX_ROUND_MAX_SLOTS, 1, max_is_pending, round_begin);
 #if NETSTACK_CONF_WITH_CHAOS_NODE_DYNAMIC
-#include "join.h"
-CHAOS_APPS(&join, &chaos_max_app);
+  #include "join.h"
+  #if CHAOS_CLUSTER
+    #include "cluster.h"
+    CHAOS_APPS(&cluster, &join, &chaos_max_app);
+  #else
+    CHAOS_APPS(&join, &chaos_max_app);
+  #endif /* CHAOS_CLUSTER */
 #else
-CHAOS_APPS(&chaos_max_app);
+    CHAOS_APPS(&chaos_max_app);
 #endif /* NETSTACK_CONF_WITH_CHAOS_NODE_DYNAMIC */
 
 PROCESS(chaos_max_app_process, "Chaos Max App Process");
