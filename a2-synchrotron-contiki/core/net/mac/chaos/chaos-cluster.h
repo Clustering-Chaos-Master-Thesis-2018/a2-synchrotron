@@ -3,12 +3,13 @@
 #define _CHAOS_CLUSTER_H_
 
 #include "contiki.h"
-#include "cluster.h"
 
 typedef uint16_t node_id_t;
 typedef uint8_t node_index_t;
 
 #if CHAOS_CLUSTER
+    #include "cluster.h"
+
     #define IS_CLUSTER_ROUND()                   0
     #define IS_SAME_CLUSTER(RECEIVED_CLUSTER_ID) (RECEIVED_CLUSTER_ID == chaos_get_cluster_id() \
                                                || RECEIVED_CLUSTER_ID == 0 \

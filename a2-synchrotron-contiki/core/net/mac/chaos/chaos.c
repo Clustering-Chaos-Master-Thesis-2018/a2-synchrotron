@@ -998,7 +998,7 @@ uint8_t chaos_associate(rtimer_clock_t* t_sfd_actual_rtimer_ptr, uint16_t *round
       round_synced = 1;
       next_round_begin = rx_header->next_round_start;
       next_round_id = rx_header->next_round_id;
-      #ifdef CHAOS_CLUSTER
+      #if CHAOS_CLUSTER
         //If we associate with a node that is already assigned to a CH then we should just join that cluster for now.
         cluster_id = rx_header->cluster_id;
         if(cluster_id != 0) {
