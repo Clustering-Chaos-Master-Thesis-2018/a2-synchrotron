@@ -221,8 +221,10 @@ enum {
 #define INITIATOR_NODE_ID ((uint16_t)INITIATOR_NODE)
 #endif
 
-#if !CHAOS_CLUSTER
-  #define IS_INITIATOR()              (node_id == INITIATOR_NODE_ID)
+#if CHAOS_CLUSTER
+  #define IS_INITIATOR()  ((IS_CLUSTER_HEAD() && chaos_get_cluster_id() != 0) || node_id == 1)
+#else
+  #define IS_INITIATOR()    (node_id == INITIATOR_NODE_ID)
 #endif
 
 /* For target Sky and Z1 */
