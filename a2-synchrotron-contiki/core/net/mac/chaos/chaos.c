@@ -669,17 +669,12 @@ chaos_round(const uint16_t round_number, const uint8_t app_id, const uint8_t* co
         chaos_slot_timing_log_min[RX] = MIN(chaos_slot_timing_log_current[RX], chaos_slot_timing_log_min[RX]);
       }
 
-  /* Clustering time*/
+  /* If we get a packet from someone not in our cluster, ignore it. */
   #if CHAOS_CLUSTER
-    if(chaos_slot_status == CHAOS_TXRX_OK) {
-      if(!IS_SAME_CLUSTER(rx_header->cluster_id)) {
-        //COOJA_DEBUG_PRINTF("NO, not my cluster, cluster_id: %d, slot_nbr: %d, round: %d\n", rx_header->cluster_id, rx_header->slot_number, rx_header->round_number);
-        slot_number++;
-        LEDS_OFF(LEDS_BLUE);
-        continue;
-      }
-    } else {
-      COOJA_DEBUG_PRINTF("Slot status is not OK, it is: %s", CHAOS_RX_STATE_TO_STRING(chaos_slot_status));
+    if(chaos_slot_status == CHAOS_TXRX_OK && !IS_SAME_CLUSTER(rx_header->cluster_id)) {
+      slot_number++;
+      LEDS_OFF(LEDS_BLUE);
+      continue;
     }
   #endif /* CHAOS_CLUSTER */
 
@@ -965,11 +960,7 @@ uint8_t chaos_associate(rtimer_clock_t* t_sfd_actual_rtimer_ptr, uint16_t *round
         /* try to get get a valid packet */
         rx_status = chaos_rx_slot(&sfd_vht, 0, 0, 1);
         *t_sfd_actual_rtimer_ptr = VHT_TO_RTIMER(sfd_vht);
-      #if CHAOS_CLUSTER
-        associated += (rx_status == CHAOS_TXRX_OK); // && IS_SAME_CLUSTER(rx_header->cluster_id, node_id);
-      #else
         associated += (rx_status == CHAOS_TXRX_OK);
-      #endif /* CHAOS_CLUSTER */
         watchdog_periodic(); /* association could take a long time */
         /* hop channel after a number of slots without a successful association */
         if(++association_counter > CHAOS_ASSOCIATION_HOP_CHANNEL_THERSHOLD) {

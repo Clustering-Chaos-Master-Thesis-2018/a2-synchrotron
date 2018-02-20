@@ -178,10 +178,6 @@ static int index_of(const node_id_t *array, uint8_t size, node_id_t value) {
 }
 
 static void round_begin_sniffer(chaos_header_t* header){
-  // header->join = !chaos_get_has_node_index() /*&& !is_join_round*/;
-  // if( IS_INITIATOR() ){
-  //   header->join |= pending /*&& !is_join_round*/;
-  // }
 }
 
 static void round_end_sniffer(const chaos_header_t* header){
