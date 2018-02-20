@@ -138,7 +138,6 @@ static chaos_state_t process_cluster_node(uint16_t round_count, uint16_t slot,
 
 static void round_begin(const uint16_t round_count, const uint8_t app_id) {
     is_cluster_service_running = 1;
-    COOJA_DEBUG_PRINTF("cluster round begin\n");
     cluster_t cluster_data;
     memset(&cluster_data, 0, sizeof(cluster_t));
 
