@@ -105,11 +105,12 @@ static chaos_state_t process_cluster_head(uint16_t round_count, uint16_t slot,
             next_state = CHAOS_TX;
         }
         
-        int node_in_list = index_of(tx_payload->cluster_head_list, tx_payload->cluster_head_count, node_id);
+        const int node_in_list = index_of(tx_payload->cluster_head_list, tx_payload->cluster_head_count, node_id);
         if(node_in_list == -1) {
-            // TODO: Check if list is full. Should we use NODE_LIST_LEN? Do we need to insert, not append?
-            tx_payload->cluster_head_list[tx_payload->cluster_head_count++] = node_id;
-            next_state = CHAOS_TX;
+            if(tx_payload->cluster_head_count < NODE_LIST_LEN) {
+                tx_payload->cluster_head_list[tx_payload->cluster_head_count++] = node_id;
+                next_state = CHAOS_TX;
+            }
         }
         
     } else { /* CHAOS_TX */
