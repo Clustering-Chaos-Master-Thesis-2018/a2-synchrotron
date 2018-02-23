@@ -4,7 +4,7 @@
  * to get a few things */
 
 
-#include "net/ip/uip.h"
+#include "net/ipv6/uip.h"
 #include "net/ipv6/uip-ds6.h"
 #include <string.h>
 
@@ -130,7 +130,7 @@ uip_icmp6chksum(void)
 
 /*---------------------------------------------------------------------------*/
 void
-uip_ds6_link_neighbor_callback(int status, int numtx)
+uip_ds6_link_callback(int status, int numtx)
 {
 
 }
