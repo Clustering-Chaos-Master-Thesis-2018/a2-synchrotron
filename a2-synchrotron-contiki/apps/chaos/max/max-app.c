@@ -81,8 +81,8 @@ PROCESS_THREAD(chaos_max_app_process, ev, data)
 #endif
 	while( 1 ){
 		PROCESS_YIELD();
-		if(chaos_has_node_index){
-      printf("{rd %u res} max: %u, fin: %i/%i, node id: %u, n: %u\n", round_count_local, max_value, complete, off_slot, node_id, chaos_node_count);
+		if(chaos_get_has_node_index()){
+      printf("{rd %u res} max: %u, fin: %i/%i, node id: %u, n: %u\n", round_count_local, max_value, complete, off_slot, node_id, chaos_get_node_count());
 //      int latency = complete *
 //      printf("{rd %u prf} latency = %f, total slot time = %f\n", complete, off_slot);
 
@@ -108,7 +108,7 @@ PROCESS_THREAD(chaos_max_app_process, ev, data)
       }
 #endif
 		} else {
-      printf("{rd %u res} max: waiting to join, n: %u\n", round_count_local, chaos_node_count);
+      printf("{rd %u res} max: waiting to join, n: %u\n", round_count_local, chaos_get_node_count());
 		}
 	}
 	PROCESS_END();

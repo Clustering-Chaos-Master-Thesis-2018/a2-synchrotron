@@ -467,7 +467,7 @@ chaos_round(const uint16_t round_number, const uint8_t app_id, const uint8_t* co
   RTIMER_DCO_SYNC();
 
 #if CHAOS_CLUSTER
-  if(!IS_CLUSTER_HEAD() && IS_CLUSTER_ROUND() && HAS_CLUSTER_ID()) {
+  if(!IS_CLUSTER_HEAD() && IS_CLUSTER_ROUND()) {
     /* Cluster head time, normal nodes keep quiet */
     return 1;
   }
@@ -566,7 +566,7 @@ chaos_round(const uint16_t round_number, const uint8_t app_id, const uint8_t* co
 
 #if CHAOS_CLUSTER
   /* Cluster head time, normal nodes keep quiet */
-  if(IS_CLUSTER_HEAD() && IS_CLUSTER_ROUND() && HAS_CLUSTER_ID()) {
+  if(IS_CLUSTER_HEAD() && IS_CLUSTER_ROUND()) {
     HOP_CHANNEL_CLUSTER_HEAD(round_number, slot_number);  
   } else {
     HOP_CHANNEL(round_number, slot_number);
@@ -865,7 +865,7 @@ chaos_round(const uint16_t round_number, const uint8_t app_id, const uint8_t* co
     slot_number++;
     /* change channel */
   #if CHAOS_CLUSTER
-    if(IS_CLUSTER_HEAD() && IS_CLUSTER_ROUND() && HAS_CLUSTER_ID()) {
+    if(IS_CLUSTER_HEAD() && IS_CLUSTER_ROUND()) {
       HOP_CHANNEL_CLUSTER_HEAD(round_number, slot_number);  
     } else {
       HOP_CHANNEL(round_number, slot_number);

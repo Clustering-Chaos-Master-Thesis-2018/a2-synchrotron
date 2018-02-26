@@ -134,7 +134,7 @@
 /* how many failed rounds to allow before associating again? */
 #undef CHAOS_FAILED_ROUNDS_RESYNC_THRESHOLD
 #if CHAOS_CLUSTER
-    #define CHAOS_FAILED_ROUNDS_RESYNC_THRESHOLD (3)
+    #define CHAOS_FAILED_ROUNDS_RESYNC_THRESHOLD (5)
 #else 
     #define CHAOS_FAILED_ROUNDS_RESYNC_THRESHOLD (1)
 #endif /* CHAOS_CLUSTER */

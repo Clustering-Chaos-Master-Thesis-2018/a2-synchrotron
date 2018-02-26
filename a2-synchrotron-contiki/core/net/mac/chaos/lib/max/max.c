@@ -69,9 +69,9 @@
 #define LIMIT_TX_NO_DELTA 0
 
 #define FLAGS_LEN_X(X)   (((X) >> 3) + (((X) & 7) ? 1 : 0))
-#define FLAGS_LEN   (FLAGS_LEN_X(chaos_node_count))
+#define FLAGS_LEN   (FLAGS_LEN_X(chaos_get_node_count()))
 //#define LAST_FLAGS  ((1 << (((chaos_node_count - 1) % 8) + 1)) - 1)
-#define LAST_FLAGS  ((1 << (((chaos_node_count - 1) & 7) + 1)) - 1)
+#define LAST_FLAGS  ((1 << (((chaos_get_node_count() - 1) & 7) + 1)) - 1)
 //#define FLAG_SUM    (((FLAGS_LEN - 1) * 0xFF) + LAST_FLAGS)
 #define FLAG_SUM    (((FLAGS_LEN - 1) << 8) - (FLAGS_LEN - 1) + LAST_FLAGS)
 
@@ -226,8 +226,8 @@ int max_round_begin(const uint16_t round_number, const uint8_t app_id, uint16_t*
   memset(&max_local, 0, sizeof(max_local));
   max_local.max.max = *max_value;
   /* set my flag */
-  unsigned int array_index = chaos_node_index / 8;
-  unsigned int array_offset = chaos_node_index % 8;
+  unsigned int array_index = chaos_get_node_index() / 8;
+  unsigned int array_offset = chaos_get_node_index() % 8;
   max_local.max.flags[array_index] |= 1 << (array_offset);
 
   chaos_round(round_number, app_id, (const uint8_t const*)&max_local.max, sizeof(max_t) + max_get_flags_length(), MAX_SLOT_LEN_DCO, MAX_ROUND_MAX_SLOTS, max_get_flags_length(), process);
