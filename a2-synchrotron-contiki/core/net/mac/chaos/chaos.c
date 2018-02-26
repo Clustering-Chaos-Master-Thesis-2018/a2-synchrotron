@@ -826,16 +826,8 @@ void chaos_slot(uint16_t* sync_slot, int* chaos_slot_status, chaos_state_t* chao
     LEDS_OFF(LEDS_BLUE);
 
 #if BUSYWAIT_UNTIL_SLOT_END
-    /* busy wait until end of slot if we still have time */
-    rtimer_clock_t sfd_goal_rtimer = VHT_TO_RTIMER(t_sfd_goal);
-    rtimer_clock_t slot_guard_time = ((round_synced ? RX_GUARD_TIME/2 : ROUND_GUARD_TIME/2))
-        + (2) + VHT_TO_RTIMER(PREP_RX_VHT + 2*RX_LEDS_DELAY) /* for led toggling */
-        + ( (*chaos_state == CHAOS_RX) ? VHT_TO_RTIMER(CHAOS_RX_DELAY_VHT)
-                                      : VHT_TO_RTIMER(CHAOS_TX_DELAY_VHT) );
-    if(RTIMER_LT(RTIMER_NOW(), sfd_goal_rtimer - slot_guard_time)) {
-      while(RTIMER_LT(RTIMER_NOW(), sfd_goal_rtimer - slot_guard_time));
-    }
-#endif /* BUSYWAIT_UNTIL_SLOT_END */
+    busywait_until_end_of_slot(t_sfd_goal, *chaos_state);
+#endif /* BUSYWAIT_UNTIL_SLOT_END */ 
 
     LEDS_OFF(LEDS_RED);
     rtimer_clock_t t_slot_end = DCO_NOW();
@@ -854,6 +846,18 @@ void chaos_slot(uint16_t* sync_slot, int* chaos_slot_status, chaos_state_t* chao
       }
     }
   
+}
+
+ALWAYS_INLINE void busywait_until_end_of_slot(vht_clock_t t_sfd_goal, chaos_state_t chaos_state) {
+  /* busy wait until end of slot if we still have time */
+  rtimer_clock_t sfd_goal_rtimer = VHT_TO_RTIMER(t_sfd_goal);
+  rtimer_clock_t slot_guard_time = ((round_synced ? RX_GUARD_TIME/2 : ROUND_GUARD_TIME/2))
+      + (2) + VHT_TO_RTIMER(PREP_RX_VHT + 2*RX_LEDS_DELAY) /* for led toggling */
+      + ( (chaos_state == CHAOS_RX) ? VHT_TO_RTIMER(CHAOS_RX_DELAY_VHT)
+                                    : VHT_TO_RTIMER(CHAOS_TX_DELAY_VHT) );
+  if(RTIMER_LT(RTIMER_NOW(), sfd_goal_rtimer - slot_guard_time)) {
+    while(RTIMER_LT(RTIMER_NOW(), sfd_goal_rtimer - slot_guard_time));
+  }
 }
 
 /* Associate:
