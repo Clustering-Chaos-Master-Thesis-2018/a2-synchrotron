@@ -63,10 +63,6 @@ ALWAYS_INLINE uint16_t chaos_multichannel_lookup_channel(uint16_t round_number, 
 ALWAYS_INLINE uint16_t chaos_multichannel_update_current_channel(uint16_t round_number, uint16_t slot_number);
 
 #define HOP_CHANNEL(ROUND, SLOT) ( NETSTACK_RADIO_set_channel(chaos_multichannel_update_current_channel(ROUND, SLOT)) )
-
-#if CHAOS_CLUSTER
-#define HOP_CHANNEL_CLUSTER_HEAD(ROUND, SLOT) ( NETSTACK_RADIO_set_channel(chaos_multichannel_update_current_channel(ROUND, SLOT)) )
-#endif /* CHAOS_CLUSTER */
 #define CHANNEL_IDX(C) ((C)-RF_FIRST_CHANNEL)
 
 #endif /* CHAOS_MULTICHANNEL_H_ */

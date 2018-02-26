@@ -467,7 +467,7 @@ chaos_round(const uint16_t round_number, const uint8_t app_id, const uint8_t* co
   RTIMER_DCO_SYNC();
 
 #if CHAOS_CLUSTER
-  if(!IS_CLUSTER_HEAD() && IS_CLUSTER_ROUND()) {
+  if(!IS_CLUSTER_HEAD() && IS_CLUSTER_HEAD_ROUND()) {
     /* Cluster head time, normal nodes keep quiet */
     return 1;
   }
@@ -564,16 +564,7 @@ chaos_round(const uint16_t round_number, const uint8_t app_id, const uint8_t* co
 //  CHAOS_LOG_ADD_MSG("Ini %u id %u hIdx %u nxt %s", IS_INITIATOR(), node_id, chaos_has_node_index, CHAOS_STATE_TO_STRING(next_state));
 //  CHAOS_LOG_ADD_MSG("!n %u g %u d %u l %i", t_round_on, round_rtimer + scheduler_get_next_round_begin(), -((round_rtimer + scheduler_get_next_round_begin()) + t_round_on), too_late);
 
-#if CHAOS_CLUSTER
-  /* Cluster head time, normal nodes keep quiet */
-  if(IS_CLUSTER_HEAD() && IS_CLUSTER_ROUND()) {
-    HOP_CHANNEL_CLUSTER_HEAD(round_number, slot_number);  
-  } else {
-    HOP_CHANNEL(round_number, slot_number);
-  }
-#else
   HOP_CHANNEL(round_number, slot_number);
-#endif /* CHAOS_CLUSTER */
 
 //  CHAOS_LOG_ADD_MSG("rr s %u n %u",
 //      round_start,
@@ -864,15 +855,7 @@ chaos_round(const uint16_t round_number, const uint8_t app_id, const uint8_t* co
     /* move to next slot */
     slot_number++;
     /* change channel */
-  #if CHAOS_CLUSTER
-    if(IS_CLUSTER_HEAD() && IS_CLUSTER_ROUND()) {
-      HOP_CHANNEL_CLUSTER_HEAD(round_number, slot_number);  
-    } else {
-      HOP_CHANNEL(round_number, slot_number);
-    }
-  #else
     HOP_CHANNEL(round_number, slot_number);
-  #endif /* CHAOS_CLUSTER */
     LEDS_OFF(LEDS_BLUE);
 
 #if BUSYWAIT_UNTIL_SLOT_END

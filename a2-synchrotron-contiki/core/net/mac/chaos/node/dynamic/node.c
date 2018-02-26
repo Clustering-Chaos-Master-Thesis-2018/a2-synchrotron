@@ -59,41 +59,41 @@ void init_node_index(){
 }
 
 ALWAYS_INLINE uint8_t chaos_get_has_node_index(void) {
-  #if IS_CLUSTER_ROUND
+  #if IS_CLUSTER_HEAD_ROUND
     return chaos_cluster_node_count != 0;
   #else
     return chaos_has_node_index;
-  #endif /* IS_CLUSTER_ROUND */
+  #endif /* IS_CLUSTER_HEAD_ROUND */
 }
 
 ALWAYS_INLINE uint8_t chaos_get_node_count(void) {
-  #if IS_CLUSTER_ROUND
+  #if IS_CLUSTER_HEAD_ROUND
     return chaos_cluster_node_count;
   #else
     return chaos_node_count;
-  #endif /* IS_CLUSTER_ROUND */
+  #endif /* IS_CLUSTER_HEAD_ROUND */
 }
 
 ALWAYS_INLINE uint8_t chaos_get_node_index(void) {
-  #if IS_CLUSTER_ROUND
+  #if IS_CLUSTER_HEAD_ROUND
     return chaos_cluster_node_index;
   #else
     return chaos_node_index;
-  #endif /* IS_CLUSTER_ROUND */
+  #endif /* IS_CLUSTER_HEAD_ROUND */
 }
 
 ALWAYS_INLINE void chaos_set_node_index(uint8_t node_index) {
-  #if IS_CLUSTER_ROUND
+  #if IS_CLUSTER_HEAD_ROUND
     chaos_cluster_node_index = node_index;
   #else
     chaos_node_index = node_index;
-  #endif /* IS_CLUSTER_ROUND */
+  #endif /* IS_CLUSTER_HEAD_ROUND */
 }
 
 ALWAYS_INLINE void chaos_set_node_count(uint8_t node_count) {
- #if IS_CLUSTER_ROUND
+ #if IS_CLUSTER_HEAD_ROUND
     chaos_cluster_node_count = node_count;
   #else
     chaos_node_count = node_count;
-  #endif /* IS_CLUSTER_ROUND */
+  #endif /* IS_CLUSTER_HEAD_ROUND */
 }
