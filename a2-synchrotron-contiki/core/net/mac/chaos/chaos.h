@@ -340,6 +340,8 @@ uint16_t chaos_round(const uint16_t round_number, const uint8_t app_id, const ui
     const uint8_t payload_length, const rtimer_clock_t slot_length_dco, const uint16_t max_slots, const uint8_t app_flags_len,
     process_callback_t process);
 
+ALWAYS_INLINE void chaos_slot(uint16_t* sync_slot, int* chaos_slot_status, chaos_state_t* chaos_state, uint16_t* slot_number, uint16_t round_number, uint8_t app_id, vht_clock_t slot_length_app, process_callback_t process);
+
 uint8_t chaos_associate(rtimer_clock_t* t_sfd_actual_rtimer_ptr, uint16_t *round_number_ptr, uint16_t* slot_number_ptr, uint8_t* app_id_ptr);
 
 int get_round_synced();

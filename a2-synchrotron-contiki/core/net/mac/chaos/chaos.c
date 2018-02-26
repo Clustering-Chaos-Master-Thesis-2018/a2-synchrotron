@@ -590,45 +590,63 @@ chaos_round(const uint16_t round_number, const uint8_t app_id, const uint8_t* co
   watchdog_periodic();
   LEDS_OFF(LEDS_BLUE);
   while( slot_number < max_slots && chaos_state != CHAOS_OFF ){
+    chaos_slot(&sync_slot, &chaos_slot_status, &chaos_state, &slot_number, round_number, app_id, slot_length_app, process);
+  }
+
+  LEDS_OFF(LEDS_RED);
+  off();
+  for(i = 0; i < chaos_app_count; i++){
+    if( chaos_apps[i]->round_end_sniffer != NULL ){
+      chaos_apps[i]->round_end_sniffer(tx_header);
+    }
+  }
+  CHAOS_LOG_ADD_MSG("{I}GT s%u r%u", RX_GUARD_TIME, ROUND_GUARD_TIME);
+  CHAOS_LOG_ADD_MSG("{I}Pw %u #%u a%u p%u", CHAOS_TX_POWER, CHAOS_NUMBER_OF_CHANNELS, CHAOS_MULTI_CHANNEL_ADAPTIVE, CHAOS_MULTI_CHANNEL_PARALLEL_SEQUENCES);
+  UNSET_PIN_ADC7;
+
+  //pet the watchdog to keep it calm after the round :)
+  watchdog_periodic();
+
+  //TODO: write result to payload packet
+  return slot_number;
+}
+
+//(sync_slot, chaos_slot_status, chaos_state, slot_number, round_number, app_id, slot_length_app);
+/*
+
+(const uint16_t round_number, const uint8_t app_id, const uint8_t* const payload, const uint8_t payload_length_app, const rtimer_clock_t slot_length_app_dco, const uint16_t max_slots,  const uint8_t app_flags_len){
+
+*/
+ALWAYS_INLINE
+void chaos_slot(uint16_t* sync_slot, int* chaos_slot_status, chaos_state_t* chaos_state, uint16_t* slot_number, uint16_t round_number, uint8_t app_id, vht_clock_t slot_length_app, process_callback_t process) {
+
     t_slot_start_dco = DCO_NOW();
     t_slot_start = VHT_NOW();
 
-    //COOJA_DEBUG_PRINTF("rs %lx rr %x rrv %lx ro %lx ss %lx", round_start, round_rtimer, round_rtimer, t_round_on, t_slot_start);
-
-    //
     LEDS_ON(LEDS_BLUE);
     //for long rounds, pet the watchdog every slot to keep it calm :)
     watchdog_periodic();
 
-    if(chaos_state == CHAOS_TX){
-      tx_header->slot_number = slot_number;
-      tx_header->slot_number_msb = slot_number > 255;
+    if(*chaos_state == CHAOS_TX){
+      tx_header->slot_number = *slot_number;
+      tx_header->slot_number_msb = *slot_number > 255;
       tx_header->round_number = round_number;
 #if CHAOS_USE_SRC_RANK
       tx_header->src_rank = chaos_rank;
-      //tx_header->src_time_rank = chaos_time_rank;
 #endif
 #if CHAOS_CLUSTER
       tx_header->cluster_id = chaos_get_cluster_id();
 #endif
 #if CHAOS_HW_SECURITY
-      //tx_header->src_node_id = node_id;
-//        tx_header->chaos_security_frame_counter.round_number = round_number;
-//        tx_header->chaos_security_frame_counter.slot_number = slot_number;
-//        tx_header->chaos_security_frame_counter.seq_number = slot_number;
-////        chaos_update_nonce(chaos_nonce, tx_header->chaos_security_frame_counter.security_frame_counter);
-//        chaos_make_nonce(chaos_get_nonce_pointer(),
-//            chaos_get_extended_address(tx_header->src_node_id),
-//            tx_header->chaos_security_frame_counter.security_frame_counter);
         chaos_make_const_nonce(chaos_nonce);
         cc2420_set_nonce(chaos_nonce, 0); /* upload tx nonce */
 #endif /* CHAOS_HW_SECURITY */
 
-        chaos_slot_status = chaos_do_tx();
+        *chaos_slot_status = chaos_do_tx();
 
         chaos_slot_timing_log_current[TX] = t_txrx_end - call_dco;
         chaos_slot_timing_tx_sum += chaos_slot_timing_log_current[TX];
-        if(slot_number > sync_slot){ //ignore first slot
+        if(*slot_number > *sync_slot){ //ignore first slot
           chaos_slot_timing_log_current[TX_PREPARE] = call_dco - t_slot_start_dco;
           chaos_slot_timing_log_max[TX_PREPARE] = MAX(chaos_slot_timing_log_current[TX_PREPARE], chaos_slot_timing_log_max[TX_PREPARE]);
           chaos_slot_timing_log_min[TX_PREPARE] = MIN(chaos_slot_timing_log_current[TX_PREPARE], chaos_slot_timing_log_min[TX_PREPARE]);
@@ -636,23 +654,13 @@ chaos_round(const uint16_t round_number, const uint8_t app_id, const uint8_t* co
           chaos_slot_timing_log_min[TX] = MIN(chaos_slot_timing_log_current[TX], chaos_slot_timing_log_min[TX]);
         }
 
-//      COOJA_DEBUG_STRX("delay_exact_dco", delay_exact_dco, 6);
-
-      //self correct for tx
-//        if ( CHAOS_ENABLE_SFD_SYNC && chaos_slot_status == CHAOS_TXRX_OK && ((t_sfd_goal > t_sfd_actual
-//            && t_sfd_goal - t_sfd_actual < MAX(TX_RANDOM_DELAY, DCO_TO_VHT(20)))
-//            || (t_sfd_goal < t_sfd_actual
-//                && t_sfd_actual - t_sfd_goal < MAX(TX_RANDOM_DELAY, DCO_TO_VHT(20))))) {
-//          // XXX only self-correct if it is a meaningful value
-////          t_sfd_goal = t_sfd_actual; //sometimes a transmission is delayed be a rx coming in the same time
-//        }
       chaos_rank += ( !IS_INITIATOR() ) ? CHAOS_RANK_TX_INCREMENT : 0;
     } else {
 
-      chaos_slot_status = chaos_do_rx(app_id);
+      *chaos_slot_status = chaos_do_rx(app_id);
       chaos_slot_timing_log_current[RX] = t_txrx_end - call_dco;
       chaos_slot_timing_rx_sum += chaos_slot_timing_log_current[RX];
-      if(slot_number > sync_slot){
+      if(*slot_number > *sync_slot){
         chaos_slot_timing_log_current[RX_PREPARE] = call_dco - t_slot_start_dco;
         chaos_slot_timing_log_max[RX_PREPARE] = MAX(chaos_slot_timing_log_current[RX_PREPARE], chaos_slot_timing_log_max[RX_PREPARE]);
         chaos_slot_timing_log_min[RX_PREPARE] = MIN(chaos_slot_timing_log_current[RX_PREPARE], chaos_slot_timing_log_min[RX_PREPARE]);
@@ -662,10 +670,11 @@ chaos_round(const uint16_t round_number, const uint8_t app_id, const uint8_t* co
 
   /* If we get a packet from someone not in our cluster, ignore it. */
   #if CHAOS_CLUSTER
-    if(chaos_slot_status == CHAOS_TXRX_OK && !IS_SAME_CLUSTER(rx_header->cluster_id)) {
-      slot_number++;
+    if(*chaos_slot_status == CHAOS_TXRX_OK && !IS_SAME_CLUSTER(rx_header->cluster_id)) {
+
+      (*slot_number)++;
       LEDS_OFF(LEDS_BLUE);
-      continue;
+      return;
     }
   #endif /* CHAOS_CLUSTER */
 
@@ -673,11 +682,9 @@ chaos_round(const uint16_t round_number, const uint8_t app_id, const uint8_t* co
        * Shall we use it for synchronization anyway?
        * Now we don't */
 
-      chaos_slot_status = chaos_post_rx(chaos_slot_status, app_id, round_synced, round_number);
+      *chaos_slot_status = chaos_post_rx(*chaos_slot_status, app_id, round_synced, round_number);
 
-      if(chaos_slot_status == CHAOS_TXRX_OK){
-        //slot_number = rx_header->slot_number;
-        //slot_number |= rx_header->slot_number_msb ? 0x100 : 0;
+      if(*chaos_slot_status == CHAOS_TXRX_OK){
 
         uint8_t rx_good_rank = 0;
 #if CHAOS_USE_SRC_RANK
@@ -687,7 +694,6 @@ chaos_round(const uint16_t round_number, const uint8_t app_id, const uint8_t* co
         chaos_rank = ((uint16_t)chaos_rank * RANK_ALPHA +
                    (uint16_t)rx_header->src_rank * (RANK_SCALE - RANK_ALPHA)) / RANK_SCALE;
 
-        //chaos_rank = rx_header->src_rank + 1 > 0 ? rx_header->src_rank + 1 : CHAOS_MAX_RANK;
         rx_good_rank = rx_header->src_rank <= chaos_rank;
 
 #else
@@ -697,12 +703,6 @@ chaos_round(const uint16_t round_number, const uint8_t app_id, const uint8_t* co
         if(!IS_INITIATOR()) {
           //never correct initiator sync because it is the time source
 
-          /* correct sfd based on RX if better rank, otherwise skip */
-//          uint8_t rx_good_time_rank = rx_header->src_time_rank <= chaos_time_rank;
-//          if( (rx_good_time_rank && CHAOS_ENABLE_SFD_SYNC) || !round_synced) {
-//            t_sfd_goal = t_sfd_actual; //actual end sfd
-//            chaos_time_rank = rx_header->src_time_rank;
-//          }
           if( rx_good_rank && CHAOS_ENABLE_SFD_SYNC == 1 ){
             /* only correct of meaningful value (within guard time) */
             if( ABS_VHT(t_sfd_goal - t_sfd_actual) < (round_synced ? RTIMER_TO_VHT(RX_GUARD_TIME) : RTIMER_TO_VHT(ROUND_GUARD_TIME)) ){
@@ -710,15 +710,14 @@ chaos_round(const uint16_t round_number, const uint8_t app_id, const uint8_t* co
             }
           }
           if( !round_synced ){
-            slot_number = rx_header->slot_number;
-            slot_number |= rx_header->slot_number_msb ? 0x100 : 0;
-            round_rtimer = ROUND_START_FROM_SLOT(t_sfd_actual, slot_number, slot_length_app);
+            *slot_number = rx_header->slot_number;
+            *slot_number |= rx_header->slot_number_msb ? 0x100 : 0;
+            round_rtimer = ROUND_START_FROM_SLOT(t_sfd_actual, *slot_number, slot_length_app);
             t_sfd_goal = t_sfd_actual;
             round_synced = 1;
-            sync_slot = slot_number;
+            *sync_slot = *slot_number;
             next_round_begin = rx_header->next_round_start;
             next_round_id = rx_header->next_round_id;
-  //          CHAOS_LOG_ADD_MSG("!rr %u, f %u, %u %ul\n", round_rtimer, t_sfd_actual_rtimer, slot_number, slot_length_app);
           }
         }
       } else {
@@ -726,46 +725,36 @@ chaos_round(const uint16_t round_number, const uint8_t app_id, const uint8_t* co
       }
 
     }
-    SET_SLOT_STATUS(slot_number, chaos_state, chaos_slot_status);
+    SET_SLOT_STATUS(*slot_number, *chaos_state, *chaos_slot_status);
 
-//
-    //XXX_number * slot_length_app;
 #if WITH_CHAOS_LOG
     chaos_state_t chaos_state_backup_log;
-    chaos_state_backup_log = chaos_state;
+    chaos_state_backup_log = *chaos_state;
 #endif
-    /* increment time rank */
-    //t_sfd_goal = round_rtimer + slot
-//    if( !IS_INITIATOR() ){
-//      chaos_time_rank = chaos_time_rank + 1 > 0 ? chaos_time_rank + 1 : CHAOS_MAX_RANK;
-//    } else {
-//      chaos_time_rank = 0;
-//      chaos_rank = 0;
-//    }
-    uint8_t timing_log_state = chaos_state == CHAOS_TX ? TX_POST : RX_POST;
+    uint8_t timing_log_state = *chaos_state == CHAOS_TX ? TX_POST : RX_POST;
     rtimer_clock_t t_post_txrx_end = DCO_NOW();
-    if(slot_number > sync_slot){
+    if(*slot_number > *sync_slot){
       chaos_slot_timing_log_current[timing_log_state] = t_post_txrx_end - t_txrx_end;
       chaos_slot_timing_log_max[timing_log_state] = MAX(chaos_slot_timing_log_current[timing_log_state], chaos_slot_timing_log_max[timing_log_state]);
       chaos_slot_timing_log_min[timing_log_state] = MIN(chaos_slot_timing_log_current[timing_log_state], chaos_slot_timing_log_min[RX]);
     }
     /* process app */
     if( !chaos_apps[app_id]->requires_node_index || chaos_has_node_index ){
-      chaos_state = process(round_number, slot_number, chaos_state, (chaos_slot_status == CHAOS_TXRX_OK), (chaos_slot_status == CHAOS_TXRX_OK) ? CHAOS_PAYLOAD_LENGTH(rx_header) : 0, rx_header->payload, tx_header->payload, &app_flags);
-      int app_do_sync = ( chaos_state == CHAOS_RX_SYNC ) || ( chaos_state == CHAOS_TX_SYNC );
-      chaos_state = ( chaos_state == CHAOS_RX_SYNC ) ? chaos_state = CHAOS_RX : (( chaos_state == CHAOS_TX_SYNC ) ? chaos_state = CHAOS_TX : chaos_state);
-      if( chaos_slot_status == CHAOS_TXRX_OK && app_do_sync  && CHAOS_ENABLE_SFD_SYNC == 2){
+      *chaos_state = process(round_number, *slot_number, *chaos_state, (*chaos_slot_status == CHAOS_TXRX_OK), (*chaos_slot_status == CHAOS_TXRX_OK) ? CHAOS_PAYLOAD_LENGTH(rx_header) : 0, rx_header->payload, tx_header->payload, &app_flags);
+      int app_do_sync = ( *chaos_state == CHAOS_RX_SYNC ) || ( *chaos_state == CHAOS_TX_SYNC );
+      *chaos_state = ( *chaos_state == CHAOS_RX_SYNC ) ? *chaos_state = CHAOS_RX : (( *chaos_state == CHAOS_TX_SYNC ) ? *chaos_state = CHAOS_TX : *chaos_state);
+      if( *chaos_slot_status == CHAOS_TXRX_OK && app_do_sync  && CHAOS_ENABLE_SFD_SYNC == 2){
         /* the application reports a packet coming from the initiator, so we can synchronize on it;
          * e.g., we got a phase transition that only the initiator can issue */
-        slot_number = rx_header->slot_number;
-        slot_number |= rx_header->slot_number_msb ? 0x100 : 0;
-        round_rtimer = ROUND_START_FROM_SLOT(t_sfd_actual, slot_number, slot_length_app);
+        *slot_number = rx_header->slot_number;
+        *slot_number |= rx_header->slot_number_msb ? 0x100 : 0;
+        round_rtimer = ROUND_START_FROM_SLOT(t_sfd_actual, *slot_number, slot_length_app);
         t_sfd_goal = t_sfd_actual;
       }
     }
 #if NETSTACK_CONF_WITH_CHAOS_NODE_DYNAMIC
-    else if( chaos_state == CHAOS_RX
-        && chaos_slot_status == CHAOS_TXRX_OK ){
+    else if( *chaos_state == CHAOS_RX
+        && *chaos_slot_status == CHAOS_TXRX_OK ){
       /* work as a forwarder if not joined */
       flag_delta |= tx_header->length != rx_header->length;
       if( !flag_delta ){
@@ -774,11 +763,11 @@ chaos_round(const uint16_t round_number, const uint8_t app_id, const uint8_t* co
       if( flag_delta ){
         memcpy(tx_header->payload, rx_header->payload, rx_header->length);
         tx_header->length = rx_header->length;
-        chaos_state = CHAOS_TX;
+        *chaos_state = CHAOS_TX;
         flag_delta = 0;
       }
     } else {
-      chaos_state = CHAOS_RX;
+      *chaos_state = CHAOS_RX;
     }
 #endif /* NETSTACK_CONF_WITH_CHAOS_NODE_DYNAMIC */
 
@@ -787,7 +776,7 @@ chaos_round(const uint16_t round_number, const uint8_t app_id, const uint8_t* co
     rtimer_clock_t t_app_processing_end = DCO_NOW();
     const chaos_app_t* current_app = scheduler_get_current_app();
     int is_join_app = strcmp(current_app->name, "join");
-    if(slot_number > sync_slot){
+    if(*slot_number > *sync_slot){
       if((!chaos_apps[app_id]->requires_node_index || chaos_has_node_index) && !is_join_app){
         chaos_slot_timing_log_current[APP_PROCESSING] = t_app_processing_end - t_post_txrx_end;
         chaos_slot_timing_log_max[APP_PROCESSING] = MAX(chaos_slot_timing_log_current[APP_PROCESSING], chaos_slot_timing_log_max[APP_PROCESSING]);
@@ -798,28 +787,13 @@ chaos_round(const uint16_t round_number, const uint8_t app_id, const uint8_t* co
         chaos_slot_timing_log_min[JOIN_PROCESSING] = MIN(chaos_slot_timing_log_current[JOIN_PROCESSING], chaos_slot_timing_log_min[JOIN_PROCESSING]);
       }
     }
-    /* log */
-    //log hack!
-//    typedef struct __attribute__((packed)) chaos_max_struct {
-//      uint16_t dummy_start;
-//      uint16_t max;
-//      uint8_t dummy[APP_DUMMY_LEN];
-//      uint8_t flags[];
-//    } chaos_max_t;
 
     CHAOS_LOG_ADD(chaos_log_txrx, {
         log->txrx.state = chaos_state_backup_log;
-        log->txrx.rx_status = chaos_slot_status;
+        log->txrx.rx_status = *chaos_slot_status;
         log->txrx.t_sfd_delta = t_sfd_actual - t_sfd_goal_log;
 
-//        log->txrx.t_slot_start = t_slot_start;
-//        log->txrx.t_go_goal = t_go_goal;
-//        log->txrx.t_go_actual = t_go_actual;
         log->txrx.t_go_delta = t_go_actual - t_go_goal;
-//        log->txrx.t_sfd_goal = t_sfd_goal_log;
-//        log->txrx.t_sfd_actual = t_sfd_actual;
-//        log->txrx.t_slot_length_app = slot_length_app;
-//        log->txrx.t_slot_length_actual = ABS(t_sfd_goal_dco - t_sfd_goal_dco_log) / 4;
 #if CHAOS_MULTI_CHANNEL && CHAOS_MULTI_CHANNEL_ADAPTIVE
         log->txrx.channel_black_list_local = chaos_multichannel_get_black_list_local();
         log->txrx.channel_black_list_merged = chaos_multichannel_get_black_list_merged();
@@ -841,30 +815,22 @@ chaos_round(const uint16_t round_number, const uint8_t app_id, const uint8_t* co
         log->txrx.join_has_node_index = chaos_has_node_index;
         log->txrx.join_slot_count = join_get_slot_count_from_payload( payload );
 #endif
-        /* profiling */
-        //log->txrx.t_post_processing = (DCO_NOW() - t_processing)/4;
-        //XXX log hack!
-//        chaos_max_t* log_hack = (chaos_state_backup_log == CHAOS_RX ) ? (chaos_max_t*)(rx_header->payload) : (chaos_max_t*)(tx_header->payload);
-//        log->txrx.t_post_processing = log_hack->max;
-//        uint8_t log_hack = ( chaos_state_backup_log == CHAOS_RX ) ? rx_header->payload[0] : tx_header->payload[0];
-//        log->txrx.t_post_processing = chaos_rank;
     });
 
 
     RTIMER_DCO_SYNC();
     /* move to next slot */
-    slot_number++;
+    (*slot_number)++;
     /* change channel */
     HOP_CHANNEL(round_number, slot_number);
     LEDS_OFF(LEDS_BLUE);
 
 #if BUSYWAIT_UNTIL_SLOT_END
-    //t_last_slot = VHT_NOW() - t_slot_start;
     /* busy wait until end of slot if we still have time */
     rtimer_clock_t sfd_goal_rtimer = VHT_TO_RTIMER(t_sfd_goal);
     rtimer_clock_t slot_guard_time = ((round_synced ? RX_GUARD_TIME/2 : ROUND_GUARD_TIME/2))
         + (2) + VHT_TO_RTIMER(PREP_RX_VHT + 2*RX_LEDS_DELAY) /* for led toggling */
-        + ( (chaos_state == CHAOS_RX) ? VHT_TO_RTIMER(CHAOS_RX_DELAY_VHT)
+        + ( (*chaos_state == CHAOS_RX) ? VHT_TO_RTIMER(CHAOS_RX_DELAY_VHT)
                                       : VHT_TO_RTIMER(CHAOS_TX_DELAY_VHT) );
     if(RTIMER_LT(RTIMER_NOW(), sfd_goal_rtimer - slot_guard_time)) {
       while(RTIMER_LT(RTIMER_NOW(), sfd_goal_rtimer - slot_guard_time));
@@ -873,7 +839,7 @@ chaos_round(const uint16_t round_number, const uint8_t app_id, const uint8_t* co
 
     LEDS_OFF(LEDS_RED);
     rtimer_clock_t t_slot_end = DCO_NOW();
-    if(slot_number > sync_slot + 1){
+    if(*slot_number > *sync_slot + 1){
       chaos_slot_timing_log_current[SLOT_END_PROCCESSING] = t_slot_end - t_app_processing_end;
       chaos_slot_timing_log_max[SLOT_END_PROCCESSING] = MAX(chaos_slot_timing_log_current[SLOT_END_PROCCESSING], chaos_slot_timing_log_max[SLOT_END_PROCCESSING]);
       chaos_slot_timing_log_min[SLOT_END_PROCCESSING] = MIN(chaos_slot_timing_log_current[SLOT_END_PROCCESSING], chaos_slot_timing_log_min[SLOT_END_PROCCESSING]);
@@ -881,30 +847,13 @@ chaos_round(const uint16_t round_number, const uint8_t app_id, const uint8_t* co
       chaos_slot_timing_log_max[SLOT_TIME_ALL] = MAX(chaos_slot_timing_log_current[SLOT_TIME_ALL], chaos_slot_timing_log_max[SLOT_TIME_ALL]);
       chaos_slot_timing_log_min[SLOT_TIME_ALL] = MIN(chaos_slot_timing_log_current[SLOT_TIME_ALL], chaos_slot_timing_log_min[SLOT_TIME_ALL]);
       if(chaos_slot_timing_log_current[SLOT_TIME_ALL] >= chaos_slot_timing_log_min[SLOT_TIME_ALL]){
-        chaos_slot_timing_log_min[SLOTNUMBER] = slot_number;
+        chaos_slot_timing_log_min[SLOTNUMBER] = *slot_number;
       }
       if(chaos_slot_timing_log_current[SLOT_TIME_ALL] >= chaos_slot_timing_log_max[SLOT_TIME_ALL]){
-        chaos_slot_timing_log_max[SLOTNUMBER] = slot_number;
+        chaos_slot_timing_log_max[SLOTNUMBER] = *slot_number;
       }
     }
-  }
-
-  LEDS_OFF(LEDS_RED);
-  off();
-  for(i = 0; i < chaos_app_count; i++){
-    if( chaos_apps[i]->round_end_sniffer != NULL ){
-      chaos_apps[i]->round_end_sniffer(tx_header);
-    }
-  }
-  CHAOS_LOG_ADD_MSG("{I}GT s%u r%u", RX_GUARD_TIME, ROUND_GUARD_TIME);
-  CHAOS_LOG_ADD_MSG("{I}Pw %u #%u a%u p%u", CHAOS_TX_POWER, CHAOS_NUMBER_OF_CHANNELS, CHAOS_MULTI_CHANNEL_ADAPTIVE, CHAOS_MULTI_CHANNEL_PARALLEL_SEQUENCES);
-  UNSET_PIN_ADC7;
-
-  //pet the watchdog to keep it calm after the round :)
-  watchdog_periodic();
-
-  //TODO: write result to payload packet
-  return slot_number;
+  
 }
 
 /* Associate:
