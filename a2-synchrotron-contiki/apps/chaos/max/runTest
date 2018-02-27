@@ -1,0 +1,2 @@
+#!/bin/sh
+make TARGET=cooja -nogui=Simulation $1 | sh

@@ -29,7 +29,7 @@ ifneq ($(MAKECMDGOALS),clean)
 .PHONY: $(MAKECMDGOALS)
 .PRECIOUS: $(MAKECMDGOALS)
 $(MAKECMDGOALS): $(CONTIKI)/tools/cooja/dist/cooja.jar
-	 java -mx512m -jar $< -quickstart='$(firstword $(MAKECMDGOALS))' -contiki='$(CONTIKI)'
+	 java -mx512m -jar $< -nogui='$(firstword $(MAKECMDGOALS))' -contiki='$(CONTIKI)'
 endif
 
 endif ## QUICKSTART
