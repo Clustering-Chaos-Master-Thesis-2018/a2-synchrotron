@@ -670,7 +670,7 @@ void chaos_slot(uint16_t* sync_slot, int* chaos_slot_status, chaos_state_t* chao
 
   /* If we get a packet from someone not in our cluster, ignore it. */
   #if CHAOS_CLUSTER
-    if(*chaos_slot_status == CHAOS_TXRX_OK && !IS_SAME_CLUSTER(rx_header->cluster_id)) {
+    if(*chaos_slot_status == CHAOS_TXRX_OK && !IS_SAME_CLUSTER(rx_header->cluster_id) && !IS_CLUSTER_HEAD_ROUND()) {
 
       (*slot_number)++;
       LEDS_OFF(LEDS_BLUE);
