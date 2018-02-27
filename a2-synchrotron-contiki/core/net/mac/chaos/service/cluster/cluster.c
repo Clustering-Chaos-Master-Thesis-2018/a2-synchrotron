@@ -180,12 +180,26 @@ static int index_of(const node_id_t *array, uint8_t size, node_id_t value) {
 static void round_begin_sniffer(chaos_header_t* header){
 }
 
-static void round_end_sniffer(const chaos_header_t* header){
-    if ( is_cluster_service_running ) {
-        char str[200];
+static void log_cluster_heads(node_id_t *cluster_head_list, uint8_t cluster_head_count) {
+    char str[200];
+    sprintf(str, "cluster: rd: %u, cluster_head_count: %u, picked_cluster: %u available_clusters: [ ", chaos_get_round_number(), cluster_head_count, cluster_id);
 
+    int i;
+    for(i = 0; i < cluster_head_count; i++) {
+        char tmp[10];
+        sprintf(tmp, (i == cluster_head_count-1 ? "%u ":"%u, "), cluster_head_list[i]);
+        strcat(str, tmp);
+    }
+
+    strcat(str, "]\n");
+    PRINTF(str);
+}
+
+static void round_end_sniffer(const chaos_header_t* header){
+    if (is_cluster_service_running) {
         is_cluster_service_running = 0;
         cluster_t* const cluster_tx = (cluster_t*) header->payload;
+
         if(IS_CLUSTER_HEAD()) {
             init_node_index();
             chaos_cluster_node_count = cluster_tx->cluster_head_count;
@@ -194,19 +208,7 @@ static void round_end_sniffer(const chaos_header_t* header){
         } else {
             cluster_id = pick_best_cluster(cluster_tx->cluster_head_list, cluster_tx->cluster_head_count);
         }
-        char tmp[80];
-        sprintf(tmp, "cluster: round_end_sniffer cluster_head_count: %u, picked_cluster: %u available_clusters: [ ", cluster_tx->cluster_head_count, cluster_id);
-        strcpy(str, tmp);
-        
-        int i;
-        for(i = 0; i < cluster_tx->cluster_head_count; i++) {
-            char tmp[10];
-            sprintf(tmp, (i == cluster_tx->cluster_head_count-1 ? "%u ":"%u, "), cluster_tx->cluster_head_list[i]);
-            strcat(str, tmp);
-        }
-        
-        strcat(str, "]\n");
-        PRINTF(str);
+        log_cluster_heads(cluster_tx->cluster_head_list, cluster_tx->cluster_head_count);
     }
 }
 
