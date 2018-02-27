@@ -108,14 +108,20 @@ PROCESS_THREAD(chaos_max_app_process, ev, data)
       }
 #endif
 		} else {
-      printf("{rd %u res} max: waiting to join, n: %u\n", round_count_local, chaos_get_node_count());
+      if(!chaos_has_node_index) {
+        printf("{rd %u res} max: waiting to join, n: %u\n", round_count_local, chaos_get_node_count());
+      } else {
+        printf("{rd %u res} max: is clustering round but has no cluster node index\n", round_count_local);
+      }
 		}
 	}
 	PROCESS_END();
 }
 
 static void round_begin(const uint16_t round_count, const uint8_t id){
-  max_value = node_id;
+  if(!IS_CLUSTER_HEAD() && !IS_CLUSTER_HEAD_ROUND()) {
+    max_value = node_id;
+  }
   complete = max_round_begin(round_count, id, &max_value, &flags);
   off_slot = max_get_off_slot();
   round_count_local = round_count;
