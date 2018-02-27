@@ -195,10 +195,10 @@ chaos_post_processing(void)
 //        printf("{rd %u-%u err} %s %s l %u i %u\n", round_number, join_debug_var.slot, CHAOS_STATE_TO_STRING(join_debug_var.slot_type), CHAOS_RX_STATE_TO_STRING(join_debug_var.slot_status), join_debug_var.debug_pos, join_debug_var.info);
 //      }
 
-      if( IS_INITIATOR() && (chaos_node_count > FAULTY_NODE_COUNT || faulty_pkt || COOJA)){
-        PRINTF("{rd %u join list} begin > ", round_number);
+      if( IS_INITIATOR() && (chaos_node_count > FAULTY_NODE_COUNT || faulty_pkt || COOJA || CHAOS_CLUSTER)){
+        printf("{rd %u join list} begin > ", round_number);
         join_print_nodes();
-        PRINTF("< end join list\n");
+        printf("< end join list\n");
       }
     }
   }
@@ -442,4 +442,3 @@ PROCESS_THREAD(chaos_process, ev, data)
 
   PROCESS_END();
 }
-

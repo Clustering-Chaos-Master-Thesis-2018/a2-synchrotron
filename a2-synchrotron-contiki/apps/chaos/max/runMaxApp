@@ -1,0 +1,9 @@
+#!/usr/bin/sh
+
+make clean
+
+make motes log=0 printf=1 tx=31 mch=1 pch=0 sec=0 src=2 sync=0 failure=0 dynamic=1 initiator=1 interval=29 cluster=1
+
+make TARGET=sky MOTES=/dev/ttyUSB0 max-app.upload &
+make TARGET=sky MOTES=/dev/ttyUSB1 max-app.upload &
+make TARGET=sky MOTES=/dev/ttyUSB2 max-app.upload 
