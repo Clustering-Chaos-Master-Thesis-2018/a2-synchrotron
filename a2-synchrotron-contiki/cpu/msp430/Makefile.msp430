@@ -287,6 +287,7 @@ sec?=0 #HW security level: 0-disabled, 5-authentication with 2 bytes. - Compatib
 description?=""
 failures?=0 # inject failures in vote, 2pc, 3pc with a probability of 1/failures
 max_node_count?=0
+cluster?=0
 
 CFLAGS += -D_param_join=$(dynamic)
 CFLAGS += -D_param_log=$(log)
