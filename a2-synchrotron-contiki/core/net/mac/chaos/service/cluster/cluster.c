@@ -202,8 +202,10 @@ static void round_end_sniffer(const chaos_header_t* header){
 
         if(IS_CLUSTER_HEAD()) {
             init_node_index();
-            chaos_cluster_node_count = cluster_tx->cluster_head_count;
-            chaos_cluster_node_index = node_id - 1;
+            if(chaos_cluster_node_count < cluster_tx->cluster_head_count) {
+                chaos_cluster_node_count = cluster_tx->cluster_head_count;
+                chaos_cluster_node_index = node_id - 1;
+            }
             cluster_id = node_id;
         } else {
             cluster_id = pick_best_cluster(cluster_tx->cluster_head_list, cluster_tx->cluster_head_count);
