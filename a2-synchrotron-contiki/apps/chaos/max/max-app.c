@@ -119,7 +119,7 @@ PROCESS_THREAD(chaos_max_app_process, ev, data)
 }
 
 static void round_begin(const uint16_t round_count, const uint8_t id){
-  if(!IS_CLUSTER_HEAD() && !IS_CLUSTER_HEAD_ROUND()) {
+  if(!IS_CLUSTER_HEAD() || (IS_CLUSTER_HEAD() && !IS_CLUSTER_HEAD_ROUND())) {
     max_value = node_id;
   }
   complete = max_round_begin(round_count, id, &max_value, &flags);
