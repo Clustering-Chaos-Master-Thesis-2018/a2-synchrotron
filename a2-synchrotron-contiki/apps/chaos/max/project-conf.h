@@ -197,7 +197,7 @@
 #define LOG_CONF_ENABLED 0
 
 #undef ENERGEST_CONF_ON
-#define ENERGEST_CONF_ON 0
+#define ENERGEST_CONF_ON 1
 
 
 #endif /* PROJECT_CONF_H_ */

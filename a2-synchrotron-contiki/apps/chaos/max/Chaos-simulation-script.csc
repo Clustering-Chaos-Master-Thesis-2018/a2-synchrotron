@@ -303,28 +303,37 @@ TIMEOUT(60000);
 
 var imports = new JavaImporter(java.io, java.lang);
 with (imports) {
-    var logFile = new FileWriter("log.txt");
-    //System.out.println(file.getAbsolutePath());
-    System.out.println("helo2");
 
-    logFile.write("helo");
-    logFile.flush();
-    logFile.close();
-    // while (true) {
-    //   YIELD_THEN_WAIT_UNTIL(msg.startsWith("cluster"));
-    //   logFile.write(time + ":\t" + id + ":\t" + msg + "\n");
-    //   log.log(time + ":\t" + id + ":\t" + msg + "\n" + mote + "\n");      
-    // }
-    // /path/to/my/script.js
+     // Use JavaScript object as an associative array
+     outputs = new Object();
+     
+     while (true) {
+
+      //Has the output file been created.
+      if(! outputs[id.toString()]){
+        
+        // BTW: FileWriter seems to be buffered.
+        outputs[id.toString()]= new FileWriter("log/log_" + id +".txt");
+      }
+      //Write to file.
+      outputs[id.toString()].write(time + " " + msg + "\n");
+       
+      try{
+        //This is the tricky part. The Script is terminated using
+        // an exception. This needs to be caught.
+        YIELD();
+      } catch (e) {
+        //Close files.
+        for (var ids in outputs){
+          outputs[ids].close();
+        }
+        //Rethrow exception again, to end the script.
+        throw('test script killed');
+      }
+     }
+    
 }
 
-//var FileWriter = Java.type("java.io.FileWriter");
-// var ArrayList = Java.type("java.util.ArrayList");
-//importPackage(java.io);
-
-// var logFile = FileWriter("log.txt");
-
-//var l = new ArrayList();
 
 
 
