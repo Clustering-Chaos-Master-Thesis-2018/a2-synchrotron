@@ -620,6 +620,7 @@ chaos_round(const uint16_t round_number, const uint8_t app_id, const uint8_t* co
 ALWAYS_INLINE
 void chaos_slot(uint16_t* sync_slot, int* chaos_slot_status, chaos_state_t* chaos_state, uint16_t* slot_number, uint16_t round_number, uint8_t app_id, vht_clock_t slot_length_app, process_callback_t process) {
 
+    int my_cluster = 1;
     t_slot_start_dco = DCO_NOW();
     t_slot_start = VHT_NOW();
 
@@ -670,19 +671,17 @@ void chaos_slot(uint16_t* sync_slot, int* chaos_slot_status, chaos_state_t* chao
 
   /* If we get a packet from someone not in our cluster, ignore it. */
   #if CHAOS_CLUSTER
-    if(*chaos_slot_status == CHAOS_TXRX_OK && !IS_SAME_CLUSTER(rx_header->cluster_id) && !IS_CLUSTER_HEAD_ROUND()) {
-
-      (*slot_number)++;
-      LEDS_OFF(LEDS_BLUE);
-      return;
+    if(*chaos_slot_status == CHAOS_TXRX_OK && !IS_SAME_CLUSTER(rx_header->cluster_id) && !IS_CLUSTER_HEAD_ROUND() && !IS_CLUSTER_JOIN()) {
+      my_cluster = 0;
     }
   #endif /* CHAOS_CLUSTER */
 
       /* it could be a valid packet but an unexpected app id.
        * Shall we use it for synchronization anyway?
        * Now we don't */
-
-      *chaos_slot_status = chaos_post_rx(*chaos_slot_status, app_id, round_synced, round_number);
+      if(my_cluster)  {
+        *chaos_slot_status = chaos_post_rx(*chaos_slot_status, app_id, round_synced, round_number);
+      }
 
       if(*chaos_slot_status == CHAOS_TXRX_OK){
 
@@ -739,7 +738,7 @@ void chaos_slot(uint16_t* sync_slot, int* chaos_slot_status, chaos_state_t* chao
       chaos_slot_timing_log_min[timing_log_state] = MIN(chaos_slot_timing_log_current[timing_log_state], chaos_slot_timing_log_min[RX]);
     }
     /* process app */
-    if( !chaos_apps[app_id]->requires_node_index || chaos_has_node_index ){
+    if( (!chaos_apps[app_id]->requires_node_index || chaos_has_node_index) && my_cluster){
       *chaos_state = process(round_number, *slot_number, *chaos_state, (*chaos_slot_status == CHAOS_TXRX_OK), (*chaos_slot_status == CHAOS_TXRX_OK) ? CHAOS_PAYLOAD_LENGTH(rx_header) : 0, rx_header->payload, tx_header->payload, &app_flags);
       int app_do_sync = ( *chaos_state == CHAOS_RX_SYNC ) || ( *chaos_state == CHAOS_TX_SYNC );
       *chaos_state = ( *chaos_state == CHAOS_RX_SYNC ) ? *chaos_state = CHAOS_RX : (( *chaos_state == CHAOS_TX_SYNC ) ? *chaos_state = CHAOS_TX : *chaos_state);
