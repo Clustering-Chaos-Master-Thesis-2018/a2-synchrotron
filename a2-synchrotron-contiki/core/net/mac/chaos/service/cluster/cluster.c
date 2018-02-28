@@ -34,7 +34,7 @@ static inline int merge_lists(cluster_t* cluster_tx, cluster_t* cluster_rx);
 //In order to combat early termination. This should probably be changed to something more robust.
 #define CONSECUTIVE_RECEIVE_THRESHOLD 10
 
-#define NUMBER_OF_CLUSTER_ROUNDS 3
+#define NUMBER_OF_CLUSTER_ROUNDS 4
 
 //What is this
 #define FLAGS_LEN(node_count)   ((node_count / 8) + ((node_count % 8) ? 1 : 0))
@@ -43,6 +43,9 @@ static inline int merge_lists(cluster_t* cluster_tx, cluster_t* cluster_rx);
 
 #define CHAOS_RESTART_MAX 10
 #define CHAOS_RESTART_MIN 4
+
+//The percentage chance for a node to become a cluster head. 
+#define CLUSTER_HEAD_ELECTION_CHANCE 10
 
 CHAOS_SERVICE(cluster, (7*(RTIMER_SECOND/1000)+0*(RTIMER_SECOND/1000)/2), 260 , 0, is_pending, round_begin, round_begin_sniffer, round_end_sniffer);
 
@@ -58,7 +61,15 @@ uint32_t restart_threshold = 0;
 uint32_t invalid_rx_count = 0;
 
 uint8_t is_cluster_service_running = 0;
+int8_t cluster_head = -1;
 
+ALWAYS_INLINE int8_t is_cluster_head(void) {
+    return cluster_head > 0;
+}
+
+ALWAYS_INLINE int8_t cluster_head_not_initialized(void) {
+    return cluster_head == -1;
+}
 
 static chaos_state_t process(uint16_t round_count, uint16_t slot,
     chaos_state_t current_state, int chaos_txrx_success, size_t payload_length,
@@ -80,7 +91,7 @@ static chaos_state_t process(uint16_t round_count, uint16_t slot,
         }
     }
 
-    if(IS_CLUSTER_HEAD()) {
+    if(is_cluster_head()) {
         return process_cluster_head(round_count, slot, current_state, chaos_txrx_success, payload_length, cluster_rx, cluster_tx, app_flags);
     } else {
         return process_cluster_node(round_count, slot, current_state, chaos_txrx_success, payload_length, cluster_rx, cluster_tx, app_flags);
@@ -142,7 +153,11 @@ static void round_begin(const uint16_t round_count, const uint8_t app_id) {
     cluster_t cluster_data;
     memset(&cluster_data, 0, sizeof(cluster_t));
 
-    if(IS_CLUSTER_HEAD()) {
+    if(cluster_head_not_initialized()) {
+        cluster_head = (chaos_random_generator_fast() % 100) < CLUSTER_HEAD_ELECTION_CHANCE || node_id == 1;
+    }
+
+    if(is_cluster_head()) {
         cluster_data.cluster_head_list[0] = node_id;
         cluster_data.cluster_head_count++;
     }
@@ -159,12 +174,8 @@ ALWAYS_INLINE static int is_pending(const uint16_t round_count) {
 
 static node_id_t pick_best_cluster(const node_id_t *cluster_head_list, uint8_t size) {
     // Should be based on some more complex calculation later.
-    const node_id_t value = node_id % 2 == 0 ? 2 : 1;
-    if(index_of(cluster_head_list, size, value) != -1) {
-        return value;
-    } else {
-        return 0;
-    }
+    cluster_index = chaos_random_generator_fast() % size;
+    return cluster_head_list[cluster_index];
 }
 
 static int index_of(const node_id_t *array, uint8_t size, node_id_t value) {
@@ -200,13 +211,14 @@ static void round_end_sniffer(const chaos_header_t* header){
         is_cluster_service_running = 0;
         cluster_t* const cluster_tx = (cluster_t*) header->payload;
 
-        if(IS_CLUSTER_HEAD()) {
+        if(is_cluster_head()) {
             init_node_index();
             if(chaos_cluster_node_count < cluster_tx->cluster_head_count) {
                 chaos_cluster_node_count = cluster_tx->cluster_head_count;
                 chaos_cluster_node_index = node_id - 1;
             }
             cluster_id = node_id;
+            cluster_index = index_of(cluster_tx->cluster_head_list, cluster_tx->cluster_head_count, node_id);
         } else {
             cluster_id = pick_best_cluster(cluster_tx->cluster_head_list, cluster_tx->cluster_head_count);
         }

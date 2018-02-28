@@ -5,6 +5,8 @@
 #include "net/mac/chaos/chaos-random-generator.h"
 
 node_id_t cluster_id = 0;
+uint8_t cluster_index = 0;
+
 
 void chaos_cluster_init(void) {
     PRINTF("where should this run?");
@@ -17,4 +19,8 @@ ALWAYS_INLINE void chaos_cluster_round_init(uint8_t is_initiator, chaos_header_t
 
 ALWAYS_INLINE node_id_t chaos_get_cluster_id(void) {
   return cluster_id;
+}
+
+ALWAYS_INLINE uint8_t chaos_get_cluster_index(void) {
+  return cluster_index;
 }
