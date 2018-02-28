@@ -178,7 +178,7 @@ static node_id_t pick_best_cluster(const node_id_t *cluster_head_list, uint8_t s
     return cluster_head_list[cluster_index];
 }
 
-static int index_of(const node_id_t *array, uint8_t size, node_id_t value) {
+ALWAYS_ACTUALLY_INLINE static int index_of(const node_id_t *array, uint8_t size, node_id_t value) {
     int i;
     for(i = 0; i < size; ++i) {
         if (array[i] == value) {
@@ -191,7 +191,7 @@ static int index_of(const node_id_t *array, uint8_t size, node_id_t value) {
 static void round_begin_sniffer(chaos_header_t* header){
 }
 
-static void log_cluster_heads(node_id_t *cluster_head_list, uint8_t cluster_head_count) {
+ALWAYS_ACTUALLY_INLINE static void log_cluster_heads(node_id_t *cluster_head_list, uint8_t cluster_head_count) {
     char str[200];
     sprintf(str, "cluster: rd: %u, cluster_head_count: %u, picked_cluster: %u available_clusters: [ ", chaos_get_round_number(), cluster_head_count, cluster_id);
 
