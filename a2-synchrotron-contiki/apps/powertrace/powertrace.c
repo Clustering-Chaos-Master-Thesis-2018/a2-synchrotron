@@ -115,7 +115,7 @@ powertrace_print(char *str)
   all_radio = energest_type_time(ENERGEST_TYPE_LISTEN) +
     energest_type_time(ENERGEST_TYPE_TRANSMIT);
 
-  printf("%s %lu P %d.%d %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu (radio %d.%02d%% / %d.%02d%% tx %d.%02d%% / %d.%02d%% listen %d.%02d%% / %d.%02d%%)\n",
+  printf("{power: clock_time: %s, rimeAddr: %lu P  seqNr: %d.%d all_cpu: %lu, all_lpm: %lu, all_transmit: %lu, all_listen: %lu, all_idle_transmit: %lu, all_idle_listen: %lu, cpu: %lu, lpm: %lu \npower: transmit: %lu, listen: %lu, idle_transmit: %lu, idle_listen: %lu,  %lu (radio %d.%02d%% / %d.%02d%% tx %d.%02d%% / %d.%02d%% listen %d.%02d%% / %d.%02d%%)}\n",
          str,
          clock_time(), linkaddr_node_addr.u8[0], linkaddr_node_addr.u8[1], seqno,
          all_cpu, all_lpm, all_transmit, all_listen, all_idle_transmit, all_idle_listen,
