@@ -60,4 +60,6 @@ rtimer_clock_t scheduler_get_next_round_begin();
 /* correct only at round end!! */
 const chaos_app_t* scheduler_get_current_app();
 
+void scheduler_set_next_app(uint8_t);
+
 #endif /* CHAOS_SCHEDULER_H_ */

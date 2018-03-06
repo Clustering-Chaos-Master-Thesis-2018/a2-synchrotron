@@ -54,6 +54,7 @@
 #include "chaos-scheduler.h"
 #include "chaos-control.h"
 #include "chaos-config.h"
+#include "chaos-cluster.h"
 //for NETSTACK_RADIO_sfd_sync
 #include "chaos-platform-specific.h"
 #include "leds.h"
@@ -244,6 +245,7 @@ PT_THREAD(chaos_round_proc(struct rtimer *t, void *ptr))
     leds_blink();
     COOJA_DEBUG_LINE();
     scheduler_round_end();
+    chaos_cluster_round_end();
   } else {
     failed_rounds=CHAOS_FAILED_ROUNDS_RESYNC_THRESHOLD; //app is NULL!! Panic!
   }

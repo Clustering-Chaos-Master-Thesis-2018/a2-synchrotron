@@ -121,6 +121,11 @@ const chaos_app_t* scheduler_get_current_app(){
   return current_app;
 }
 
+void scheduler_set_next_app(uint8_t id) {
+  next_app_id = id;
+  next_app = chaos_apps[id];
+}
+
 uint8_t scheduler_get_next_round_app_id(){
   return next_app_id;
 }
