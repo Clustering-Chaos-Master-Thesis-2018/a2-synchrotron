@@ -27,7 +27,7 @@ static int is_pending(const uint16_t round_count);
 static void round_begin_sniffer(chaos_header_t* header);
 static void round_end_sniffer(const chaos_header_t* header);
 static node_id_t pick_best_cluster(const node_id_t *cluster_head_list, uint8_t size);
-static int index_of(const node_id_t *cluster_head_list, uint8_t size, node_id_t);
+static int index_of(const node_id_t *cluster_head_list, uint8_t size, node_id_t value);
 static inline int merge_lists(cluster_t* cluster_tx, cluster_t* cluster_rx);
 
 //The number of consecutive receive states we need to be in before forcing to send again.
