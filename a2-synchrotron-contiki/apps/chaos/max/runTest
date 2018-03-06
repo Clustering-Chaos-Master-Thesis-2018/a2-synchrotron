@@ -1,2 +1,2 @@
 #!/bin/sh
-make TARGET=cooja -nogui=Simulation $1 | sh
+java -mx512m -jar ../../../tools/cooja/dist/cooja.jar -nogui="$1" -contiki='../../..'
