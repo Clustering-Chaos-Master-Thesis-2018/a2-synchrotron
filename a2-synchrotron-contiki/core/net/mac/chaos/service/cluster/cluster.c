@@ -35,7 +35,7 @@ static inline int merge_lists(cluster_t* cluster_tx, cluster_t* cluster_rx);
 //In order to combat early termination. This should probably be changed to something more robust.
 #define CONSECUTIVE_RECEIVE_THRESHOLD 10
 
-#define NUMBER_OF_CLUSTER_ROUNDS 4
+#define NUMBER_OF_CLUSTER_ROUNDS 2
 
 //What is this
 #define FLAGS_LEN(node_count)   ((node_count / 8) + ((node_count % 8) ? 1 : 0))
@@ -176,7 +176,7 @@ static void round_begin(const uint16_t round_count, const uint8_t app_id) {
 }
 
 ALWAYS_INLINE static int is_pending(const uint16_t round_count) {
-    return round_count < NUMBER_OF_CLUSTER_ROUNDS;
+    return round_count <= NUMBER_OF_CLUSTER_ROUNDS;
 }
 
 static node_id_t pick_best_cluster(const node_id_t *cluster_head_list, uint8_t size) {
