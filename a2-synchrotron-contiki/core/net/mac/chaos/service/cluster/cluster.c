@@ -76,9 +76,10 @@ ALWAYS_INLINE int8_t cluster_head_not_initialized(void) {
 static chaos_state_t process(uint16_t round_count, uint16_t slot,
     chaos_state_t current_state, int chaos_txrx_success, size_t payload_length,
     uint8_t* rx_payload, uint8_t* tx_payload, uint8_t** app_flags){
-
-    cluster_t* const cluster_tx = (cluster_t*) tx_payload;
-    cluster_t* const cluster_rx = (cluster_t*) rx_payload;
+    
+    if (current_state == CHAOS_INIT && IS_INITIATOR()) {
+        return CHAOS_TX;
+    } 
 
     if(current_state == CHAOS_RX) {
         if(chaos_txrx_success) {
@@ -92,6 +93,9 @@ static chaos_state_t process(uint16_t round_count, uint16_t slot,
             }
         }
     }
+
+    cluster_t* const cluster_tx = (cluster_t*) tx_payload;
+    cluster_t* const cluster_rx = (cluster_t*) rx_payload;
 
     if(is_cluster_head()) {
         return process_cluster_head(round_count, slot, current_state, chaos_txrx_success, payload_length, cluster_rx, cluster_tx, app_flags);
@@ -109,9 +113,7 @@ static chaos_state_t process_cluster_head(uint16_t round_count, uint16_t slot,
     uint8_t delta = 0;
     chaos_state_t next_state = CHAOS_RX;
 
-    if (current_state == CHAOS_INIT) {
-        next_state = CHAOS_TX;
-    } else if(current_state == CHAOS_RX) {
+    if(current_state == CHAOS_RX) {
         delta = merge_lists(tx_payload, rx_payload);
         consecutive_rx++;
         if (delta || consecutive_rx == CONSECUTIVE_RECEIVE_THRESHOLD) {
@@ -219,13 +221,13 @@ static void round_end_sniffer(const chaos_header_t* header){
         cluster_t* const cluster_tx = (cluster_t*) header->payload;
 
         if(is_cluster_head()) {
-            init_node_index();
             if(chaos_cluster_node_count < cluster_tx->cluster_head_count) {
                 chaos_cluster_node_count = cluster_tx->cluster_head_count;
                 chaos_cluster_node_index = node_id - 1;
             }
             cluster_id = node_id;
             cluster_index = index_of(cluster_tx->cluster_head_list, cluster_tx->cluster_head_count, node_id);
+            init_node_index();
         } else {
             cluster_id = pick_best_cluster(cluster_tx->cluster_head_list, cluster_tx->cluster_head_count);
         }
