@@ -10,4 +10,11 @@ extern uint8_t is_cluster_service_running;
 #define NODE_LIST_LEN 10  //describes how many nodes can become clusterheads.
 #endif
 
+typedef enum {
+    NOT_INITIALIZED,
+    NOT_CH,
+    TENTATIVE,
+    FINAL
+} CHState;
+
 #endif /* CHAOS_CLUSTER_H */

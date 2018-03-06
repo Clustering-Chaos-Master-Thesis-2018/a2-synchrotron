@@ -22,6 +22,7 @@ typedef struct __attribute__((packed)) {
 
 static chaos_state_t process_cluster_head(uint16_t, uint16_t, chaos_state_t, int, size_t, cluster_t*, cluster_t*, uint8_t**);
 static chaos_state_t process_cluster_node(uint16_t, uint16_t, chaos_state_t, int, size_t, cluster_t*, cluster_t*, uint8_t**);
+static CHState determine_cluster_head_state(node_id_t);
 static void round_begin(const uint16_t round_count, const uint8_t id);
 static int is_pending(const uint16_t round_count);
 static void round_begin_sniffer(chaos_header_t* header);
@@ -61,14 +62,15 @@ uint32_t restart_threshold = 0;
 uint32_t invalid_rx_count = 0;
 
 uint8_t is_cluster_service_running = 0;
-int8_t cluster_head = -1;
+
+CHState cluster_head_state = NOT_INITIALIZED;
 
 ALWAYS_INLINE int8_t is_cluster_head(void) {
-    return cluster_head > 0;
+    return cluster_head_state == TENTATIVE || cluster_head_state == FINAL;
 }
 
 ALWAYS_INLINE int8_t cluster_head_not_initialized(void) {
-    return cluster_head == -1;
+    return cluster_head_state == NOT_INITIALIZED;
 }
 
 static chaos_state_t process(uint16_t round_count, uint16_t slot,
@@ -148,13 +150,18 @@ static chaos_state_t process_cluster_node(uint16_t round_count, uint16_t slot,
     return next_state;
 }
 
+static CHState determine_cluster_head_state(node_id_t node_id) {
+    return (chaos_random_generator_fast() % 100) < CLUSTER_HEAD_ELECTION_CHANCE || node_id == 1 ?
+            FINAL : NOT_CH;
+}
+
 static void round_begin(const uint16_t round_count, const uint8_t app_id) {
     is_cluster_service_running = 1;
     cluster_t cluster_data;
     memset(&cluster_data, 0, sizeof(cluster_t));
 
     if(cluster_head_not_initialized()) {
-        cluster_head = (chaos_random_generator_fast() % 100) < CLUSTER_HEAD_ELECTION_CHANCE || node_id == 1;
+        cluster_head_state = determine_cluster_head_state(node_id);
     }
 
     if(is_cluster_head()) {
