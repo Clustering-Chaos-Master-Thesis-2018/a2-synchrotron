@@ -17,8 +17,11 @@ SCRIPT_FILE = os.path.join(TEST_DIRECTORY, "simulationScript.js")
 LOCAL_SIMULATION_DIRECTORY = "simulation_files"
 LOCAL_LOG_DIRECTORY = "log"
 LOCAL_COOJA_LOG_FILE = "cooja.log"
+LOCAL_TEST_INFORMATION_FILE = "information.txt"
 #Time is in seconds.
-SIMULATION_TIMEOUT = 60
+SIMULATION_TIMEOUT = sys.argv[2] if len(sys.argv) > 2 else 60
+
+GET_COMMIT_HASH = ["git", "log", "-n 1", "--pretty=format:\"%h\""]
 
 def get_global_simulation_files(folder):
   return [os.path.join(root, *directory, file) for root, directory, files in os.walk(folder) for file in files if file.endswith(TEST_FILE_EXTENSION) ]
@@ -46,7 +49,7 @@ def create_log_path_variable(base_path, file_name):
   return "var logpath = \"" + os.path.join(base_path, os.path.splitext(file_name)[0], LOCAL_LOG_DIRECTORY) + "/\";\n"
 
 def create_timeout_function_call(time):
-  return "TIMEOUT(" + str(time * 1000) + ");\n"
+  return "TIMEOUT(" + str(int(time) * 1000) + ");\n"
 
 def create_script_plugin_tree(root):
   plugin = ET.SubElement(root, "plugin")
@@ -85,8 +88,10 @@ def create_local_simulation_files(test_folder, output_folder):
 
 
 def main(args):
+  commit_hash = subprocess.check_output(GET_COMMIT_HASH)
   name = (f"{args[1]}_" if len(args) > 1 else "")
   test_name = f"{name}{datetime.datetime.now():%Y-%m-%d_%H:%M:%S}"
+
 
   test_folder, simulation_folder = create_test_folder_structure(test_name)
   local_files = create_local_simulation_files(test_folder, simulation_folder)
@@ -100,6 +105,16 @@ def main(args):
     with open(os.path.join(path, LOCAL_COOJA_LOG_FILE), "w") as cooja_log:
       cooja_log.write(output)
 
+
+    information = f"""Name: {test_name}
+      Time: {datetime.datetime.now():%Y-%m-%d_%H:%M:%S}
+      Timeout: {SIMULATION_TIMEOUT} seconds
+      Commit: {commit_hash}
+      #Tests: {len(local_files)}
+      """
+
+  with open (os.path.join(test_folder, LOCAL_TEST_INFORMATION_FILE), "w") as info:
+    info.write(information)
 
 if __name__ == '__main__':
     main(sys.argv)
