@@ -91,13 +91,16 @@ def create_local_simulation_files(test_folder, output_folder):
 
 def run_test(test_folder, file):
   path = create_local_test_folder(test_folder, file)
-  print("Running test: " + os.path.basename(file) + " for " + str(SIMULATION_TIMEOUT) + " seconds... ", end="", flush=True)
-  output = subprocess.run(RUN_TEST_COMMAND + [file], stdout=subprocess.PIPE, universal_newlines=True).stdout
-  print(output)
-  print("Done")
-
+  # print("Running test: " + os.path.basename(file) + " for " + str(SIMULATION_TIMEOUT) + " seconds... ", end="", flush=True)
   with open(os.path.join(path, LOCAL_COOJA_LOG_FILE), "w") as cooja_log:
-    cooja_log.write(output)
+    output = ""
+    process = subprocess.Popen(RUN_TEST_COMMAND + [file], stdout=subprocess.PIPE, universal_newlines=True)
+    for line in process.stdout:
+      output += line
+      cooja_log.write(line)
+      cooja_log.flush()
+
+  process.wait()
 
   match = re.search(r'Duration: (\d+).+?', output)
   return match.group(1)
