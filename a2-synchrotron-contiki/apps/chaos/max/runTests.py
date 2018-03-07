@@ -21,10 +21,10 @@ LOCAL_COOJA_LOG_FILE = "cooja.log"
 SIMULATION_TIMEOUT = 60
 
 def get_global_simulation_files(folder):
-  return [file for root, dirs, files in os.walk(folder) for file in files if file.endswith(TEST_FILE_EXTENSION) ]
+  return [file for _, _, files in os.walk(folder) for file in files if file.endswith(TEST_FILE_EXTENSION) ]
 
 def create_test_folder_structure(test_name):
-  test_folder = TEST_DIRECTORY + "/" + test_name + str(datetime.datetime.now())
+  test_folder = TEST_DIRECTORY + "/" + test_name
   simulation_folder = test_folder + "/" + LOCAL_SIMULATION_DIRECTORY
 
   os.mkdir(test_folder)
@@ -49,6 +49,7 @@ def create_timeout_function_call(time):
   return "TIMEOUT( + " + str(time * 1000) + ");\n"
 
 def create_local_simulation_files(test_folder, output_folder):
+  """ Inserts the simulation script into the csc files and saves the new csc files to the output_folder."""
   simulation_files = get_global_simulation_files(GLOBAL_SIMULATION_DIRECTORY)
   simulation_script = ""
   local_files = []
@@ -73,11 +74,8 @@ def create_local_simulation_files(test_folder, output_folder):
 
 
 def main(args):
-  test_name = args[1] + (" - " if len(args) > 1 else "") + str(datetime.datetime.now())
-  simulation_script = ""
-
-  with open (SCRIPT_FILE) as file:
-    simulation_script = file.read()
+  name = (f"{args[1]}_" if len(args) > 1 else "")
+  test_name = f"{name}{datetime.datetime.now():%Y-%m-%d_%H:%M:%S}"
 
   test_folder, simulation_folder = create_test_folder_structure(test_name)
   local_files = create_local_simulation_files(test_folder, simulation_folder)
