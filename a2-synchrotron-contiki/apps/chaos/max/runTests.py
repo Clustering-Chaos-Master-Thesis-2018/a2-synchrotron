@@ -21,7 +21,7 @@ LOCAL_COOJA_LOG_FILE = "cooja.log"
 SIMULATION_TIMEOUT = 60
 
 def get_global_simulation_files(folder):
-  return [file for _, _, files in os.walk(folder) for file in files if file.endswith(TEST_FILE_EXTENSION) ]
+  return [os.path.join(root, *directory, file) for root, directory, files in os.walk(folder) for file in files if file.endswith(TEST_FILE_EXTENSION) ]
 
 def create_test_folder_structure(test_name):
   test_folder = TEST_DIRECTORY + "/" + test_name
@@ -46,7 +46,15 @@ def create_log_path_variable(base_path, file_name):
   return "var logpath = \"" + base_path + "/" + os.path.splitext(file_name)[0] + "/" + LOCAL_LOG_DIRECTORY + "/\";\n"
 
 def create_timeout_function_call(time):
-  return "TIMEOUT( + " + str(time * 1000) + ");\n"
+  return "TIMEOUT(" + str(time * 1000) + ");\n"
+
+def create_script_plugin_tree(root):
+  plugin = ET.SubElement(root, "plugin")
+  plugin.text = "org.contikios.cooja.plugins.ScriptRunner"
+  plugin_config = ET.SubElement(plugin, "plugin_config")
+  script_tag = ET.SubElement(plugin_config, "script")
+
+  return script_tag
 
 def create_local_simulation_files(test_folder, output_folder):
   """ Inserts the simulation script into the csc files and saves the new csc files to the output_folder."""
@@ -58,12 +66,15 @@ def create_local_simulation_files(test_folder, output_folder):
     simulation_script = file.read()
 
   for simulation_file in simulation_files:
-    output_file_path = output_folder + "/" + simulation_file
+    output_file_path = output_folder + "/" + os.path.basename(simulation_file)
     tree = ET.parse(simulation_file)
     root = tree.getroot()
 
     script_tag = root.find(SCRIPT_TAG)
-    log_path = create_log_path_variable(test_folder, simulation_file)
+    if script_tag is None:
+      script_tag = create_script_plugin_tree(root)
+
+    log_path = create_log_path_variable(test_folder, os.path.basename(simulation_file))
     timeout_call = create_timeout_function_call(SIMULATION_TIMEOUT)
     script_tag.text = log_path + timeout_call + simulation_script
 
