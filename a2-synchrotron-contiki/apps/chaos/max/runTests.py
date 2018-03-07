@@ -12,7 +12,7 @@ GLOBAL_SIMULATION_DIRECTORY = TEST_DIRECTORY + "/Simulations"
 
 TEST_FILE_EXTENSION = ".csc"
 SCRIPT_TAG = ".//script"
-SCRIPT_FILE = TEST_DIRECTORY + "/" + "simulationScript.js"
+SCRIPT_FILE = os.path.join(TEST_DIRECTORY, "simulationScript.js")
 
 LOCAL_SIMULATION_DIRECTORY = "simulation_files"
 LOCAL_LOG_DIRECTORY = "log"
@@ -24,8 +24,8 @@ def get_global_simulation_files(folder):
   return [os.path.join(root, *directory, file) for root, directory, files in os.walk(folder) for file in files if file.endswith(TEST_FILE_EXTENSION) ]
 
 def create_test_folder_structure(test_name):
-  test_folder = TEST_DIRECTORY + "/" + test_name
-  simulation_folder = test_folder + "/" + LOCAL_SIMULATION_DIRECTORY
+  test_folder = os.path.join(TEST_DIRECTORY, test_name)
+  simulation_folder = os.path.join(test_folder, LOCAL_SIMULATION_DIRECTORY)
 
   os.mkdir(test_folder)
   os.mkdir(simulation_folder)
@@ -34,8 +34,8 @@ def create_test_folder_structure(test_name):
 
 def create_local_test_folder(test_directory, simulation_file):
   folder_name = os.path.splitext(os.path.basename(simulation_file))[0]
-  local_test_folder = test_directory + "/" + folder_name
-  log_folder = local_test_folder + "/" + LOCAL_LOG_DIRECTORY
+  local_test_folder = os.path.join(test_directory, folder_name)
+  log_folder = os.path.join(local_test_folder, LOCAL_LOG_DIRECTORY)
 
   os.mkdir(local_test_folder)
   os.mkdir(log_folder)
@@ -43,7 +43,7 @@ def create_local_test_folder(test_directory, simulation_file):
   return local_test_folder
 
 def create_log_path_variable(base_path, file_name):
-  return "var logpath = \"" + base_path + "/" + os.path.splitext(file_name)[0] + "/" + LOCAL_LOG_DIRECTORY + "/\";\n"
+  return "var logpath = \"" + os.path.join(base_path, os.path.splitext(file_name)[0], LOCAL_LOG_DIRECTORY) + "/\";\n"
 
 def create_timeout_function_call(time):
   return "TIMEOUT(" + str(time * 1000) + ");\n"
@@ -66,7 +66,7 @@ def create_local_simulation_files(test_folder, output_folder):
     simulation_script = file.read()
 
   for simulation_file in simulation_files:
-    output_file_path = output_folder + "/" + os.path.basename(simulation_file)
+    output_file_path = os.path.join(output_folder, os.path.basename(simulation_file))
     tree = ET.parse(simulation_file)
     root = tree.getroot()
 
@@ -97,7 +97,7 @@ def main(args):
     print("Running test: " + os.path.basename(file) + " for " + str(SIMULATION_TIMEOUT) + " seconds... ", end="", flush=True)
     output = subprocess.run(RUN_TEST_COMMAND + [file], stdout=subprocess.PIPE, universal_newlines=True).stdout
     print("Done")
-    with open(path + "/" + LOCAL_COOJA_LOG_FILE, "w") as cooja_log:
+    with open(os.path.join(path, LOCAL_COOJA_LOG_FILE), "w") as cooja_log:
       cooja_log.write(output)
 
 
