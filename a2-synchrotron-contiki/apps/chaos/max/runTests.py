@@ -4,6 +4,8 @@ import os
 import shlex
 import sys
 import datetime
+import concurrent.futures
+import re
 import xml.etree.ElementTree as ET
 
 RUN_TEST_COMMAND = ["./runTest"]
@@ -87,6 +89,19 @@ def create_local_simulation_files(test_folder, output_folder):
   return local_files
 
 
+def run_test(test_folder, file):
+  path = create_local_test_folder(test_folder, file)
+  print("Running test: " + os.path.basename(file) + " for " + str(SIMULATION_TIMEOUT) + " seconds... ", end="", flush=True)
+  output = subprocess.run(RUN_TEST_COMMAND + [file], stdout=subprocess.PIPE, universal_newlines=True).stdout
+  print(output)
+  print("Done")
+
+  with open(os.path.join(path, LOCAL_COOJA_LOG_FILE), "w") as cooja_log:
+    cooja_log.write(output)
+
+  match = re.search(r'Duration: (\d+).+?', output)
+  return match.group(1)
+
 def main(args):
   commit_hash = subprocess.check_output(GET_COMMIT_HASH)
   name = (f"{args[1]}_" if len(args) > 1 else "")
@@ -97,21 +112,28 @@ def main(args):
   local_files = create_local_simulation_files(test_folder, simulation_folder)
   print("Running test suite: " + test_name + " with " + str(len(local_files)) + " test(s)")
 
-  for file in local_files:
-    path = create_local_test_folder(test_folder, file)
-    print("Running test: " + os.path.basename(file) + " for " + str(SIMULATION_TIMEOUT) + " seconds... ", end="", flush=True)
-    output = subprocess.run(RUN_TEST_COMMAND + [file], stdout=subprocess.PIPE, universal_newlines=True).stdout
-    print("Done")
-    with open(os.path.join(path, LOCAL_COOJA_LOG_FILE), "w") as cooja_log:
-      cooja_log.write(output)
+  test_statistics = ""
+  # We can use a with statement to ensure threads are cleaned up promptly
+  with concurrent.futures.ThreadPoolExecutor() as executor:
+      # Start the load operations and mark each future with its URL
+      future_to_test = {executor.submit(run_test, test_folder, file): file for file in local_files}
+      for test in concurrent.futures.as_completed(future_to_test):
+          file = future_to_test[test]
+          try:
+              data = test.result()
+              test_statistics += os.path.basename(file) + " ran for: " + data + "ms\n"
+          except Exception as exc:
+              print('%r generated an exception: %s' % (file, exc))
+          else:
+              print('test %r ran for %sms' % (os.path.basename(file), data))
 
+  information = f"""Name: {test_name}
+    Time: {datetime.datetime.now():%Y-%m-%d_%H:%M:%S}
+    Timeout: {SIMULATION_TIMEOUT} seconds
+    Commit: {commit_hash}
+    #Tests: {len(local_files)}\n"""
 
-    information = f"""Name: {test_name}
-      Time: {datetime.datetime.now():%Y-%m-%d_%H:%M:%S}
-      Timeout: {SIMULATION_TIMEOUT} seconds
-      Commit: {commit_hash}
-      #Tests: {len(local_files)}
-      """
+  information += test_statistics
 
   with open (os.path.join(test_folder, LOCAL_TEST_INFORMATION_FILE), "w") as info:
     info.write(information)
