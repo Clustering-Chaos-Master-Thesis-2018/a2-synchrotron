@@ -43,7 +43,7 @@ def create_local_test_folder(test_directory, simulation_file):
   return local_test_folder
 
 def create_log_path_variable(base_path, file_name):
-  return "var logpath = \"" + base_path + "/" + os.path.splitext(file_name)[0] + "/" + LOCAL_LOG_DIRECTORY + "/\"\n"
+  return "var logpath = \"" + base_path + "/" + os.path.splitext(file_name)[0] + "/" + LOCAL_LOG_DIRECTORY + "/\";\n"
 
 def create_timeout_function_call(time):
   return "TIMEOUT( + " + str(time * 1000) + ");\n"
@@ -58,17 +58,17 @@ def create_local_simulation_files(test_folder, output_folder):
     simulation_script = file.read()
 
   for simulation_file in simulation_files:
-    output_file = output_folder + "/" + simulation_file
+    output_file_path = output_folder + "/" + simulation_file
     tree = ET.parse(simulation_file)
     root = tree.getroot()
 
     script_tag = root.find(SCRIPT_TAG)
     log_path = create_log_path_variable(test_folder, simulation_file)
     timeout_call = create_timeout_function_call(SIMULATION_TIMEOUT)
-    script_tag.text = log_path + simulation_script
+    script_tag.text = log_path + timeout_call + simulation_script
 
-    local_files.append(output_file)
-    tree.write(output_file)
+    local_files.append(output_file_path)
+    tree.write(output_file_path)
 
   return local_files
 
