@@ -1,4 +1,6 @@
 *
 !.gitignore
-!Simulations
+!Simulations/*
 !simulationScript.js
+
+!*/
