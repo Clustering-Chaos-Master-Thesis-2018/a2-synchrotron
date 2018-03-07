@@ -2,11 +2,17 @@ if(!logpath) {
   logpath = "log/"
 }
 
+if(!errorpath) {
+  errorpath = "error/"
+}
+
 var imports = new JavaImporter(java.io, java.lang);
 with (imports) {
 
      // Use JavaScript object as an associative array
      outputs = new Object();
+     errorOutputs = new Object();
+     isFirstPrintToFile = new Object();
      
      while (true) {
 
@@ -15,6 +21,9 @@ with (imports) {
         
         // BTW: FileWriter seems to be buffered.
         outputs[id.toString()]= new FileWriter(logpath + "log_" + id +".txt");
+        errorOutputs[id.toString()]= new FileWriter(errorpath + "log_" + id +".txt");
+        outputs[id.toString()].write("[" + "\n");
+        isFirstPrintToFile[id.toString()] = true;
       }
       //Write to file.
       //outputs[id.toString()].write(time + " " + msg + "\n");
@@ -43,18 +52,21 @@ with (imports) {
       //outputs[id.toString()].write(rawJson + "\n");
       try {
         parsed = JSON.parse(rawJson);
-        parsed.status = "success";
+        parsed.nodeid = id
         
         var s = " ";
-        //outputs[id.toString()].write(parsed + "\n");
-        var formatted = time +s+ parsed.all_cpu;
-        outputs[id.toString()].write(formatted + "\n");
+        
+        if (isFirstPrintToFile[id.toString()]) {
+          outputs[id.toString()].write(JSON.stringify(parsed) + "\n");
+          isFirstPrintToFile[id.toString()] = false;
+        }
+        outputs[id.toString()].write("," + JSON.stringify(parsed) + "\n");
+        
         outputs[id.toString()].flush();
       } catch (e) {
-        outputs[id.toString()].write(e + "\n");          
+        errorOutputs[id.toString()].write(e + "\n");          
       }
-
-      
+        
 
       // var p = msg.trim().split(/\s+/) //.split(/\\s+/);
       // var formatted = time + " " + p[0] + " " + p[1] + " " + p[2] + " " + p[3];
@@ -70,7 +82,13 @@ with (imports) {
         //YIELD();
       } catch (e) {
         //Close files.
+
+        for (var ids in errorOutputs){
+          errorOutputs[ids].close();
+        }
+
         for (var ids in outputs){
+          outputs[ids].write("]" + "\n");
           outputs[ids].close();
         }
         //Rethrow exception again, to end the script.

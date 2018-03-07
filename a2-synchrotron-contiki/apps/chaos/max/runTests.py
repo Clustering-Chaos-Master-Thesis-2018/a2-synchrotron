@@ -18,6 +18,7 @@ SCRIPT_FILE = os.path.join(TEST_DIRECTORY, "simulationScript.js")
 
 LOCAL_SIMULATION_DIRECTORY = "simulation_files"
 LOCAL_LOG_DIRECTORY = "log"
+LOCAL_ERROR_DIRECTORY = "error"
 LOCAL_COOJA_LOG_FILE = "cooja.log"
 LOCAL_TEST_INFORMATION_FILE = "information.txt"
 #Time is in seconds.
@@ -32,8 +33,7 @@ def create_test_folder_structure(test_name):
   test_folder = os.path.join(TEST_DIRECTORY, test_name)
   simulation_folder = os.path.join(test_folder, LOCAL_SIMULATION_DIRECTORY)
 
-  os.mkdir(test_folder)
-  os.mkdir(simulation_folder)
+  os.makedirs(simulation_folder, exist_ok=True)
 
   return test_folder, simulation_folder
 
@@ -41,14 +41,19 @@ def create_local_test_folder(test_directory, simulation_file):
   folder_name = os.path.splitext(os.path.basename(simulation_file))[0]
   local_test_folder = os.path.join(test_directory, folder_name)
   log_folder = os.path.join(local_test_folder, LOCAL_LOG_DIRECTORY)
+  error_folder = os.path.join(local_test_folder, LOCAL_ERROR_DIRECTORY)
 
-  os.mkdir(local_test_folder)
-  os.mkdir(log_folder)
+  os.makedirs(local_test_folder, exist_ok=True)
+  os.makedirs(log_folder, exist_ok=True)
+  os.makedirs(error_folder, exist_ok=True)
 
   return local_test_folder
 
 def create_log_path_variable(base_path, file_name):
   return "var logpath = \"" + os.path.join(base_path, os.path.splitext(file_name)[0], LOCAL_LOG_DIRECTORY) + "/\";\n"
+
+def create_error_path_variable(base_path, file_name):
+  return "var errorpath = \"" + os.path.join(base_path, os.path.splitext(file_name)[0], LOCAL_ERROR_DIRECTORY) + "/\";\n"
 
 def create_timeout_function_call(time):
   return "TIMEOUT(" + str(int(time) * 1000) + ");\n"
@@ -80,8 +85,9 @@ def create_local_simulation_files(test_folder, output_folder):
       script_tag = create_script_plugin_tree(root)
 
     log_path = create_log_path_variable(test_folder, os.path.basename(simulation_file))
+    error_path = create_error_path_variable(test_folder, os.path.basename(simulation_file))
     timeout_call = create_timeout_function_call(SIMULATION_TIMEOUT)
-    script_tag.text = log_path + timeout_call + simulation_script
+    script_tag.text = log_path + error_path + timeout_call + simulation_script
 
     local_files.append(output_file_path)
     tree.write(output_file_path)
@@ -94,7 +100,7 @@ def run_test(test_folder, file):
   # print("Running test: " + os.path.basename(file) + " for " + str(SIMULATION_TIMEOUT) + " seconds... ", end="", flush=True)
   with open(os.path.join(path, LOCAL_COOJA_LOG_FILE), "w") as cooja_log:
     output = ""
-    process = subprocess.Popen(RUN_TEST_COMMAND + [file], stdout=subprocess.PIPE, universal_newlines=True)
+    process = subprocess.Popen(RUN_TEST_COMMAND + [file], stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
     for line in process.stdout:
       output += line
       cooja_log.write(line)
@@ -110,6 +116,8 @@ def main(args):
   name = (f"{args[1]}_" if len(args) > 1 else "")
   test_name = f"{name}{datetime.datetime.now():%Y-%m-%d_%H:%M:%S}"
 
+  if args[1] == "dev":
+    test_name = "dev"
 
   test_folder, simulation_folder = create_test_folder_structure(test_name)
   local_files = create_local_simulation_files(test_folder, simulation_folder)
