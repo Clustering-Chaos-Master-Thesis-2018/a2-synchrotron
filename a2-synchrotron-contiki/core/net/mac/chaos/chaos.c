@@ -466,12 +466,12 @@ chaos_round(const uint16_t round_number, const uint8_t app_id, const uint8_t* co
     const uint16_t max_slots,  const uint8_t app_flags_len, process_callback_t process){
   RTIMER_DCO_SYNC();
 
-#if CHAOS_CLUSTER
-  if(!IS_CLUSTER_HEAD() && IS_CLUSTER_HEAD_ROUND()) {
-    /* Cluster head time, normal nodes keep quiet */
-    return 1;
-  }
-#endif /* CHAOS_CLUSTER */
+// #if CHAOS_CLUSTER
+//   if(!IS_CLUSTER_HEAD() && IS_CLUSTER_HEAD_ROUND()) {
+//     /* Cluster head time, normal nodes keep quiet */
+//     return 1;
+//   }
+// #endif /* CHAOS_CLUSTER */
 
   static vht_clock_t t_round_on = 0;
   round_start = VHT_NOW();
@@ -671,9 +671,14 @@ void chaos_slot(uint16_t* sync_slot, int* chaos_slot_status, chaos_state_t* chao
 
   /* If we get a packet from someone not in our cluster, ignore it. */
   #if CHAOS_CLUSTER
-    if(*chaos_slot_status == CHAOS_TXRX_OK && !IS_SAME_CLUSTER(rx_header->cluster_id) && !IS_CLUSTER_HEAD_ROUND() && !IS_CLUSTER_JOIN()) {
-      my_cluster = 0;
+    if (*chaos_slot_status == CHAOS_TXRX_OK) {
+      if (IS_CLUSTER_HEAD_ROUND()) {
+        my_cluster = IS_CLUSTER_HEAD();
+      } else if (!IS_CLUSTER_JOIN()) {
+        my_cluster = IS_SAME_CLUSTER(rx_header->cluster_id);
+      }
     }
+    
   #endif /* CHAOS_CLUSTER */
 
       /* it could be a valid packet but an unexpected app id.
@@ -739,6 +744,7 @@ void chaos_slot(uint16_t* sync_slot, int* chaos_slot_status, chaos_state_t* chao
     }
     /* process app */
     if( (!chaos_apps[app_id]->requires_node_index || chaos_has_node_index) && my_cluster){
+      COOJA_DEBUG_PRINTF("Processing\n");
       *chaos_state = process(round_number, *slot_number, *chaos_state, (*chaos_slot_status == CHAOS_TXRX_OK), (*chaos_slot_status == CHAOS_TXRX_OK) ? CHAOS_PAYLOAD_LENGTH(rx_header) : 0, rx_header->payload, tx_header->payload, &app_flags);
       int app_do_sync = ( *chaos_state == CHAOS_RX_SYNC ) || ( *chaos_state == CHAOS_TX_SYNC );
       *chaos_state = ( *chaos_state == CHAOS_RX_SYNC ) ? *chaos_state = CHAOS_RX : (( *chaos_state == CHAOS_TX_SYNC ) ? *chaos_state = CHAOS_TX : *chaos_state);
@@ -754,6 +760,7 @@ void chaos_slot(uint16_t* sync_slot, int* chaos_slot_status, chaos_state_t* chao
 #if NETSTACK_CONF_WITH_CHAOS_NODE_DYNAMIC
     else if( *chaos_state == CHAOS_RX
         && *chaos_slot_status == CHAOS_TXRX_OK ){
+      COOJA_DEBUG_PRINTF("Forwarding\n");
       /* work as a forwarder if not joined */
       flag_delta |= tx_header->length != rx_header->length;
       if( !flag_delta ){

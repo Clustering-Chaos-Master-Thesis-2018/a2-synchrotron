@@ -35,7 +35,7 @@ static inline int merge_lists(cluster_t* cluster_tx, cluster_t* cluster_rx);
 //In order to combat early termination. This should probably be changed to something more robust.
 #define CONSECUTIVE_RECEIVE_THRESHOLD 10
 
-#define NUMBER_OF_CLUSTER_ROUNDS 2
+#define NUMBER_OF_CLUSTER_ROUNDS 4
 
 //What is this
 #define FLAGS_LEN(node_count)   ((node_count / 8) + ((node_count % 8) ? 1 : 0))
