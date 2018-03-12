@@ -15,10 +15,16 @@
 #include "dev/cooja-debug.h"
 
 typedef struct __attribute__((packed)) {
-    uint8_t cluster_head_count;
+    node_id_t id;
+    uint8_t distance;
+} cluster_head_information_t;
 
-    node_id_t cluster_head_list[NODE_LIST_LEN];
+typedef struct __attribute__((packed)) {
+    uint8_t cluster_head_count;
+    cluster_head_information_t cluster_head_list[NODE_LIST_LEN];
 } cluster_t;
+
+cluster_t cluster_data;
 
 static chaos_state_t process_cluster_head(uint16_t, uint16_t, chaos_state_t, int, size_t, cluster_t*, cluster_t*, uint8_t**);
 static chaos_state_t process_cluster_node(uint16_t, uint16_t, chaos_state_t, int, size_t, cluster_t*, cluster_t*, uint8_t**);
@@ -27,8 +33,10 @@ static void round_begin(const uint16_t round_count, const uint8_t id);
 static int is_pending(const uint16_t round_count);
 static void round_begin_sniffer(chaos_header_t* header);
 static void round_end_sniffer(const chaos_header_t* header);
-static node_id_t pick_best_cluster(const node_id_t *cluster_head_list, uint8_t size);
-static int index_of(const node_id_t *cluster_head_list, uint8_t size, node_id_t value);
+static cluster_head_information_t pick_best_cluster(const cluster_head_information_t *cluster_head_list, uint8_t size);
+static int index_of(const cluster_head_information_t *cluster_head_list, uint8_t size, node_id_t value);
+static void log_cluster_heads(cluster_head_information_t *cluster_head_list, uint8_t cluster_head_count);
+
 static inline int merge_lists(cluster_t* cluster_tx, cluster_t* cluster_rx);
 
 //The number of consecutive receive states we need to be in before forcing to send again.
@@ -123,7 +131,10 @@ static chaos_state_t process_cluster_head(uint16_t round_count, uint16_t slot,
         const int node_in_list = index_of(tx_payload->cluster_head_list, tx_payload->cluster_head_count, node_id);
         if(node_in_list == -1) {
             if(tx_payload->cluster_head_count < NODE_LIST_LEN) {
-                tx_payload->cluster_head_list[tx_payload->cluster_head_count++] = node_id;
+                cluster_head_information_t info;
+                info.id = node_id;
+                info.distance = 1;
+                tx_payload->cluster_head_list[tx_payload->cluster_head_count++] = info;
                 next_state = CHAOS_TX;
             }
         }
@@ -142,11 +153,15 @@ static chaos_state_t process_cluster_node(uint16_t round_count, uint16_t slot,
     chaos_state_t next_state = CHAOS_RX;
     
     if (current_state == CHAOS_RX) {
-        delta = tx_payload->cluster_head_count != rx_payload->cluster_head_count;
+        delta = merge_lists(tx_payload, rx_payload);
+        memcpy(&cluster_data, tx_payload, sizeof(cluster_t));
         if (delta) {
             next_state = CHAOS_TX;
+            int i;
+            for(i = 0; i < tx_payload->cluster_head_count; ++i) {
+                tx_payload->cluster_head_list[i].distance++;
+            }
         }
-        memcpy(tx_payload, rx_payload, sizeof(cluster_t));
     }
 
     return next_state;
@@ -159,7 +174,8 @@ static CHState determine_cluster_head_state(node_id_t node_id) {
 
 static void round_begin(const uint16_t round_count, const uint8_t app_id) {
     is_cluster_service_running = 1;
-    cluster_t cluster_data;
+    cluster_t initial_cluster_data;
+    memset(&initial_cluster_data, 0, sizeof(cluster_t));
     memset(&cluster_data, 0, sizeof(cluster_t));
 
     if(cluster_head_not_initialized()) {
@@ -167,30 +183,44 @@ static void round_begin(const uint16_t round_count, const uint8_t app_id) {
     }
 
     if(is_cluster_head()) {
-        cluster_data.cluster_head_list[0] = node_id;
-        cluster_data.cluster_head_count++;
+        initial_cluster_data.cluster_head_list[0].id= node_id;
+        initial_cluster_data.cluster_head_list[0].distance = 1;
+        initial_cluster_data.cluster_head_count++;
     }
 
     invalid_rx_count = 0;
     restart_threshold = generate_restart_threshold();
 
-    chaos_round(round_count, app_id, (const uint8_t const*)&cluster_data, sizeof(cluster_data), (7*(RTIMER_SECOND/1000)+0*(RTIMER_SECOND/1000)/2) * CLOCK_PHI, JOIN_ROUND_MAX_SLOTS, get_flags_length(), process);
+    chaos_round(round_count, app_id, (const uint8_t const*)&initial_cluster_data, sizeof(initial_cluster_data), (7*(RTIMER_SECOND/1000)+0*(RTIMER_SECOND/1000)/2) * CLOCK_PHI, JOIN_ROUND_MAX_SLOTS, get_flags_length(), process);
 }
 
 ALWAYS_INLINE static int is_pending(const uint16_t round_count) {
     return round_count <= NUMBER_OF_CLUSTER_ROUNDS;
 }
 
-static node_id_t pick_best_cluster(const node_id_t *cluster_head_list, uint8_t size) {
-    // Should be based on some more complex calculation later.
-    cluster_index = chaos_random_generator_fast() % size;
-    return cluster_head_list[cluster_index];
-}
-
-ALWAYS_ACTUALLY_INLINE static int index_of(const node_id_t *array, uint8_t size, node_id_t value) {
+static cluster_head_information_t pick_best_cluster(const cluster_head_information_t *cluster_head_list, uint8_t size) {
+    uint8_t smallest_distance = 255;
+    uint8_t valid_cluster_head_count = 0;
+    cluster_head_information_t valid_cluster_heads[NODE_LIST_LEN];
     int i;
     for(i = 0; i < size; ++i) {
-        if (array[i] == value) {
+        if(cluster_head_list[i].distance < smallest_distance) {
+            smallest_distance = cluster_head_list[i].distance;
+            // COOJA_DEBUG_PRINTF("cluster new smallest distance: %u", )
+        }
+    }
+    for(i = 0; i < size; ++i) {
+        if(cluster_head_list[i].distance == smallest_distance) {
+            valid_cluster_heads[valid_cluster_head_count++] = cluster_head_list[i];
+        }
+    }
+    return valid_cluster_heads[chaos_random_generator_fast() % valid_cluster_head_count];
+}
+
+ALWAYS_ACTUALLY_INLINE static int index_of(const cluster_head_information_t *array, uint8_t size, node_id_t value) {
+    int i;
+    for(i = 0; i < size; ++i) {
+        if (array[i].id == value) {
             return i;
         }
     }
@@ -200,14 +230,14 @@ ALWAYS_ACTUALLY_INLINE static int index_of(const node_id_t *array, uint8_t size,
 static void round_begin_sniffer(chaos_header_t* header){
 }
 
-ALWAYS_ACTUALLY_INLINE static void log_cluster_heads(node_id_t *cluster_head_list, uint8_t cluster_head_count) {
+ALWAYS_ACTUALLY_INLINE static void log_cluster_heads(cluster_head_information_t *cluster_head_list, uint8_t cluster_head_count) {
     char str[200];
     sprintf(str, "cluster: rd: %u, cluster_head_count: %u, picked_cluster: %u available_clusters: [ ", chaos_get_round_number(), cluster_head_count, cluster_id);
 
     int i;
     for(i = 0; i < cluster_head_count; i++) {
-        char tmp[10];
-        sprintf(tmp, (i == cluster_head_count-1 ? "%u ":"%u, "), cluster_head_list[i]);
+        char tmp[20];
+        sprintf(tmp, (i == cluster_head_count-1 ? "%u -> %u ":"%u -> %u, "), cluster_head_list[i].id, cluster_head_list[i].distance);
         strcat(str, tmp);
     }
 
@@ -218,20 +248,20 @@ ALWAYS_ACTUALLY_INLINE static void log_cluster_heads(node_id_t *cluster_head_lis
 static void round_end_sniffer(const chaos_header_t* header){
     if (is_cluster_service_running) {
         is_cluster_service_running = 0;
-        cluster_t* const cluster_tx = (cluster_t*) header->payload;
 
         if(is_cluster_head()) {
-            if(chaos_cluster_node_count < cluster_tx->cluster_head_count) {
-                chaos_cluster_node_count = cluster_tx->cluster_head_count;
+            if(chaos_cluster_node_count < cluster_data.cluster_head_count) {
+                chaos_cluster_node_count = cluster_data.cluster_head_count;
                 chaos_cluster_node_index = node_id - 1;
             }
             cluster_id = node_id;
-            cluster_index = index_of(cluster_tx->cluster_head_list, cluster_tx->cluster_head_count, node_id);
+            cluster_index = index_of(cluster_data.cluster_head_list, cluster_data.cluster_head_count, node_id);
             init_node_index();
         } else {
-            cluster_id = pick_best_cluster(cluster_tx->cluster_head_list, cluster_tx->cluster_head_count);
+            cluster_id = pick_best_cluster(cluster_data.cluster_head_list, cluster_data.cluster_head_count).id;
+            cluster_index = index_of(cluster_data.cluster_head_list, cluster_data.cluster_head_count, node_id);
         }
-        log_cluster_heads(cluster_tx->cluster_head_list, cluster_tx->cluster_head_count);
+        log_cluster_heads(cluster_data.cluster_head_list, cluster_data.cluster_head_count);
     }
 }
 
@@ -241,15 +271,16 @@ static inline int merge_lists(cluster_t* cluster_tx, cluster_t* cluster_rx) {
   uint8_t index_merge = 0;
   uint8_t delta = 0;
 
-  node_id_t merge[NODE_LIST_LEN] = {0};
+  cluster_head_information_t merge[NODE_LIST_LEN];
+  memset(merge, 0, sizeof(merge));
 
   while ((index_tx < cluster_tx->cluster_head_count || index_rx < cluster_rx->cluster_head_count ) && index_merge < NODE_LIST_LEN) {
-    if (index_tx >= cluster_tx->cluster_head_count || (index_rx < cluster_rx->cluster_head_count && cluster_rx->cluster_head_list[index_rx] < cluster_tx->cluster_head_list[index_tx])) {
+    if (index_tx >= cluster_tx->cluster_head_count || (index_rx < cluster_rx->cluster_head_count && cluster_rx->cluster_head_list[index_rx].id < cluster_tx->cluster_head_list[index_tx].id)) {
       merge[index_merge] = cluster_rx->cluster_head_list[index_rx];
       index_merge++;
       index_rx++;
       delta = 1; //arrays differs, so TX
-    } else if (index_rx >= cluster_rx->cluster_head_count || (index_tx < cluster_tx->cluster_head_count && cluster_rx->cluster_head_list[index_rx] > cluster_tx->cluster_head_list[index_tx])) {
+    } else if (index_rx >= cluster_rx->cluster_head_count || (index_tx < cluster_tx->cluster_head_count && cluster_rx->cluster_head_list[index_rx].id > cluster_tx->cluster_head_list[index_tx].id)) {
       merge[index_merge] = cluster_tx->cluster_head_list[index_tx];
       index_merge++;
       index_tx++;
@@ -261,6 +292,18 @@ static inline int merge_lists(cluster_t* cluster_tx, cluster_t* cluster_rx) {
       index_tx++;
     }
   }
+    int i, j;
+    for(i = 0; i < cluster_data.cluster_head_count; ++i) {
+        for(j = 0; j < index_merge; ++j) {
+            if(merge[j].id == cluster_data.cluster_head_list[i].id &&
+               merge[j].distance > cluster_data.cluster_head_list[i].distance) {
+                // COOJA_DEBUG_PRINTF("cluster updated existing distance with better local one, cluster_id: %d recv distance :%d, our distance %d\n",
+                    // merge[j].id, merge[j].distance, cluster_data.cluster_head_list[i].distance);
+                merge[j].distance = cluster_data.cluster_head_list[i].distance;
+                delta = 1;
+            }
+        }
+    }
 
   /* New overflow? */
   if (index_merge >= NODE_LIST_LEN && (index_rx < cluster_rx->cluster_head_count || index_tx < cluster_tx->cluster_head_count)) {
