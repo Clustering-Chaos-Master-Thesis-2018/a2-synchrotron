@@ -1,0 +1,15 @@
+FROM tejp/cooja
+
+# Copy the whole repo
+COPY --chown=cooja:cooja . /home/cooja/a2-synchrotron
+
+# Compile the cooja jar
+WORKDIR /home/cooja/a2-synchrotron/a2-synchrotron-contiki/tools/cooja
+RUN ant jar
+
+# Compile contiki project with chaos
+WORKDIR /home/cooja/a2-synchrotron/a2-synchrotron-contiki/apps/chaos/max
+RUN make cooja log=0 printf=1 tx=31 mch=1 pch=0 sec=0 src=2 sync=0 failure=0 dynamic=1 initiator=1 interval=29 cluster=1 max_node_count=30
+
+CMD python runTests.py docker-test 10
+
