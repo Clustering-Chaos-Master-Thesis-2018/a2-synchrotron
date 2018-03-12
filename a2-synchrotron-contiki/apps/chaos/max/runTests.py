@@ -109,14 +109,17 @@ def run_test(test_folder, file):
   process.wait()
 
   match = re.search(r'Duration: (\d+).+?', output)
-  return match.group(1)
+  if match:
+    return match.group(1)
+  else:
+    return None
 
 def main(args):
   commit_hash = subprocess.check_output(GET_COMMIT_HASH)
   name = (f"{args[1]}_" if len(args) > 1 else "")
   test_name = f"{name}{datetime.datetime.now():%Y-%m-%d_%H:%M:%S}"
 
-  if args[1] == "dev":
+  if len(args) > 1 and args[1] == "dev":
     test_name = "dev"
 
   test_folder, simulation_folder = create_test_folder_structure(test_name)
@@ -130,13 +133,12 @@ def main(args):
       future_to_test = {executor.submit(run_test, test_folder, file): file for file in local_files}
       for test in concurrent.futures.as_completed(future_to_test):
           file = future_to_test[test]
-          try:
-              data = test.result()
-              test_statistics += os.path.basename(file) + " ran for: " + data + "ms\n"
-          except Exception as exc:
-              print('%r generated an exception: %s' % (file, exc))
+          data = test.result()
+          if data:
+            test_statistics += os.path.basename(file) + " ran for: " + data + "ms\n"
+            print('test %r ran for %sms' % (os.path.basename(file), data))
           else:
-              print('test %r ran for %sms' % (os.path.basename(file), data))
+            print("Error occured in cooja running test: %r" %(os.path.basename(file)))
 
   information = f"""Name: {test_name}
     Time: {datetime.datetime.now():%Y-%m-%d_%H:%M:%S}
