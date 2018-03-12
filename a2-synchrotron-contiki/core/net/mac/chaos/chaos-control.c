@@ -245,7 +245,9 @@ PT_THREAD(chaos_round_proc(struct rtimer *t, void *ptr))
     leds_blink();
     COOJA_DEBUG_LINE();
     scheduler_round_end();
+#if CHAOS_CLUSTER
     chaos_cluster_round_end();
+#endif /* CHAOS_CLUSTER */
   } else {
     failed_rounds=CHAOS_FAILED_ROUNDS_RESYNC_THRESHOLD; //app is NULL!! Panic!
   }
