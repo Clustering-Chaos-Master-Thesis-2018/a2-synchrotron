@@ -16,7 +16,7 @@
 
 typedef struct __attribute__((packed)) {
     node_id_t id;
-    uint8_t distance;
+    uint8_t hop_count;
 } cluster_head_information_t;
 
 typedef struct __attribute__((packed)) {
@@ -133,7 +133,7 @@ static chaos_state_t process_cluster_head(uint16_t round_count, uint16_t slot,
             if(tx_payload->cluster_head_count < NODE_LIST_LEN) {
                 cluster_head_information_t info;
                 info.id = node_id;
-                info.distance = 1;
+                info.hop_count = 1;
                 tx_payload->cluster_head_list[tx_payload->cluster_head_count++] = info;
                 next_state = CHAOS_TX;
             }
@@ -159,7 +159,7 @@ static chaos_state_t process_cluster_node(uint16_t round_count, uint16_t slot,
             next_state = CHAOS_TX;
             int i;
             for(i = 0; i < tx_payload->cluster_head_count; ++i) {
-                tx_payload->cluster_head_list[i].distance++;
+                tx_payload->cluster_head_list[i].hop_count++;
             }
         }
     }
@@ -184,7 +184,7 @@ static void round_begin(const uint16_t round_count, const uint8_t app_id) {
 
     if(is_cluster_head()) {
         initial_cluster_data.cluster_head_list[0].id= node_id;
-        initial_cluster_data.cluster_head_list[0].distance = 1;
+        initial_cluster_data.cluster_head_list[0].hop_count = 1;
         initial_cluster_data.cluster_head_count++;
     }
 
@@ -199,18 +199,18 @@ ALWAYS_INLINE static int is_pending(const uint16_t round_count) {
 }
 
 static cluster_head_information_t pick_best_cluster(const cluster_head_information_t *cluster_head_list, uint8_t size) {
-    uint8_t smallest_distance = 255;
+    uint8_t smallest_hop_count = 255;
     uint8_t valid_cluster_head_count = 0;
     cluster_head_information_t valid_cluster_heads[NODE_LIST_LEN];
     int i;
     for(i = 0; i < size; ++i) {
-        if(cluster_head_list[i].distance < smallest_distance) {
-            smallest_distance = cluster_head_list[i].distance;
-            // COOJA_DEBUG_PRINTF("cluster new smallest distance: %u", )
+        if(cluster_head_list[i].hop_count < smallest_hop_count) {
+            smallest_hop_count = cluster_head_list[i].hop_count;
+            // COOJA_DEBUG_PRINTF("cluster new smallest hop_count: %u", )
         }
     }
     for(i = 0; i < size; ++i) {
-        if(cluster_head_list[i].distance == smallest_distance) {
+        if(cluster_head_list[i].hop_count == smallest_hop_count) {
             valid_cluster_heads[valid_cluster_head_count++] = cluster_head_list[i];
         }
     }
@@ -237,7 +237,7 @@ ALWAYS_ACTUALLY_INLINE static void log_cluster_heads(cluster_head_information_t 
     int i;
     for(i = 0; i < cluster_head_count; i++) {
         char tmp[20];
-        sprintf(tmp, (i == cluster_head_count-1 ? "%u -> %u ":"%u -> %u, "), cluster_head_list[i].id, cluster_head_list[i].distance);
+        sprintf(tmp, (i == cluster_head_count-1 ? "%u -> %u ":"%u -> %u, "), cluster_head_list[i].id, cluster_head_list[i].hop_count);
         strcat(str, tmp);
     }
 
@@ -296,10 +296,10 @@ static inline int merge_lists(cluster_t* cluster_tx, cluster_t* cluster_rx) {
     for(i = 0; i < cluster_data.cluster_head_count; ++i) {
         for(j = 0; j < index_merge; ++j) {
             if(merge[j].id == cluster_data.cluster_head_list[i].id &&
-               merge[j].distance > cluster_data.cluster_head_list[i].distance) {
-                // COOJA_DEBUG_PRINTF("cluster updated existing distance with better local one, cluster_id: %d recv distance :%d, our distance %d\n",
-                    // merge[j].id, merge[j].distance, cluster_data.cluster_head_list[i].distance);
-                merge[j].distance = cluster_data.cluster_head_list[i].distance;
+               merge[j].hop_count > cluster_data.cluster_head_list[i].hop_count) {
+                // COOJA_DEBUG_PRINTF("cluster updated existing hop_count with better local one, cluster_id: %d recv hop_count :%d, our hop_count %d\n",
+                    // merge[j].id, merge[j].hop_count, cluster_data.cluster_head_list[i].hop_count);
+                merge[j].hop_count = cluster_data.cluster_head_list[i].hop_count;
                 delta = 1;
             }
         }
