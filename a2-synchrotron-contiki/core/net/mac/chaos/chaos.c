@@ -936,7 +936,7 @@ uint8_t chaos_associate(rtimer_clock_t* t_sfd_actual_rtimer_ptr, uint16_t *round
       #if CHAOS_CLUSTER
         //If we associate with a node that is already assigned to a CH then we should just join that cluster for now.
         //However if we are running the cluster service we can skip this step.
-        if(!IS_CLUSTER_JOIN()) {
+        if(strcmp(app->name, "cluster")) {
           cluster_id = rx_header->cluster_id;
           if(cluster_id != 0) {
             COOJA_DEBUG_PRINTF("Associated with a clustered node, joining cluster: %u\n", cluster_id);
