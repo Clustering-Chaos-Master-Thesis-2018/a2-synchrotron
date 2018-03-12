@@ -47,16 +47,18 @@ volatile uint8_t chaos_node_index = 0;
 volatile uint8_t chaos_node_count = 0;
 volatile uint8_t chaos_has_node_index = 0;
 
-#if CHAOS_CLUSTER 
 volatile uint8_t chaos_cluster_node_index = 0;
 volatile uint8_t chaos_cluster_node_count = 0;
-#endif /* CHAOS_CLUSTER */
 
 const uint16_t mapping[] = (uint16_t[])TESTBED_MAPPING;
 
 void init_node_index(){
   join_init();
 }
+
+#if !CHAOS_CLUSTER
+  #define IS_CLUSTER_HEAD_ROUND() 0
+#endif
 
 ALWAYS_INLINE uint8_t chaos_get_has_node_index(void) {
   if(IS_CLUSTER_HEAD_ROUND()) {
