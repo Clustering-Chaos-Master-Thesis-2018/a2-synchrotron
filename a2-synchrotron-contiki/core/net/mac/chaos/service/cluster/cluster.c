@@ -14,6 +14,8 @@
 #define ENABLE_COOJA_DEBUG COOJA
 #include "dev/cooja-debug.h"
 
+#include "sys/compower.h"
+
 typedef struct __attribute__((packed)) {
     node_id_t id;
     uint8_t hop_count;
@@ -25,6 +27,7 @@ typedef struct __attribute__((packed)) {
 } cluster_t;
 
 cluster_t cluster_data;
+unsigned long total_energy_used = 0;
 
 static chaos_state_t process_cluster_head(uint16_t, uint16_t, chaos_state_t, int, size_t, cluster_t*, cluster_t*, uint8_t**);
 static chaos_state_t process_cluster_node(uint16_t, uint16_t, chaos_state_t, int, size_t, cluster_t*, cluster_t*, uint8_t**);
@@ -228,6 +231,13 @@ ALWAYS_ACTUALLY_INLINE static int index_of(const cluster_head_information_t *arr
 }
 
 static void round_begin_sniffer(chaos_header_t* header){
+    unsigned long all_cpu = energest_type_time(ENERGEST_TYPE_CPU);
+    unsigned long all_lpm = energest_type_time(ENERGEST_TYPE_LPM);
+    unsigned long all_transmit = energest_type_time(ENERGEST_TYPE_TRANSMIT);
+    unsigned long all_listen = energest_type_time(ENERGEST_TYPE_LISTEN);
+    unsigned long all_idle_transmit = compower_idle_activity.transmit;
+    unsigned long all_idle_listen = compower_idle_activity.listen;
+    total_energy_used += all_cpu + all_lpm + all_transmit + all_listen + all_idle_transmit + all_idle_listen;
 }
 
 ALWAYS_ACTUALLY_INLINE static void log_cluster_heads(cluster_head_information_t *cluster_head_list, uint8_t cluster_head_count) {
