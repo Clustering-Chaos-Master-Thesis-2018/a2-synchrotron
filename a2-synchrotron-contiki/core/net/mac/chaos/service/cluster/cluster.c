@@ -23,10 +23,13 @@ typedef struct __attribute__((packed)) {
 
 typedef struct __attribute__((packed)) {
     uint8_t cluster_head_count;
+    node_id_t source_id;
     cluster_head_information_t cluster_head_list[NODE_LIST_LEN];
 } cluster_t;
 
 cluster_t cluster_data;
+uint16_t neighbour_list[MAX_NODE_COUNT];
+
 unsigned long total_energy_used = 0;
 
 static chaos_state_t process_cluster_head(uint16_t, uint16_t, chaos_state_t, int, size_t, cluster_t*, cluster_t*, uint8_t**);
@@ -45,8 +48,7 @@ static inline int merge_lists(cluster_t* cluster_tx, cluster_t* cluster_rx);
 //The number of consecutive receive states we need to be in before forcing to send again.
 //In order to combat early termination. This should probably be changed to something more robust.
 #define CONSECUTIVE_RECEIVE_THRESHOLD 10
-
-#define NUMBER_OF_CLUSTER_ROUNDS 2
+#define CLUSTER_SERVICE_PENDING_THRESHOLD 10
 
 //What is this
 #define FLAGS_LEN(node_count)   ((node_count / 8) + ((node_count % 8) ? 1 : 0))
@@ -87,6 +89,10 @@ ALWAYS_INLINE int8_t cluster_head_not_initialized(void) {
 static chaos_state_t process(uint16_t round_count, uint16_t slot,
     chaos_state_t current_state, int chaos_txrx_success, size_t payload_length,
     uint8_t* rx_payload, uint8_t* tx_payload, uint8_t** app_flags){
+
+    cluster_t* const cluster_rx = (cluster_t*) rx_payload;
+    cluster_t* const cluster_tx = (cluster_t*) tx_payload;
+    cluster_tx->source_id = node_id;
     
     if (current_state == CHAOS_INIT && IS_INITIATOR()) {
         return CHAOS_TX;
@@ -95,6 +101,7 @@ static chaos_state_t process(uint16_t round_count, uint16_t slot,
     if(current_state == CHAOS_RX) {
         if(chaos_txrx_success) {
             invalid_rx_count = 0;
+            neighbour_list[cluster_rx->source_id]++;
         } else {
             invalid_rx_count++;
             if(invalid_rx_count > restart_threshold) {
@@ -104,9 +111,6 @@ static chaos_state_t process(uint16_t round_count, uint16_t slot,
             }
         }
     }
-
-    cluster_t* const cluster_tx = (cluster_t*) tx_payload;
-    cluster_t* const cluster_rx = (cluster_t*) rx_payload;
 
     if(is_cluster_head()) {
         return process_cluster_head(round_count, slot, current_state, chaos_txrx_success, payload_length, cluster_rx, cluster_tx, app_flags);
@@ -198,7 +202,7 @@ static void round_begin(const uint16_t round_count, const uint8_t app_id) {
 }
 
 ALWAYS_INLINE static int is_pending(const uint16_t round_count) {
-    return round_count <= NUMBER_OF_CLUSTER_ROUNDS;
+    return round_count <= CLUSTER_SERVICE_PENDING_THRESHOLD;
 }
 
 static cluster_head_information_t pick_best_cluster(const cluster_head_information_t *cluster_head_list, uint8_t size) {
