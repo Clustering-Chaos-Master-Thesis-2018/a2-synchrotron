@@ -42,13 +42,14 @@ static void round_end_sniffer(const chaos_header_t* header);
 static cluster_head_information_t pick_best_cluster(const cluster_head_information_t *cluster_head_list, uint8_t size);
 static int index_of(const cluster_head_information_t *cluster_head_list, uint8_t size, node_id_t value);
 static void log_cluster_heads(cluster_head_information_t *cluster_head_list, uint8_t cluster_head_count);
+static uint8_t filter_valid_cluster_heads(const cluster_head_information_t* cluster_head_list, uint8_t cluster_head_count, cluster_head_information_t* const output, uint8_t threshold);
 
 static inline int merge_lists(cluster_t* cluster_tx, cluster_t* cluster_rx);
 
 //The number of consecutive receive states we need to be in before forcing to send again.
 //In order to combat early termination. This should probably be changed to something more robust.
 #define CONSECUTIVE_RECEIVE_THRESHOLD 10
-#define CLUSTER_SERVICE_PENDING_THRESHOLD 10
+#define CLUSTER_SERVICE_PENDING_THRESHOLD 100
 
 //What is this
 #define FLAGS_LEN(node_count)   ((node_count / 8) + ((node_count % 8) ? 1 : 0))
@@ -58,7 +59,7 @@ static inline int merge_lists(cluster_t* cluster_tx, cluster_t* cluster_rx);
 #define CHAOS_RESTART_MAX 10
 #define CHAOS_RESTART_MIN 4
 
-//The percentage chance for a node to become a cluster head. 
+//The percentage chance for a node to become a cluster head.
 #define CLUSTER_HEAD_ELECTION_CHANCE 10
 
 CHAOS_SERVICE(cluster, (7*(RTIMER_SECOND/1000)+0*(RTIMER_SECOND/1000)/2), 260 , 0, is_pending, round_begin, round_begin_sniffer, round_end_sniffer);
@@ -76,14 +77,105 @@ uint32_t invalid_rx_count = 0;
 
 uint8_t is_cluster_service_running = 0;
 
+//Hop count.
+const uint8_t CLUSTER_HEAD_COMPETITION_RADIUS = 2;
+
+float CH_probablity = -1.0f;
+float previous_CH_probability = -1.0f;
+//Average energy used per round * some number of rounds
+uint64_t MAX_ENERGY = (uint64_t)30000 * (uint64_t)1000;
+float C_PROB = 0.05f;
+
 CHState cluster_head_state = NOT_INITIALIZED;
 
 ALWAYS_INLINE int8_t is_cluster_head(void) {
     return cluster_head_state == TENTATIVE || cluster_head_state == FINAL;
 }
 
+// C program for implementation of ftoa()
+#include<stdio.h>
+#include<math.h>
+
+int ipow(int base, int exp) {
+    int result = 1;
+    while (exp)
+    {
+        if (exp & 1)
+            result *= base;
+        exp >>= 1;
+        base *= base;
+    }
+
+    return result;
+}
+
+// reverses a string 'str' of length 'len'
+void reverse(char *str, int len) {
+    int i=0, j=len-1, temp;
+    while (i<j)
+    {
+        temp = str[i];
+        str[i] = str[j];
+        str[j] = temp;
+        i++; j--;
+    }
+}
+
+ // Converts a given integer x to string str[].  d is the number
+ // of digits required in output. If d is more than the number
+ // of digits in x, then 0s are added at the beginning.
+int intToStr(int x, char str[], int d) {
+    int i = 0;
+    while (x)
+    {
+        str[i++] = (x%10) + '0';
+        x = x/10;
+    }
+
+    // If number of digits required is more, then
+    // add 0s at the beginning
+    while (i < d)
+        str[i++] = '0';
+
+    reverse(str, i);
+    str[i] = '\0';
+    return i;
+}
+
+// Converts a floating point number to string.
+void ftoa(float n, char *res, int afterpoint) {
+    // Extract integer part
+    int ipart = (int)n;
+
+    // Extract floating part
+    float fpart = n - (float)ipart;
+
+    // convert integer part to string
+    int i = intToStr(ipart, res, 0);
+
+    // check for display option after point
+    if (afterpoint != 0)
+    {
+        res[i] = '.';  // add dot
+
+        // Get the value of fraction part upto given no.
+        // of points after dot. The third parameter is needed
+        // to handle cases like 233.007
+        fpart = fpart * ipow(10, afterpoint);
+
+        intToStr((int)fpart, res + i + 1, afterpoint);
+    }
+}
+
 ALWAYS_INLINE int8_t cluster_head_not_initialized(void) {
     return cluster_head_state == NOT_INITIALIZED;
+}
+
+float calculate_initial_CH_prob(uint64_t total_energy_used) {
+    uint64_t residualEnergy = MAX_ENERGY - total_energy_used;
+    float probability = C_PROB * (float)(residualEnergy / MAX_ENERGY);
+    float min = 0.0001f;
+    return probability > min ? probability : min;
 }
 
 static chaos_state_t process(uint16_t round_count, uint16_t slot,
@@ -93,10 +185,10 @@ static chaos_state_t process(uint16_t round_count, uint16_t slot,
     cluster_t* const cluster_rx = (cluster_t*) rx_payload;
     cluster_t* const cluster_tx = (cluster_t*) tx_payload;
     cluster_tx->source_id = node_id;
-    
+
     if (current_state == CHAOS_INIT && IS_INITIATOR()) {
         return CHAOS_TX;
-    } 
+    }
 
     if(current_state == CHAOS_RX) {
         if(chaos_txrx_success) {
@@ -124,7 +216,7 @@ static uint8_t consecutive_rx = 0;
 static chaos_state_t process_cluster_head(uint16_t round_count, uint16_t slot,
     chaos_state_t current_state, int chaos_txrx_success, size_t payload_length,
     cluster_t* rx_payload, cluster_t* tx_payload, uint8_t** app_flags) {
-        
+
     uint8_t delta = 0;
     chaos_state_t next_state = CHAOS_RX;
 
@@ -134,7 +226,7 @@ static chaos_state_t process_cluster_head(uint16_t round_count, uint16_t slot,
         if (delta || consecutive_rx == CONSECUTIVE_RECEIVE_THRESHOLD) {
             next_state = CHAOS_TX;
         }
-        
+
         const int node_in_list = index_of(tx_payload->cluster_head_list, tx_payload->cluster_head_count, node_id);
         if(node_in_list == -1) {
             if(tx_payload->cluster_head_count < NODE_LIST_LEN) {
@@ -145,7 +237,7 @@ static chaos_state_t process_cluster_head(uint16_t round_count, uint16_t slot,
                 next_state = CHAOS_TX;
             }
         }
-        
+
     } else { /* CHAOS_TX */
         consecutive_rx = 0;
     }
@@ -158,9 +250,10 @@ static chaos_state_t process_cluster_node(uint16_t round_count, uint16_t slot,
     cluster_t* rx_payload, cluster_t* tx_payload, uint8_t** app_flags) {
     uint8_t delta = 0;
     chaos_state_t next_state = CHAOS_RX;
-    
+
     if (current_state == CHAOS_RX) {
         delta = merge_lists(tx_payload, rx_payload);
+        delta = chaos_random_generator_fast() % 100 < 30;
         memcpy(&cluster_data, tx_payload, sizeof(cluster_t));
         if (delta) {
             next_state = CHAOS_TX;
@@ -185,18 +278,21 @@ static void round_begin(const uint16_t round_count, const uint8_t app_id) {
     memset(&initial_cluster_data, 0, sizeof(cluster_t));
     memset(&cluster_data, 0, sizeof(cluster_t));
 
-    if(cluster_head_not_initialized()) {
-        cluster_head_state = determine_cluster_head_state(node_id);
-    }
+    // if(cluster_head_not_initialized()) {
+        // cluster_head_state = determine_cluster_head_state(node_id);
+    // }
 
-    if(is_cluster_head()) {
-        initial_cluster_data.cluster_head_list[0].id= node_id;
-        initial_cluster_data.cluster_head_list[0].hop_count = 1;
-        initial_cluster_data.cluster_head_count++;
-    }
+    // if(is_cluster_head()) {
+    //     initial_cluster_data.cluster_head_list[0].id= node_id;
+    //     initial_cluster_data.cluster_head_list[0].hop_count = 1;
+    //     initial_cluster_data.cluster_head_count++;
+    // }
 
     invalid_rx_count = 0;
     restart_threshold = generate_restart_threshold();
+    if(CH_probablity < 0){
+      CH_probablity = calculate_initial_CH_prob(total_energy_used);
+    }
 
     chaos_round(round_count, app_id, (const uint8_t const*)&initial_cluster_data, sizeof(initial_cluster_data), (7*(RTIMER_SECOND/1000)+0*(RTIMER_SECOND/1000)/2) * CLOCK_PHI, JOIN_ROUND_MAX_SLOTS, get_flags_length(), process);
 }
@@ -213,15 +309,12 @@ static cluster_head_information_t pick_best_cluster(const cluster_head_informati
     for(i = 0; i < size; ++i) {
         if(cluster_head_list[i].hop_count < smallest_hop_count) {
             smallest_hop_count = cluster_head_list[i].hop_count;
-            // COOJA_DEBUG_PRINTF("cluster new smallest hop_count: %u", )
         }
     }
-    for(i = 0; i < size; ++i) {
-        if(cluster_head_list[i].hop_count == smallest_hop_count) {
-            valid_cluster_heads[valid_cluster_head_count++] = cluster_head_list[i];
-        }
-    }
-    return valid_cluster_heads[chaos_random_generator_fast() % valid_cluster_head_count];
+    valid_cluster_head_count = filter_valid_cluster_heads(cluster_head_list, size, valid_cluster_heads, smallest_hop_count);
+    cluster_head_information_t asd =  valid_cluster_heads[chaos_random_generator_fast() % valid_cluster_head_count];
+    COOJA_DEBUG_PRINTF("cluster, valid cluster count %u, chosen id: %d \n", valid_cluster_head_count, asd.id);
+    return asd;
 }
 
 ALWAYS_ACTUALLY_INLINE static int index_of(const cluster_head_information_t *array, uint8_t size, node_id_t value) {
@@ -242,6 +335,7 @@ static void round_begin_sniffer(chaos_header_t* header){
     unsigned long all_idle_transmit = compower_idle_activity.transmit;
     unsigned long all_idle_listen = compower_idle_activity.listen;
     total_energy_used += all_cpu + all_lpm + all_transmit + all_listen + all_idle_transmit + all_idle_listen;
+    COOJA_DEBUG_PRINTF("cluster total energy used: %lu", total_energy_used);
 }
 
 ALWAYS_ACTUALLY_INLINE static void log_cluster_heads(cluster_head_information_t *cluster_head_list, uint8_t cluster_head_count) {
@@ -259,22 +353,77 @@ ALWAYS_ACTUALLY_INLINE static void log_cluster_heads(cluster_head_information_t 
     PRINTF(str);
 }
 
+static uint8_t filter_valid_cluster_heads(const cluster_head_information_t* cluster_head_list, uint8_t cluster_head_count, cluster_head_information_t* const output, uint8_t threshold) {
+    uint8_t i, j = 0;
+    for(i = 0; i < cluster_head_count; ++i) {
+        if(cluster_head_list[i].hop_count <= threshold) {
+            output[j++] = cluster_head_list[i];
+        }
+    }
+    return j;
+}
+
+static void heed_repeat(const cluster_head_information_t* cluster_head_list, uint8_t cluster_head_count) {
+    if(previous_CH_probability >= 1.0f) {
+        return;
+    }
+    cluster_head_information_t valid_cluster_heads[NODE_LIST_LEN];
+    uint8_t valid_cluster_head_count = filter_valid_cluster_heads(cluster_head_list, cluster_head_count, valid_cluster_heads, CLUSTER_HEAD_COMPETITION_RADIUS);
+    if(valid_cluster_head_count > 0) {
+        cluster_id = pick_best_cluster(valid_cluster_heads, valid_cluster_head_count).id;
+        cluster_index = index_of(cluster_head_list, cluster_head_count, node_id);
+
+        if(cluster_id == node_id) {
+            if(CH_probablity >= 1.0f) {
+                cluster_head_state = FINAL;
+                COOJA_DEBUG_PRINTF("cluster, I AM FINAL\n");
+            } else {
+                cluster_head_state = TENTATIVE;
+            }
+        }
+    } else if(CH_probablity >= 1.0f) {
+        cluster_head_state = FINAL;
+        COOJA_DEBUG_PRINTF("cluster, I AM FINAL\n");
+    } else {
+        uint32_t precision = 1000;
+        uint32_t probability = CH_probablity * precision;
+        if(chaos_random_generator_fast() % precision <= probability) {
+            cluster_head_state = TENTATIVE;
+            if(index_of(cluster_data.cluster_head_list, cluster_data.cluster_head_count, node_id) == -1) {
+                cluster_head_information_t cluster_info;
+                cluster_info.id = node_id;
+                cluster_info.hop_count = 0;
+                cluster_data.cluster_head_list[cluster_data.cluster_head_count++] = cluster_info;
+            }
+            COOJA_DEBUG_PRINTF("cluster, I AM TENTATIVE\n");
+        }
+    }
+    previous_CH_probability = CH_probablity;
+    CH_probablity = 2.0f * CH_probablity;
+    if(CH_probablity >= 1.0f) {
+        CH_probablity = 1.0f;
+    }
+    char res[20];
+    ftoa(CH_probablity, res, 4);
+    COOJA_DEBUG_PRINTF("cluster, CH probability: %s\n", res);
+}
+
 static void round_end_sniffer(const chaos_header_t* header){
     if (is_cluster_service_running) {
         is_cluster_service_running = 0;
 
-        if(is_cluster_head()) {
-            if(chaos_cluster_node_count < cluster_data.cluster_head_count) {
-                chaos_cluster_node_count = cluster_data.cluster_head_count;
-                chaos_cluster_node_index = node_id - 1;
-            }
-            cluster_id = node_id;
-            cluster_index = index_of(cluster_data.cluster_head_list, cluster_data.cluster_head_count, node_id);
-            init_node_index();
-        } else {
-            cluster_id = pick_best_cluster(cluster_data.cluster_head_list, cluster_data.cluster_head_count).id;
-            cluster_index = index_of(cluster_data.cluster_head_list, cluster_data.cluster_head_count, node_id);
-        }
+        heed_repeat(cluster_data.cluster_head_list, cluster_data.cluster_head_count);
+
+        // if(is_cluster_head()) {
+        //     if(chaos_cluster_node_count < cluster_data.cluster_head_count) {
+        //         chaos_cluster_node_count = cluster_data.cluster_head_count;
+        //         chaos_cluster_node_index = node_id - 1;
+        //     }
+        //     cluster_id = node_id;
+        //     cluster_index = index_of(cluster_data.cluster_head_list, cluster_data.cluster_head_count, node_id);
+        //     init_node_index();
+        // } else {
+        // }
         log_cluster_heads(cluster_data.cluster_head_list, cluster_data.cluster_head_count);
     }
 }
