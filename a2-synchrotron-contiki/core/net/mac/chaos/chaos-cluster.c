@@ -8,13 +8,7 @@
 node_id_t cluster_id = 0;
 uint8_t cluster_index = 0;
 
-
-void chaos_cluster_init(void) {
-    PRINTF("where should this run?");
-}
-
-
-ALWAYS_INLINE void chaos_cluster_round_end(uint8_t is_initiator, chaos_header_t* const tx_header) {
+ALWAYS_INLINE void chaos_cluster_round_end(void) {
     scheduler_set_next_app(get_next_round_id());
 }
 
