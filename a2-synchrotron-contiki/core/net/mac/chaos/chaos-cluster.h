@@ -26,8 +26,8 @@ typedef uint8_t node_index_t;
     extern uint8_t cluster_index;
 #endif /* CHAOS_CLUSTER */
 
-void chaos_cluster_init(void);
-ALWAYS_INLINE void chaos_cluster_round_init(uint8_t is_initiator, chaos_header_t* const tx_header);
 ALWAYS_INLINE node_id_t chaos_get_cluster_id(void);
+ALWAYS_INLINE uint8_t chaos_get_cluster_index(void);
+ALWAYS_INLINE void chaos_cluster_round_end(void);
 
 #endif /* _CHAOS_CLUSTER_H_ */
