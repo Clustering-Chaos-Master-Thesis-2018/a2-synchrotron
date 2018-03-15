@@ -49,7 +49,7 @@ static inline int merge_lists(cluster_t* cluster_tx, cluster_t* cluster_rx);
 //The number of consecutive receive states we need to be in before forcing to send again.
 //In order to combat early termination. This should probably be changed to something more robust.
 #define CONSECUTIVE_RECEIVE_THRESHOLD 10
-#define CLUSTER_SERVICE_PENDING_THRESHOLD 100
+#define CLUSTER_SERVICE_PENDING_THRESHOLD 20
 
 //What is this
 #define FLAGS_LEN(node_count)   ((node_count / 8) + ((node_count % 8) ? 1 : 0))
@@ -78,7 +78,7 @@ uint32_t invalid_rx_count = 0;
 uint8_t is_cluster_service_running = 0;
 
 //Hop count.
-const uint8_t CLUSTER_HEAD_COMPETITION_RADIUS = 2;
+const uint8_t CLUSTER_HEAD_COMPETITION_RADIUS = 1;
 
 float CH_probablity = -1.0f;
 float previous_CH_probability = -1.0f;
@@ -213,6 +213,13 @@ static chaos_state_t process(uint16_t round_count, uint16_t slot,
 
 static uint8_t consecutive_rx = 0;
 
+static void update_hop_count(cluster_t* tx_payload) {
+    int i;
+    for(i = 0; i < tx_payload->cluster_head_count; ++i) {
+        tx_payload->cluster_head_list[i].hop_count++;
+    }
+}
+
 static chaos_state_t process_cluster_head(uint16_t round_count, uint16_t slot,
     chaos_state_t current_state, int chaos_txrx_success, size_t payload_length,
     cluster_t* rx_payload, cluster_t* tx_payload, uint8_t** app_flags) {
@@ -223,21 +230,21 @@ static chaos_state_t process_cluster_head(uint16_t round_count, uint16_t slot,
     if(current_state == CHAOS_RX) {
         delta = merge_lists(tx_payload, rx_payload);
         consecutive_rx++;
-        if (delta || consecutive_rx == CONSECUTIVE_RECEIVE_THRESHOLD) {
-            next_state = CHAOS_TX;
-        }
 
         const int node_in_list = index_of(tx_payload->cluster_head_list, tx_payload->cluster_head_count, node_id);
         if(node_in_list == -1) {
             if(tx_payload->cluster_head_count < NODE_LIST_LEN) {
                 cluster_head_information_t info;
                 info.id = node_id;
-                info.hop_count = 1;
+                info.hop_count = 0;
                 tx_payload->cluster_head_list[tx_payload->cluster_head_count++] = info;
-                next_state = CHAOS_TX;
+                memcpy(&cluster_data, tx_payload, sizeof(cluster_t));
             }
         }
-
+        if (delta || consecutive_rx == CONSECUTIVE_RECEIVE_THRESHOLD || node_in_list == -1) {
+            next_state = CHAOS_TX;
+            update_hop_count(tx_payload);
+        }
     } else { /* CHAOS_TX */
         consecutive_rx = 0;
     }
@@ -257,10 +264,7 @@ static chaos_state_t process_cluster_node(uint16_t round_count, uint16_t slot,
         memcpy(&cluster_data, tx_payload, sizeof(cluster_t));
         if (delta) {
             next_state = CHAOS_TX;
-            int i;
-            for(i = 0; i < tx_payload->cluster_head_count; ++i) {
-                tx_payload->cluster_head_list[i].hop_count++;
-            }
+            update_hop_count(tx_payload);
         }
     }
 
