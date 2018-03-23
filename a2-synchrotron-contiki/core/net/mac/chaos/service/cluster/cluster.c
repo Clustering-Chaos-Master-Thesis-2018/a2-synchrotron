@@ -29,7 +29,7 @@ typedef struct __attribute__((packed)) {
     cluster_head_information_t cluster_head_list[NODE_LIST_LEN];
 } cluster_t;
 
-cluster_t cluster_data;
+cluster_t local_cluster_data;
 uint16_t neighbour_list[MAX_NODE_COUNT];
 
 unsigned long total_energy_used = 0;
@@ -46,6 +46,7 @@ static int index_of(const cluster_head_information_t *cluster_head_list, uint8_t
 static void log_cluster_heads(cluster_head_information_t *cluster_head_list, uint8_t cluster_head_count);
 static uint8_t filter_valid_cluster_heads(const cluster_head_information_t* cluster_head_list, uint8_t cluster_head_count, cluster_head_information_t* const output, uint8_t threshold);
 
+static inline int32_t set_best_available_hop_count(cluster_t* destination, const cluster_t* source);
 static inline int merge_lists(cluster_t* cluster_tx, cluster_t* cluster_rx);
 
 //The number of consecutive receive states we need to be in before forcing to send again.
@@ -155,7 +156,8 @@ static chaos_state_t process_cluster_head(uint16_t round_count, uint16_t slot,
     chaos_state_t next_state = CHAOS_RX;
 
     if(current_state == CHAOS_RX) {
-        delta = merge_lists(tx_payload, rx_payload);
+        delta |= merge_lists(tx_payload, rx_payload);
+        delta |= set_best_available_hop_count(tx_payload, &local_cluster_data);
         consecutive_rx++;
 
         const int node_in_list = index_of(tx_payload->cluster_head_list, tx_payload->cluster_head_count, node_id);
@@ -165,9 +167,9 @@ static chaos_state_t process_cluster_head(uint16_t round_count, uint16_t slot,
                 info.id = node_id;
                 info.hop_count = 0;
                 tx_payload->cluster_head_list[tx_payload->cluster_head_count++] = info;
-                memcpy(&cluster_data, tx_payload, sizeof(cluster_t));
             }
         }
+        merge_lists(&local_cluster_data, tx_payload);
         if (delta || consecutive_rx == CONSECUTIVE_RECEIVE_THRESHOLD || node_in_list == -1) {
             next_state = CHAOS_TX;
             update_hop_count(tx_payload);
@@ -186,15 +188,15 @@ static chaos_state_t process_cluster_node(uint16_t round_count, uint16_t slot,
     chaos_state_t next_state = CHAOS_RX;
 
     if (current_state == CHAOS_RX) {
-        delta = merge_lists(tx_payload, rx_payload);
-        delta = chaos_random_generator_fast() % 100 < 30;
-        memcpy(&cluster_data, tx_payload, sizeof(cluster_t));
+        delta |= merge_lists(tx_payload, rx_payload);
+        delta |= set_best_available_hop_count(tx_payload, &local_cluster_data);
+        delta |= chaos_random_generator_fast() % 100 < 30;
+        merge_lists(&local_cluster_data, tx_payload);
         if (delta) {
             next_state = CHAOS_TX;
             update_hop_count(tx_payload);
         }
     }
-
     return next_state;
 }
 
@@ -205,18 +207,18 @@ static CHState determine_cluster_head_state(node_id_t node_id) {
 
 static void round_begin(const uint16_t round_count, const uint8_t app_id) {
     is_cluster_service_running = 1;
-    cluster_t initial_cluster_data;
-    memset(&initial_cluster_data, 0, sizeof(cluster_t));
-    memset(&cluster_data, 0, sizeof(cluster_t));
+    cluster_t initial_local_cluster_data;
+    memset(&initial_local_cluster_data, 0, sizeof(cluster_t));
+    // memset(&local_cluster_data, 0, sizeof(cluster_t));
 
     // if(cluster_head_not_initialized()) {
         // cluster_head_state = determine_cluster_head_state(node_id);
     // }
 
     // if(is_cluster_head()) {
-    //     initial_cluster_data.cluster_head_list[0].id= node_id;
-    //     initial_cluster_data.cluster_head_list[0].hop_count = 1;
-    //     initial_cluster_data.cluster_head_count++;
+    //     initial_local_cluster_data.cluster_head_list[0].id= node_id;
+    //     initial_local_cluster_data.cluster_head_list[0].hop_count = 1;
+    //     initial_local_cluster_data.cluster_head_count++;
     // }
 
     invalid_rx_count = 0;
@@ -225,7 +227,7 @@ static void round_begin(const uint16_t round_count, const uint8_t app_id) {
       CH_probablity = calculate_initial_CH_prob(total_energy_used);
     }
 
-    chaos_round(round_count, app_id, (const uint8_t const*)&initial_cluster_data, sizeof(initial_cluster_data), (7*(RTIMER_SECOND/1000)+0*(RTIMER_SECOND/1000)/2) * CLOCK_PHI, JOIN_ROUND_MAX_SLOTS, get_flags_length(), process);
+    chaos_round(round_count, app_id, (const uint8_t const*)&initial_local_cluster_data, sizeof(initial_local_cluster_data), (7*(RTIMER_SECOND/1000)+0*(RTIMER_SECOND/1000)/2) * CLOCK_PHI, JOIN_ROUND_MAX_SLOTS, get_flags_length(), process);
 }
 
 ALWAYS_INLINE static int is_pending(const uint16_t round_count) {
@@ -233,7 +235,7 @@ ALWAYS_INLINE static int is_pending(const uint16_t round_count) {
 }
 
 ALWAYS_INLINE static uint8_t calculate_smalles_hop_count(const cluster_head_information_t *cluster_head_list, uint8_t size) {
-    int i;
+    uint8_t i;
     uint8_t smallest_hop_count = 255;
     for(i = 0; i < size; ++i) {
         if(cluster_head_list[i].hop_count < smallest_hop_count) {
@@ -254,7 +256,7 @@ static cluster_head_information_t pick_best_cluster(const cluster_head_informati
 }
 
 ALWAYS_ACTUALLY_INLINE static int index_of(const cluster_head_information_t *array, uint8_t size, node_id_t value) {
-    int i;
+    uint8_t i;
     for(i = 0; i < size; ++i) {
         if (array[i].id == value) {
             return i;
@@ -278,7 +280,7 @@ ALWAYS_ACTUALLY_INLINE static void log_cluster_heads(cluster_head_information_t 
     char str[200];
     sprintf(str, "cluster: rd: %u, cluster_head_count: %u, picked_cluster: %u available_clusters: [ ", chaos_get_round_number(), cluster_head_count, cluster_id);
 
-    int i;
+    uint8_t i;
     for(i = 0; i < cluster_head_count; i++) {
         char tmp[20];
         sprintf(tmp, (i == cluster_head_count-1 ? "%u -> %u ":"%u -> %u, "), cluster_head_list[i].id, cluster_head_list[i].hop_count);
@@ -325,11 +327,11 @@ static void heed_repeat(const cluster_head_information_t* cluster_head_list, uin
         uint32_t probability = CH_probablity * precision;
         if(chaos_random_generator_fast() % precision <= probability) {
             cluster_head_state = TENTATIVE;
-            if(index_of(cluster_data.cluster_head_list, cluster_data.cluster_head_count, node_id) == -1) {
+            if(index_of(local_cluster_data.cluster_head_list, local_cluster_data.cluster_head_count, node_id) == -1) {
                 cluster_head_information_t cluster_info;
                 cluster_info.id = node_id;
                 cluster_info.hop_count = 0;
-                cluster_data.cluster_head_list[cluster_data.cluster_head_count++] = cluster_info;
+                local_cluster_data.cluster_head_list[local_cluster_data.cluster_head_count++] = cluster_info;
             }
             COOJA_DEBUG_PRINTF("cluster, I AM TENTATIVE\n");
         }
@@ -348,19 +350,19 @@ static void round_end_sniffer(const chaos_header_t* header){
     if (is_cluster_service_running) {
         is_cluster_service_running = 0;
 
-        heed_repeat(cluster_data.cluster_head_list, cluster_data.cluster_head_count);
+        heed_repeat(local_cluster_data.cluster_head_list, local_cluster_data.cluster_head_count);
 
         // if(is_cluster_head()) {
-        //     if(chaos_cluster_node_count < cluster_data.cluster_head_count) {
-        //         chaos_cluster_node_count = cluster_data.cluster_head_count;
+        //     if(chaos_cluster_node_count < local_cluster_data.cluster_head_count) {
+        //         chaos_cluster_node_count = local_cluster_data.cluster_head_count;
         //         chaos_cluster_node_index = node_id - 1;
         //     }
         //     cluster_id = node_id;
-        //     cluster_index = index_of(cluster_data.cluster_head_list, cluster_data.cluster_head_count, node_id);
+        //     cluster_index = index_of(local_cluster_data.cluster_head_list, local_cluster_data.cluster_head_count, node_id);
         //     init_node_index();
         // } else {
         // }
-        log_cluster_heads(cluster_data.cluster_head_list, cluster_data.cluster_head_count);
+        log_cluster_heads(local_cluster_data.cluster_head_list, local_cluster_data.cluster_head_count);
     }
 }
 
@@ -391,18 +393,6 @@ static inline int merge_lists(cluster_t* cluster_tx, cluster_t* cluster_rx) {
       index_tx++;
     }
   }
-    int i, j;
-    for(i = 0; i < cluster_data.cluster_head_count; ++i) {
-        for(j = 0; j < index_merge; ++j) {
-            if(merge[j].id == cluster_data.cluster_head_list[i].id &&
-               merge[j].hop_count > cluster_data.cluster_head_list[i].hop_count) {
-                // COOJA_DEBUG_PRINTF("cluster updated existing hop_count with better local one, cluster_id: %d recv hop_count :%d, our hop_count %d\n",
-                    // merge[j].id, merge[j].hop_count, cluster_data.cluster_head_list[i].hop_count);
-                merge[j].hop_count = cluster_data.cluster_head_list[i].hop_count;
-                delta = 1;
-            }
-        }
-    }
 
   /* New overflow? */
   if (index_merge >= NODE_LIST_LEN && (index_rx < cluster_rx->cluster_head_count || index_tx < cluster_tx->cluster_head_count)) {
@@ -413,4 +403,19 @@ static inline int merge_lists(cluster_t* cluster_tx, cluster_t* cluster_rx) {
 
   memcpy(cluster_tx->cluster_head_list, merge, sizeof(merge));
   return delta;
+}
+
+static inline uint8_t set_best_available_hop_count(cluster_t* destination, const cluster_t* source) {
+    uint8_t delta = 0;
+    uint8_t i, j;
+    for(i = 0; i < source->cluster_head_count; ++i) {
+        for(j = 0; j < destination->cluster_head_count; ++j) {
+            if(destination->cluster_head_list[j].id == source->cluster_head_list[i].id &&
+                destination->cluster_head_list[j].hop_count > source->cluster_head_list[i].hop_count) {
+                destination->cluster_head_list[j].hop_count = source->cluster_head_list[i].hop_count;
+                delta = 1;
+            }
+        }
+    }
+    return delta;
 }
