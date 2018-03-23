@@ -305,20 +305,25 @@ ALWAYS_INLINE static int is_pending(const uint16_t round_count) {
     return round_count <= CLUSTER_SERVICE_PENDING_THRESHOLD;
 }
 
-static cluster_head_information_t pick_best_cluster(const cluster_head_information_t *cluster_head_list, uint8_t size) {
-    uint8_t smallest_hop_count = 255;
-    uint8_t valid_cluster_head_count = 0;
-    cluster_head_information_t valid_cluster_heads[NODE_LIST_LEN];
+ALWAYS_INLINE static uint8_t calculate_smalles_hop_count(const cluster_head_information_t *cluster_head_list, uint8_t size) {
     int i;
+    uint8_t smallest_hop_count = 255;
     for(i = 0; i < size; ++i) {
         if(cluster_head_list[i].hop_count < smallest_hop_count) {
             smallest_hop_count = cluster_head_list[i].hop_count;
         }
     }
-    valid_cluster_head_count = filter_valid_cluster_heads(cluster_head_list, size, valid_cluster_heads, smallest_hop_count);
-    cluster_head_information_t asd =  valid_cluster_heads[chaos_random_generator_fast() % valid_cluster_head_count];
-    COOJA_DEBUG_PRINTF("cluster, valid cluster count %u, chosen id: %d \n", valid_cluster_head_count, asd.id);
-    return asd;
+    return smallest_hop_count;
+}
+
+static cluster_head_information_t pick_best_cluster(const cluster_head_information_t *cluster_head_list, uint8_t size) {
+    cluster_head_information_t valid_cluster_heads[NODE_LIST_LEN];
+    const uint8_t smallest_hop_count = calculate_smalles_hop_count(cluster_head_list, size);
+    const uint8_t valid_cluster_head_count = filter_valid_cluster_heads(cluster_head_list, size, valid_cluster_heads, smallest_hop_count);;
+
+    cluster_head_information_t best_cluster_head = valid_cluster_heads[chaos_random_generator_fast() % valid_cluster_head_count];
+    COOJA_DEBUG_PRINTF("cluster, valid cluster count %u, chosen id: %d \n", valid_cluster_head_count, best_cluster_head.id);
+    return best_cluster_head;
 }
 
 ALWAYS_ACTUALLY_INLINE static int index_of(const cluster_head_information_t *array, uint8_t size, node_id_t value) {
