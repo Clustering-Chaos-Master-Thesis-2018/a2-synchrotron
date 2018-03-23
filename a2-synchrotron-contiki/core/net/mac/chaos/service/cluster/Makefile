@@ -1,1 +1,1 @@
-CONTIKI_SOURCEFILES += cluster.c
+CONTIKI_SOURCEFILES += cluster.c lib.c
