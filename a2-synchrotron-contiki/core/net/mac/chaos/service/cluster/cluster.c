@@ -46,13 +46,13 @@ static int index_of(const cluster_head_information_t *cluster_head_list, uint8_t
 static void log_cluster_heads(cluster_head_information_t *cluster_head_list, uint8_t cluster_head_count);
 static uint8_t filter_valid_cluster_heads(const cluster_head_information_t* cluster_head_list, uint8_t cluster_head_count, cluster_head_information_t* const output, uint8_t threshold);
 
-static inline int32_t set_best_available_hop_count(cluster_t* destination, const cluster_t* source);
+static inline uint8_t set_best_available_hop_count(cluster_t* destination, const cluster_t* source);
 static inline int merge_lists(cluster_t* cluster_tx, cluster_t* cluster_rx);
 
 //The number of consecutive receive states we need to be in before forcing to send again.
 //In order to combat early termination. This should probably be changed to something more robust.
 #define CONSECUTIVE_RECEIVE_THRESHOLD 10
-#define CLUSTER_SERVICE_PENDING_THRESHOLD 20
+#define CLUSTER_SERVICE_PENDING_THRESHOLD 12
 
 //What is this
 #define FLAGS_LEN(node_count)   ((node_count / 8) + ((node_count % 8) ? 1 : 0))
@@ -273,12 +273,11 @@ static void round_begin_sniffer(chaos_header_t* header){
     unsigned long all_idle_transmit = compower_idle_activity.transmit;
     unsigned long all_idle_listen = compower_idle_activity.listen;
     total_energy_used += all_cpu + all_lpm + all_transmit + all_listen + all_idle_transmit + all_idle_listen;
-    COOJA_DEBUG_PRINTF("cluster total energy used: %lu", total_energy_used);
 }
 
 ALWAYS_ACTUALLY_INLINE static void log_cluster_heads(cluster_head_information_t *cluster_head_list, uint8_t cluster_head_count) {
     char str[200];
-    sprintf(str, "cluster: rd: %u, cluster_head_count: %u, picked_cluster: %u available_clusters: [ ", chaos_get_round_number(), cluster_head_count, cluster_id);
+    sprintf(str, "cluster: rd: %u, cluster_head_count: %u, picked_cluster: %u, cluster_index: %u, available_clusters: [ ", chaos_get_round_number(), cluster_head_count, cluster_id);
 
     uint8_t i;
     for(i = 0; i < cluster_head_count; i++) {
@@ -404,7 +403,6 @@ static inline int merge_lists(cluster_t* cluster_tx, cluster_t* cluster_rx) {
   memcpy(cluster_tx->cluster_head_list, merge, sizeof(merge));
   return delta;
 }
-
 static inline uint8_t set_best_available_hop_count(cluster_t* destination, const cluster_t* source) {
     uint8_t delta = 0;
     uint8_t i, j;
