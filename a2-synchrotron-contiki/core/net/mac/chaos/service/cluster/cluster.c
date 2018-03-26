@@ -313,7 +313,7 @@ static void heed_repeat(const cluster_head_information_t* cluster_head_list, uin
     uint8_t valid_cluster_head_count = filter_valid_cluster_heads(cluster_head_list, cluster_head_count, valid_cluster_heads, CLUSTER_HEAD_COMPETITION_RADIUS);
     if(valid_cluster_head_count > 0) {
         cluster_id = pick_best_cluster(valid_cluster_heads, valid_cluster_head_count).id;
-        cluster_index = index_of(cluster_head_list, cluster_head_count, node_id);
+        cluster_index = index_of(cluster_head_list, cluster_head_count, cluster_id);
 
         if(cluster_id == node_id) {
             if(CH_probablity >= 1.0f) {
