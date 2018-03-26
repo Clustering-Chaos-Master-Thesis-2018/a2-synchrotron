@@ -299,14 +299,25 @@
       <script>
 
 
-TIMEOUT(10000);
-
-
-logpath = "log/"
+TIMEOUT(120000);
+// if (!logpath) {
+  logpath = "log/"
+// }
 
 powerLogPath = logpath + "power/"
 roundLogPath = logpath + "round/"
 errorLogPath = logpath + "error/"
+
+function csv_format_round_log(raw) {
+  cells = [];
+  var cells_with_label = raw.split(',');
+  for (var i = 0; i != cells_with_label.length; i++) {
+    parts = cells_with_label[i].split(':');
+    cells.push(parts[1].trim());
+  }
+
+  return cells.join(" ");
+}
 
 var imports = new JavaImporter(java.io, java.lang);
 with (imports) {
@@ -330,15 +341,14 @@ with (imports) {
       }
 
       var topic = msg.substring(0, msg.indexOf(' '))
-      log.log("as");
-      log.log(topic)
       var raw = msg.substring(msg.indexOf(' ')+1);
       var parsed = {status: "error"};
       //outputs[id.toString()].write(msg + "\n");
       //outputs[id.toString()].write(raw + "\n");
 
       if (topic == "cluster_res:") {
-        outputs[id.toString()].round.write(raw + "\n");
+        formatted_row = csv_format_round_log(raw);
+        outputs[id.toString()].round.write(formatted_row + "\n");
         outputs[id.toString()].round.flush();
       } else if (topic == "power:") {
 
