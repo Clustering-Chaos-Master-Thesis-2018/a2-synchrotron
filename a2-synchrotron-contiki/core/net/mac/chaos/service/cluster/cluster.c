@@ -356,16 +356,13 @@ static void round_end_sniffer(const chaos_header_t* header){
 
         heed_repeat(local_cluster_data.cluster_head_list, local_cluster_data.cluster_head_count);
 
-        // if(is_cluster_head()) {
-        //     if(chaos_cluster_node_count < local_cluster_data.cluster_head_count) {
-        //         chaos_cluster_node_count = local_cluster_data.cluster_head_count;
-        //         chaos_cluster_node_index = node_id - 1;
-        //     }
-        //     cluster_id = node_id;
-        //     cluster_index = index_of(local_cluster_data.cluster_head_list, local_cluster_data.cluster_head_count, node_id);
-        //     init_node_index();
-        // } else {
-        // }
+        if(cluster_head_state == FINAL) {
+            if(chaos_cluster_node_count < local_cluster_data.cluster_head_count) {
+                chaos_cluster_node_count = local_cluster_data.cluster_head_count;
+                chaos_cluster_node_index = node_id - 1;
+            }
+        }
+        init_node_index();
         log_cluster_heads(local_cluster_data.cluster_head_list, local_cluster_data.cluster_head_count);
     }
 }
