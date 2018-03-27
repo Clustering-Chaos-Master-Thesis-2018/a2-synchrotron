@@ -17,6 +17,11 @@ SCRIPT_TAG = ".//script"
 SCRIPT_FILE = os.path.join(TEST_DIRECTORY, "simulationScript.js")
 
 LOCAL_SIMULATION_DIRECTORY = "simulation_files"
+
+TEST_DIRECTORY_STRUCTURE = {
+  "outputs": ["log/error", "log/round", "log/power"]
+}
+
 LOCAL_LOG_DIRECTORY = "log"
 LOCAL_ERROR_DIRECTORY = "error"
 LOCAL_COOJA_LOG_FILE = "cooja.log"
@@ -40,12 +45,11 @@ def create_test_suite_folder_structure(test_suite_name):
 def create_local_test_folder(test_suite_directory, simulation_file):
   folder_name = os.path.splitext(os.path.basename(simulation_file))[0]
   local_test_folder = os.path.join(test_suite_directory, folder_name)
-  log_folder = os.path.join(local_test_folder, LOCAL_LOG_DIRECTORY)
-  error_folder = os.path.join(local_test_folder, LOCAL_ERROR_DIRECTORY)
-
   os.makedirs(local_test_folder, exist_ok=True)
-  os.makedirs(log_folder, exist_ok=True)
-  os.makedirs(error_folder, exist_ok=True)
+
+  for output_folder in TEST_DIRECTORY_STRUCTURE["outputs"]:
+    output_directory = os.path.join(local_test_folder, output_folder)
+    os.makedirs(output_directory, exist_ok=True)
 
   return local_test_folder
 
