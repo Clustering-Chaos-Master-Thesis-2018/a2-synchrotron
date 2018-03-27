@@ -29,17 +29,17 @@ GET_COMMIT_HASH = ["git", "log", "-n 1", "--pretty=format:\"%h\""]
 def get_global_simulation_files(folder):
   return [os.path.join(root, *directory, file) for root, directory, files in os.walk(folder) for file in files if file.endswith(TEST_FILE_EXTENSION) ]
 
-def create_test_folder_structure(test_name):
-  test_folder = os.path.join(TEST_DIRECTORY, test_name)
-  simulation_folder = os.path.join(test_folder, LOCAL_SIMULATION_DIRECTORY)
+def create_test_suite_folder_structure(test_suite_name):
+  test_suite_folder = os.path.join(TEST_DIRECTORY, test_suite_name)
+  simulation_folder = os.path.join(test_suite_folder, LOCAL_SIMULATION_DIRECTORY)
 
   os.makedirs(simulation_folder, exist_ok=True)
 
-  return test_folder, simulation_folder
+  return test_suite_folder, simulation_folder
 
-def create_local_test_folder(test_directory, simulation_file):
+def create_local_test_folder(test_suite_directory, simulation_file):
   folder_name = os.path.splitext(os.path.basename(simulation_file))[0]
-  local_test_folder = os.path.join(test_directory, folder_name)
+  local_test_folder = os.path.join(test_suite_directory, folder_name)
   log_folder = os.path.join(local_test_folder, LOCAL_LOG_DIRECTORY)
   error_folder = os.path.join(local_test_folder, LOCAL_ERROR_DIRECTORY)
 
@@ -66,7 +66,7 @@ def create_script_plugin_tree(root):
 
   return script_tag
 
-def create_local_simulation_files(test_folder, output_folder):
+def create_local_simulation_files(test_suite_folder, output_folder):
   """ Inserts the simulation script into the csc files and saves the new csc files to the output_folder."""
   simulation_files = get_global_simulation_files(GLOBAL_SIMULATION_DIRECTORY)
   simulation_script = ""
@@ -84,8 +84,8 @@ def create_local_simulation_files(test_folder, output_folder):
     if script_tag is None:
       script_tag = create_script_plugin_tree(root)
 
-    log_path = create_log_path_variable(test_folder, os.path.basename(simulation_file))
-    error_path = create_error_path_variable(test_folder, os.path.basename(simulation_file))
+    log_path = create_log_path_variable(test_suite_folder, os.path.basename(simulation_file))
+    error_path = create_error_path_variable(test_suite_folder, os.path.basename(simulation_file))
     timeout_call = create_timeout_function_call(SIMULATION_TIMEOUT)
     script_tag.text = log_path + error_path + timeout_call + simulation_script
 
@@ -95,8 +95,8 @@ def create_local_simulation_files(test_folder, output_folder):
   return local_files
 
 
-def run_test(test_folder, file):
-  path = create_local_test_folder(test_folder, file)
+def run_test(test_suite_folder, file):
+  path = create_local_test_folder(test_suite_folder, file)
   # print("Running test: " + os.path.basename(file) + " for " + str(SIMULATION_TIMEOUT) + " seconds... ", end="", flush=True)
   with open(os.path.join(path, LOCAL_COOJA_LOG_FILE), "w") as cooja_log:
     output = ""
@@ -117,20 +117,20 @@ def run_test(test_folder, file):
 def main(args):
   commit_hash = subprocess.check_output(GET_COMMIT_HASH)
   name = (f"{args[1]}_" if len(args) > 1 else "")
-  test_name = f"{name}{datetime.datetime.now():%Y-%m-%d_%H:%M:%S}"
+  test_suite_name = f"{name}{datetime.datetime.now():%Y-%m-%d_%H:%M:%S}"
 
   if len(args) > 1 and args[1] == "dev":
-    test_name = "dev"
+    test_suite_name = "dev"
 
-  test_folder, simulation_folder = create_test_folder_structure(test_name)
-  local_files = create_local_simulation_files(test_folder, simulation_folder)
-  print("Running test suite: " + test_name + " with " + str(len(local_files)) + " test(s)")
+  test_suite_folder, simulation_folder = create_test_suite_folder_structure(test_suite_name)
+  local_files = create_local_simulation_files(test_suite_folder, simulation_folder)
+  print("Running test suite: " + test_suite_name + " with " + str(len(local_files)) + " test(s)")
 
   test_statistics = ""
   # We can use a with statement to ensure threads are cleaned up promptly
   with concurrent.futures.ThreadPoolExecutor() as executor:
       # Start the load operations and mark each future with its URL
-      future_to_test = {executor.submit(run_test, test_folder, file): file for file in local_files}
+      future_to_test = {executor.submit(run_test, test_suite_folder, file): file for file in local_files}
       for test in concurrent.futures.as_completed(future_to_test):
           file = future_to_test[test]
           data = test.result()
@@ -140,7 +140,7 @@ def main(args):
           else:
             print("Error occured in cooja running test: %r" %(os.path.basename(file)))
 
-  information = f"""Name: {test_name}
+  information = f"""Name: {test_suite_name}
     Time: {datetime.datetime.now():%Y-%m-%d_%H:%M:%S}
     Timeout: {SIMULATION_TIMEOUT} seconds
     Commit: {commit_hash}
@@ -148,7 +148,7 @@ def main(args):
 
   information += test_statistics
 
-  with open (os.path.join(test_folder, LOCAL_TEST_INFORMATION_FILE), "w") as info:
+  with open (os.path.join(test_suite_folder, LOCAL_TEST_INFORMATION_FILE), "w") as info:
     info.write(information)
 
 if __name__ == '__main__':
