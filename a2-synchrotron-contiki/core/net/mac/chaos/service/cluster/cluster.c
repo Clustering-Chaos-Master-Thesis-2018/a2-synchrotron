@@ -19,13 +19,13 @@
 #include "lib.h"
 
 typedef struct __attribute__((packed)) {
-    node_id_t id;
+    uint8_t id;
     uint8_t hop_count;
 } cluster_head_information_t;
 
 typedef struct __attribute__((packed)) {
     uint8_t cluster_head_count;
-    node_id_t source_id;
+    uint8_t source_id;
     cluster_head_information_t cluster_head_list[NODE_LIST_LEN];
 } cluster_t;
 
