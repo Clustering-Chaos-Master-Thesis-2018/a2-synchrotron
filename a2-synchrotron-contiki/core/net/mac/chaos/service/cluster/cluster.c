@@ -36,7 +36,6 @@ unsigned long total_energy_used = 0;
 
 static chaos_state_t process_cluster_head(uint16_t, uint16_t, chaos_state_t, int, size_t, cluster_t*, cluster_t*, uint8_t**);
 static chaos_state_t process_cluster_node(uint16_t, uint16_t, chaos_state_t, int, size_t, cluster_t*, cluster_t*, uint8_t**);
-static CHState determine_cluster_head_state(node_id_t);
 static void round_begin(const uint16_t round_count, const uint8_t id);
 static int is_pending(const uint16_t round_count);
 static void round_begin_sniffer(chaos_header_t* header);
@@ -61,9 +60,6 @@ static inline int merge_lists(cluster_t* cluster_tx, cluster_t* cluster_rx);
 
 #define CHAOS_RESTART_MAX 10
 #define CHAOS_RESTART_MIN 4
-
-//The percentage chance for a node to become a cluster head.
-#define CLUSTER_HEAD_ELECTION_CHANCE 10
 
 CHAOS_SERVICE(cluster, (7*(RTIMER_SECOND/1000)+0*(RTIMER_SECOND/1000)/2), 260 , 0, is_pending, round_begin, round_begin_sniffer, round_end_sniffer);
 
@@ -116,10 +112,6 @@ static chaos_state_t process(uint16_t round_count, uint16_t slot,
     cluster_t* const cluster_tx = (cluster_t*) tx_payload;
     cluster_tx->source_id = node_id;
 
-    // if (current_state == CHAOS_INIT && IS_INITIATOR()) {
-    //     return CHAOS_TX;
-    // }
-
     if(current_state == CHAOS_RX) {
         if(chaos_txrx_success) {
             invalid_rx_count = 0;
@@ -159,7 +151,7 @@ static chaos_state_t process_cluster_head(uint16_t round_count, uint16_t slot,
 
     if(current_state == CHAOS_RX) {
         delta |= merge_lists(tx_payload, rx_payload);
-        /*delta |=*/ set_best_available_hop_count(tx_payload, &local_cluster_data);
+        set_best_available_hop_count(tx_payload, &local_cluster_data);
         consecutive_rx++;
 
         const int node_in_list = index_of(tx_payload->cluster_head_list, tx_payload->cluster_head_count, node_id);
@@ -191,8 +183,7 @@ static chaos_state_t process_cluster_node(uint16_t round_count, uint16_t slot,
 
     if (current_state == CHAOS_RX) {
         delta |= merge_lists(tx_payload, rx_payload);
-        /*delta |= */set_best_available_hop_count(tx_payload, &local_cluster_data);
-        // delta |= chaos_random_generator_fast() % 100 < 5;
+        set_best_available_hop_count(tx_payload, &local_cluster_data);
         merge_lists(&local_cluster_data, tx_payload);
         if (delta) {
             next_state = CHAOS_TX;
@@ -202,26 +193,10 @@ static chaos_state_t process_cluster_node(uint16_t round_count, uint16_t slot,
     return next_state;
 }
 
-static CHState determine_cluster_head_state(node_id_t node_id) {
-    return (chaos_random_generator_fast() % 100) < CLUSTER_HEAD_ELECTION_CHANCE || node_id == 1 ?
-            FINAL : NOT_CH;
-}
-
 static void round_begin(const uint16_t round_count, const uint8_t app_id) {
     is_cluster_service_running = 1;
     cluster_t initial_local_cluster_data;
     memset(&initial_local_cluster_data, 0, sizeof(cluster_t));
-    // memset(&local_cluster_data, 0, sizeof(cluster_t));
-
-    // if(cluster_head_not_initialized()) {
-        // cluster_head_state = determine_cluster_head_state(node_id);
-    // }
-
-    // if(is_cluster_head()) {
-    //     initial_local_cluster_data.cluster_head_list[0].id= node_id;
-    //     initial_local_cluster_data.cluster_head_list[0].hop_count = 1;
-    //     initial_local_cluster_data.cluster_head_count++;
-    // }
 
     invalid_rx_count = 0;
     restart_threshold = generate_restart_threshold();
@@ -283,7 +258,13 @@ ALWAYS_ACTUALLY_INLINE static void log_cluster_heads(cluster_head_information_t 
     const uint8_t valid_cluster_head_count = filter_valid_cluster_heads(cluster_head_list, cluster_head_count, valid_cluster_heads, CLUSTER_COMPETITION_RADIUS);
     char res[20];
     ftoa(CH_probablity, res, 4);
-    sprintf(str, "cluster: rd: %u, CH election probability: %s, cluster_head_count: %u, valid_cluster_head_count: %u, picked_cluster: %u, cluster_index: %u, available_clusters: [ ", chaos_get_round_number(), res, cluster_head_count, valid_cluster_head_count, cluster_id);
+    sprintf(str, "cluster: rd: %u, CH election probability: %s, cluster_head_count: %u, valid_cluster_head_count: %u, picked_cluster: %u, cluster_index: %u, available_clusters: [ ",
+     chaos_get_round_number(),
+     res,
+     cluster_head_count,
+     valid_cluster_head_count,
+     cluster_id,
+     cluster_index);
 
     uint8_t i;
     for(i = 0; i < cluster_head_count; i++) {
