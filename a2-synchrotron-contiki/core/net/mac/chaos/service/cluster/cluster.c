@@ -159,7 +159,7 @@ static chaos_state_t process_cluster_head(uint16_t round_count, uint16_t slot,
 
     if(current_state == CHAOS_RX) {
         delta |= merge_lists(tx_payload, rx_payload);
-        delta |= set_best_available_hop_count(tx_payload, &local_cluster_data);
+        /*delta |=*/ set_best_available_hop_count(tx_payload, &local_cluster_data);
         consecutive_rx++;
 
         const int node_in_list = index_of(tx_payload->cluster_head_list, tx_payload->cluster_head_count, node_id);
@@ -191,8 +191,8 @@ static chaos_state_t process_cluster_node(uint16_t round_count, uint16_t slot,
 
     if (current_state == CHAOS_RX) {
         delta |= merge_lists(tx_payload, rx_payload);
-        delta |= set_best_available_hop_count(tx_payload, &local_cluster_data);
-        delta |= chaos_random_generator_fast() % 100 < 30;
+        /*delta |= */set_best_available_hop_count(tx_payload, &local_cluster_data);
+        // delta |= chaos_random_generator_fast() % 100 < 30;
         merge_lists(&local_cluster_data, tx_payload);
         if (delta) {
             next_state = CHAOS_TX;
