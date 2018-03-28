@@ -211,7 +211,6 @@ static void round_begin(const uint16_t round_count, const uint8_t app_id) {
     is_cluster_service_running = 1;
     cluster_t initial_local_cluster_data;
     memset(&initial_local_cluster_data, 0, sizeof(cluster_t));
-    COOJA_DEBUG_PRINTF("cluster competition radius: %d", CLUSTER_COMPETITION_RADIUS);
     // memset(&local_cluster_data, 0, sizeof(cluster_t));
 
     // if(cluster_head_not_initialized()) {
@@ -254,7 +253,7 @@ static cluster_head_information_t pick_best_cluster(const cluster_head_informati
     const uint8_t valid_cluster_head_count = filter_valid_cluster_heads(cluster_head_list, size, valid_cluster_heads, smallest_hop_count);;
 
     cluster_head_information_t best_cluster_head = valid_cluster_heads[chaos_random_generator_fast() % valid_cluster_head_count];
-    COOJA_DEBUG_PRINTF("cluster, valid cluster count %u, chosen id: %d \n", valid_cluster_head_count, best_cluster_head.id);
+    // COOJA_DEBUG_PRINTF("cluster, valid cluster count %u, chosen id: %d \n", valid_cluster_head_count, best_cluster_head.id);
     return best_cluster_head;
 }
 
@@ -280,7 +279,11 @@ static void round_begin_sniffer(chaos_header_t* header){
 
 ALWAYS_ACTUALLY_INLINE static void log_cluster_heads(cluster_head_information_t *cluster_head_list, uint8_t cluster_head_count) {
     char str[200];
-    sprintf(str, "cluster: rd: %u, cluster_head_count: %u, picked_cluster: %u, cluster_index: %u, available_clusters: [ ", chaos_get_round_number(), cluster_head_count, cluster_id);
+    cluster_head_information_t valid_cluster_heads[NODE_LIST_LEN];
+    const uint8_t valid_cluster_head_count = filter_valid_cluster_heads(cluster_head_list, cluster_head_count, valid_cluster_heads, CLUSTER_COMPETITION_RADIUS);
+    char res[20];
+    ftoa(CH_probablity, res, 4);
+    sprintf(str, "cluster: rd: %u, CH election probability: %s, cluster_head_count: %u, valid_cluster_head_count: %u, picked_cluster: %u, cluster_index: %u, available_clusters: [ ", chaos_get_round_number(), res, cluster_head_count, valid_cluster_head_count, cluster_id);
 
     uint8_t i;
     for(i = 0; i < cluster_head_count; i++) {
@@ -343,9 +346,7 @@ static void heed_repeat(const cluster_head_information_t* cluster_head_list, uin
     if(CH_probablity >= 1.0f) {
         CH_probablity = 1.0f;
     }
-    char res[20];
-    ftoa(CH_probablity, res, 4);
-    COOJA_DEBUG_PRINTF("cluster, CH probability: %s\n", res);
+
 }
 
 static void round_end_sniffer(const chaos_header_t* header){
