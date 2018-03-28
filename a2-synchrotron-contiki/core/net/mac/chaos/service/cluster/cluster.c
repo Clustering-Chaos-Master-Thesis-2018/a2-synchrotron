@@ -80,9 +80,6 @@ uint32_t invalid_rx_count = 0;
 
 uint8_t is_cluster_service_running = 0;
 
-//Hop count.
-const uint8_t CLUSTER_HEAD_COMPETITION_RADIUS = 1;
-
 float CH_probablity = -1.0f;
 float previous_CH_probability = -1.0f;
 //Average energy used per round * some number of rounds
@@ -214,6 +211,7 @@ static void round_begin(const uint16_t round_count, const uint8_t app_id) {
     is_cluster_service_running = 1;
     cluster_t initial_local_cluster_data;
     memset(&initial_local_cluster_data, 0, sizeof(cluster_t));
+    COOJA_DEBUG_PRINTF("cluster competition radius: %d", CLUSTER_COMPETITION_RADIUS);
     // memset(&local_cluster_data, 0, sizeof(cluster_t));
 
     // if(cluster_head_not_initialized()) {
@@ -310,7 +308,7 @@ static void heed_repeat(const cluster_head_information_t* cluster_head_list, uin
         return;
     }
     cluster_head_information_t valid_cluster_heads[NODE_LIST_LEN];
-    uint8_t valid_cluster_head_count = filter_valid_cluster_heads(cluster_head_list, cluster_head_count, valid_cluster_heads, CLUSTER_HEAD_COMPETITION_RADIUS);
+    uint8_t valid_cluster_head_count = filter_valid_cluster_heads(cluster_head_list, cluster_head_count, valid_cluster_heads, CLUSTER_COMPETITION_RADIUS);
     if(valid_cluster_head_count > 0) {
         cluster_id = pick_best_cluster(valid_cluster_heads, valid_cluster_head_count).id;
         cluster_index = index_of(cluster_head_list, cluster_head_count, cluster_id);
