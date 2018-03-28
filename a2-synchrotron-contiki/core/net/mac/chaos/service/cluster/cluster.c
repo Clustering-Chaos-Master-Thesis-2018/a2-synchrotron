@@ -122,7 +122,9 @@ static chaos_state_t process(uint16_t round_count, uint16_t slot,
             if(invalid_rx_count > restart_threshold) {
                 invalid_rx_count = 0;
                 restart_threshold = generate_restart_threshold();
-                next_state = CHAOS_TX;
+                cluster_tx->source_id = node_id;
+                update_hop_count(cluster_tx);
+                return CHAOS_TX;
             }
         }
     }
