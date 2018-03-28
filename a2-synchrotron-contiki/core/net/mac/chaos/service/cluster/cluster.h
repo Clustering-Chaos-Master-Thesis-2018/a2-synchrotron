@@ -17,4 +17,7 @@ typedef enum {
     FINAL
 } CHState;
 
+#undef CLUSTER_COMPETITION_RADIUS
+#define CLUSTER_COMPETITION_RADIUS _param_cluster_competition_radius
+
 #endif /* CHAOS_CLUSTER_H */
