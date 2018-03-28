@@ -129,7 +129,7 @@ static chaos_state_t process(uint16_t round_count, uint16_t slot,
             if(invalid_rx_count > restart_threshold) {
                 invalid_rx_count = 0;
                 restart_threshold = generate_restart_threshold();
-                return CHAOS_RX;
+                return CHAOS_TX;
             }
         }
     }
@@ -192,7 +192,7 @@ static chaos_state_t process_cluster_node(uint16_t round_count, uint16_t slot,
     if (current_state == CHAOS_RX) {
         delta |= merge_lists(tx_payload, rx_payload);
         /*delta |= */set_best_available_hop_count(tx_payload, &local_cluster_data);
-        // delta |= chaos_random_generator_fast() % 100 < 30;
+        // delta |= chaos_random_generator_fast() % 100 < 5;
         merge_lists(&local_cluster_data, tx_payload);
         if (delta) {
             next_state = CHAOS_TX;
