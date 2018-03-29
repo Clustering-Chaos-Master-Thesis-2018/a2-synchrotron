@@ -52,7 +52,7 @@ static inline int merge_lists(cluster_t* cluster_tx, cluster_t* cluster_rx);
 //The number of consecutive receive states we need to be in before forcing to send again.
 //In order to combat early termination. This should probably be changed to something more robust.
 #define CONSECUTIVE_RECEIVE_THRESHOLD 10
-#define CLUSTER_SERVICE_PENDING_THRESHOLD 17
+#define CLUSTER_SERVICE_PENDING_THRESHOLD 14
 
 //What is this
 #define FLAGS_LEN(node_count)   ((node_count / 8) + ((node_count % 8) ? 1 : 0))
@@ -81,7 +81,7 @@ float CH_probablity = -1.0f;
 float previous_CH_probability = -1.0f;
 //Average energy used per round * some number of rounds
 uint64_t MAX_ENERGY = (uint64_t)30000 * (uint64_t)1000;
-float C_PROB = 0.005f;
+float C_PROB = 0.01f;
 
 CHState cluster_head_state = NOT_INITIALIZED;
 
