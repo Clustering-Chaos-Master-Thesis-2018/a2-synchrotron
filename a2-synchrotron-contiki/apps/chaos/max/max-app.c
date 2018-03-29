@@ -78,7 +78,7 @@ PROCESS_THREAD(chaos_max_app_process, ev, data)
 
   printf("starting powertrace\n");
   int n = 1; // 1 second reporting cycle
-  powertrace_start(CLOCK_SECOND * n); 
+  powertrace_start(CLOCK_SECOND * n);
 
 
   NETSTACK_MAC.on();
