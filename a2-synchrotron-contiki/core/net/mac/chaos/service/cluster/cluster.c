@@ -264,7 +264,7 @@ ALWAYS_ACTUALLY_INLINE static void log_cluster_heads(cluster_head_information_t 
     const uint8_t valid_cluster_head_count = filter_valid_cluster_heads(cluster_head_list, cluster_head_count, valid_cluster_heads, CLUSTER_COMPETITION_RADIUS);
     char res[20];
     ftoa(CH_probablity, res, 4);
-    sprintf(str, "cluster: rd: %u, CH election probability: %s, cluster_head_count: %u, valid_cluster_head_count: %u, picked_cluster: %u, cluster_index: %u, available_clusters: [ ",
+    sprintf(str, "cluster: rd: %u, CH election probability: %s, cluster_head_count: %u, valid_cluster_head_count: %u, picked_cluster: %u, cluster_index: %u.\n available_clusters: [ ",
      chaos_get_round_number(),
      res,
      cluster_head_count,
@@ -275,7 +275,11 @@ ALWAYS_ACTUALLY_INLINE static void log_cluster_heads(cluster_head_information_t 
     uint8_t i;
     for(i = 0; i < cluster_head_count; i++) {
         char tmp[20];
-        sprintf(tmp, (i == cluster_head_count-1 ? "%u -> %u ":"%u -> %u, "), cluster_head_list[i].id, cluster_head_list[i].hop_count);
+        sprintf(tmp, (i == cluster_head_count-1 ? "%u -> (d: %u, rx_count: %u) ":"%u -> (d: %u, rx_count: %u), "),
+            cluster_head_list[i].id,
+            cluster_head_list[i].hop_count,
+            neighbour_list[cluster_head_list[i].id]);
+
         strcat(str, tmp);
     }
 
