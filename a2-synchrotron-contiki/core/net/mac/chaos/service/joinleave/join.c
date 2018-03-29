@@ -397,6 +397,7 @@ static chaos_state_t process(uint16_t round_count, uint16_t slot,
         delta = 1;
         //drop local state
         memcpy(join_tx, join_rx, sizeof(join_t));
+        memcpy(join_rx, join_tx, sizeof(join_t));
         chaos_set_node_count(join_rx->node_count);
 
         //get the index
