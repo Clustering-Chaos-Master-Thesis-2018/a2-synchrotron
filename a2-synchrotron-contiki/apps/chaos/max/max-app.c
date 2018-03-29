@@ -130,6 +130,8 @@ static void round_begin(const uint16_t round_count, const uint8_t id){
 #if CHAOS_CLUSTER
   if(!IS_CLUSTER_HEAD() || (IS_CLUSTER_HEAD() && !IS_CLUSTER_HEAD_ROUND())) {
     max_value = node_id;
+  } else {
+    max_value = MAX(max_value, node_id);
   }
 #endif /* CHAOS_CLUSTER */
   complete = max_round_begin(round_count, id, &max_value, &flags);
