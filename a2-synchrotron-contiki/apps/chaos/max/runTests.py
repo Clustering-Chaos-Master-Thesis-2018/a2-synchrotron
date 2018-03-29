@@ -23,7 +23,6 @@ TEST_DIRECTORY_STRUCTURE = {
 }
 
 LOCAL_LOG_DIRECTORY = "log"
-LOCAL_ERROR_DIRECTORY = "error"
 LOCAL_COOJA_LOG_FILE = "cooja.log"
 LOCAL_TEST_INFORMATION_FILE = "information.txt"
 # Time is in seconds.
@@ -62,10 +61,6 @@ def create_log_path_variable(base_path, file_name):
     return f'var logpath = "{os.path.join(base_path, os.path.splitext(file_name)[0], LOCAL_LOG_DIRECTORY)}/";\n'
 
 
-def create_error_path_variable(base_path, file_name):
-    return f'var errorpath = "{os.path.join(base_path, os.path.splitext(file_name)[0], LOCAL_ERROR_DIRECTORY)}/";\n'
-
-
 def create_timeout_function_call(time):
     return f"TIMEOUT({ str(int(time) * 1000) });\n"
 
@@ -101,11 +96,9 @@ def create_local_simulation_files(test_suite_folder, output_folder):
 
         log_path = create_log_path_variable(
             test_suite_folder, os.path.basename(simulation_file))
-        error_path = create_error_path_variable(
-            test_suite_folder, os.path.basename(simulation_file))
         timeout_call = create_timeout_function_call(SIMULATION_TIMEOUT)
         script_tag.text = "".join(
-            [log_path, error_path, timeout_call, simulation_script]
+            [log_path, timeout_call, simulation_script]
         )
 
         local_files.append(output_file_path)
