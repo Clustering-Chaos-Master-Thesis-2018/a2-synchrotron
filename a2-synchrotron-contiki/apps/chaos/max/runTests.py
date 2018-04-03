@@ -147,10 +147,12 @@ def run_test(test_suite_folder, file):
         return None
 
 
-def main(args):
-    commit_hash = subprocess.check_output(GET_COMMIT_HASH)
+def format_test_suite_name(args):
     name = (f"{args[1]}_" if len(args) > 1 else "")
-    test_suite_name = f"{name}{datetime.datetime.now():%Y-%m-%d_%H:%M:%S}"
+    return f"{name}{datetime.datetime.now():%Y-%m-%d_%H:%M:%S}"
+
+def main(args):
+    test_suite_name = format_test_suite_name(args)
 
     if len(args) > 1 and args[1] == "dev":
         test_suite_name = "dev"
@@ -180,6 +182,7 @@ def main(args):
                 print("Error occured in cooja running test: %r" %
                       (os.path.basename(file)))
 
+    commit_hash = subprocess.check_output(GET_COMMIT_HASH)
     information = f"""Name: {test_suite_name}
         Time: {datetime.datetime.now():%Y-%m-%d_%H:%M:%S}
         Timeout: {SIMULATION_TIMEOUT} seconds
