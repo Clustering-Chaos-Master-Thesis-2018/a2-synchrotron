@@ -129,6 +129,8 @@ static void round_begin(const uint16_t round_count, const uint8_t id){
   } else {
     max_value = MAX(max_value, node_id);
   }
+#else
+  max_value = node_id;
 #endif /* CHAOS_CLUSTER */
   complete = max_round_begin(round_count, id, &max_value, &flags);
   off_slot = max_get_off_slot();
