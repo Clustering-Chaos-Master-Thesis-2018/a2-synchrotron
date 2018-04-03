@@ -91,6 +91,15 @@ def create_local_simulation_files(test_suite_folder, output_folder):
         tree = ET.parse(simulation_file)
         root = tree.getroot()
 
+
+        firmware_tag = root.find(".//firmware")
+        if firmware_tag is None:
+            motetype_tag = root.find(".//motetype")
+            firmware_tag = ET.SubElement(motetype_tag, "firmware")
+            firmware_tag.set("EXPORT", "copy")
+
+        firmware_tag.text = f"[CONTIKI_DIR]/apps/chaos/max/{test_suite_folder}/max-app.sky"
+
         script_tag = root.find(SCRIPT_TAG)
         if script_tag is None:
             script_tag = create_script_plugin_tree(root)
