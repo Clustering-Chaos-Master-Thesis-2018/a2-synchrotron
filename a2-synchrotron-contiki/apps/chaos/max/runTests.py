@@ -7,6 +7,7 @@ import datetime
 import concurrent.futures
 import re
 import xml.etree.ElementTree as ET
+import shutil
 
 RUN_TEST_COMMAND = ["./runTest"]
 TEST_DIRECTORY = "tests"
@@ -149,6 +150,7 @@ def main(args):
         test_suite_name)
     local_files = create_local_simulation_files(
         test_suite_folder, simulation_folder)
+    shutil.copyfile("max-app.sky", os.path.join(test_suite_folder, "max-app.sky"))
     print("Running test suite: " + test_suite_name +
           " with " + str(len(local_files)) + " test(s)")
 
