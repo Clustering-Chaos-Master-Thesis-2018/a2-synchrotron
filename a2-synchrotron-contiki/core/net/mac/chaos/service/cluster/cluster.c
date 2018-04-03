@@ -351,6 +351,22 @@ static void round_end_sniffer(const chaos_header_t* header){
     }
 }
 
+static ALWAYS_INLINE uint8_t prune_cluster_head_list(cluster_head_information_t* cluster_head_list, uint8_t length) {
+  cluster_head_information_t merge[NODE_LIST_LEN];
+  memset(merge, 0, sizeof(merge));
+
+  int i, j = 0;
+  for (i = 0; i < length; ++i)  {
+    if(cluster_head_list[i].hop_count <= CLUSTER_COMPETITION_RADIUS) {
+        merge[j++] = cluster_head_list[i];
+    } else {
+        COOJA_DEBUG_PRINTF("cluster pruning id: %d, hop count %d\n", cluster_head_list[i].id, cluster_head_list[i].hop_count);
+    }
+  }
+  memcpy(cluster_head_list, merge, sizeof(merge));
+  return j;
+}
+
 static inline int merge_lists(cluster_t* cluster_tx, cluster_t* cluster_rx) {
   uint8_t index_rx = 0;
   uint8_t index_tx = 0;
@@ -360,17 +376,23 @@ static inline int merge_lists(cluster_t* cluster_tx, cluster_t* cluster_rx) {
   cluster_head_information_t merge[NODE_LIST_LEN];
   memset(merge, 0, sizeof(merge));
 
+  uint8_t size = prune_cluster_head_list(cluster_rx->cluster_head_list, cluster_rx->cluster_head_count);
+  if(size != cluster_rx->cluster_head_count) {
+    COOJA_DEBUG_PRINTF("cluster prune before %u, after %u\n", cluster_rx->cluster_head_count, size);
+  }
+  cluster_rx->cluster_head_count = size;
+
   while ((index_tx < cluster_tx->cluster_head_count || index_rx < cluster_rx->cluster_head_count ) && index_merge < NODE_LIST_LEN) {
     if (index_tx >= cluster_tx->cluster_head_count || (index_rx < cluster_rx->cluster_head_count && cluster_rx->cluster_head_list[index_rx].id < cluster_tx->cluster_head_list[index_tx].id)) {
       merge[index_merge] = cluster_rx->cluster_head_list[index_rx];
       index_merge++;
       index_rx++;
-      delta = 1; //arrays differs, so TX
+      delta = 1;
     } else if (index_rx >= cluster_rx->cluster_head_count || (index_tx < cluster_tx->cluster_head_count && cluster_rx->cluster_head_list[index_rx].id > cluster_tx->cluster_head_list[index_tx].id)) {
       merge[index_merge] = cluster_tx->cluster_head_list[index_tx];
       index_merge++;
       index_tx++;
-      delta = 1; //arrays differs, so TX
+      delta = 1;
     } else { //(remote.cluster_head_list[remote_index] == local.cluster_head_list[local_index]){
       merge[index_merge] = cluster_rx->cluster_head_list[index_rx];
       index_merge++;
@@ -379,14 +401,9 @@ static inline int merge_lists(cluster_t* cluster_tx, cluster_t* cluster_rx) {
     }
   }
 
-  /* New overflow? */
-  if (index_merge >= NODE_LIST_LEN && (index_rx < cluster_rx->cluster_head_count || index_tx < cluster_tx->cluster_head_count)) {
-    // cluster_tx->overflow = 1;
-    delta = 1; //arrays differs, so TX
-  }
+  memcpy(cluster_tx->cluster_head_list, merge, sizeof(merge));
   cluster_tx->cluster_head_count = index_merge;
 
-  memcpy(cluster_tx->cluster_head_list, merge, sizeof(merge));
   return delta;
 }
 static inline uint8_t set_best_available_hop_count(cluster_t* destination, const cluster_t* source) {
