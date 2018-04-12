@@ -15,3 +15,7 @@ load_all_nodes_round_data <- function(test_path) {
   #dfs_order <- lapply(dfs, function(x) x[["nodeid"]][[1]]) # extract nodeid from each data frame
   #dfs_internally_sorted <- dfs[order(unlist(dfs_order))] # sort using the nodeid
 }
+
+clusterHeadIds <- function(roundData) {
+  as.vector(unique(roundData[["cluster_id"]]))
+}
