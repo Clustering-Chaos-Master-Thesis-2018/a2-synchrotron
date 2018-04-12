@@ -97,11 +97,9 @@ red <- rgb(0.7,0.1,0.1,0.8)
 green <- rgb(0.1,0.7,0.1,0.8)
 blue <- rgb(0.1,0.1,0.7,0.8)
 
-plot_reliability_result <- function(result) {
-  ma <- max(result[1,])
-  mi <- min(result[1,])
-  range <- ma - mi
-  plot(result[1,], ylim=c(mi-range*0.1,ma+range*0.1), col=green, lwd=3, type="b", pch=20, cex=4, bty="l", ylab = "reliability", xlab = "node spread", xaxt='n')
+plot_reliability_result <- function(result, yMax, yMin) {
+  range <- yMax - yMin
+  plot(result[1,], ylim=c(yMin-range*0.1,yMax+range*0.1), col=green, lwd=3, type="b", pch=20, cex=4, bty="l", ylab = "Reliability", xlab = "Node spread", xaxt='n')
   
   axis(1, at=1:3, labels=c("100", "500", "1000"))
   #lines(result[1,]-0.00001, ylim=c(mi-range*0.1,ma+range*0.1), col=rgb(0.1,0.7,0.1,0.8), lwd=3, type="b", pch=20, cex=4, bty="l", ylab = "reliability", xlab = "competition radius")
@@ -128,24 +126,34 @@ plot_test_suite_results <- function(tables) {
 }
 
 
+# test1 <- "50_nodes-comp_radius_1_2018-03-29_11:41:46"
+# test2 <- "50_nodes-comp_radius_2_2018-03-29_11:42:11"
+# test3 <- "50_nodes-comp_radius_3_2018-03-29_11:42:29"
 
-test_suite_path <- paste(working_directory, "50_nodes-comp_radius_1_2018-03-29_11:41:46", sep="/")
+test1 <- "50_nodes-comp_radius_1_2018-04-03_22:03:08"
+test2 <- "50_nodes-comp_radius_2_2018-03-29_11:42:11"
+test3 <- "50_nodes-comp_radius_3_2018-03-29_11:42:29"
+
+test_suite_path <- paste(working_directory, test1, sep="/")
 tables1 <- load_test_suite(test_suite_path)
-result <- sapply(tables1, create_status_row)
-plot_reliability_result(result)
+result1 <- sapply(tables1, create_status_row)
 
-test_suite_path <- paste(working_directory, "50_nodes-comp_radius_2_2018-03-29_11:42:11", sep="/")
+
+test_suite_path <- paste(working_directory, test2, sep="/")
 tables2 <- load_test_suite(test_suite_path)
-result <- sapply(tables2, create_status_row)
-line_reliability_result(result, red)
+result2 <- sapply(tables2, create_status_row)
 
-test_suite_path <- paste(working_directory, "50_nodes-comp_radius_3_2018-03-29_11:42:29", sep="/")
+
+test_suite_path <- paste(working_directory, test3, sep="/")
 tables3 <- load_test_suite(test_suite_path)
-result <- sapply(tables3, create_status_row)
-line_reliability_result(result, blue)
+result3 <- sapply(tables3, create_status_row)
 
+# to find y bounds
+results <- c(result1[1,],result2[1,],result3[1,])
 
-
+plot_reliability_result(result1, max(results), min(results))
+line_reliability_result(result2, red)
+line_reliability_result(result3, blue)
 
 #plot_reliability_result(result)
 #print(result)
