@@ -1,6 +1,7 @@
 
 
 #source("Completion.R")
+library(functional)
 source("utils.R")
 source("LocationsMap.R")
 
