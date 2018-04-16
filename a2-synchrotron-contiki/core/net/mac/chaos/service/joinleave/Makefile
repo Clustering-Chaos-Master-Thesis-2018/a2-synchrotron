@@ -1,1 +1,1 @@
-CONTIKI_SOURCEFILES += join.c
+CONTIKI_SOURCEFILES += join.c cluster_join.c
