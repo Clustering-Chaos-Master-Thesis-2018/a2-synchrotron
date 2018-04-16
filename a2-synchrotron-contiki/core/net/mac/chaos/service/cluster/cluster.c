@@ -123,9 +123,6 @@ static chaos_state_t process(uint16_t round_count, uint16_t slot,
             invalid_rx_count = 0;
             neighbour_list[cluster_rx->source_id]++;
 
-            COOJA_DEBUG_PRINTF("catchup process local: %d, rx : %d",
-            local_cluster_data.consecutive_cluster_round_count,
-            cluster_rx->consecutive_cluster_round_count);
             if (local_cluster_data.consecutive_cluster_round_count == -1) {
                 local_cluster_data.consecutive_cluster_round_count = cluster_rx->consecutive_cluster_round_count;
             }
@@ -137,7 +134,6 @@ static chaos_state_t process(uint16_t round_count, uint16_t slot,
                 cluster_tx->source_id = node_id;
                 update_hop_count(cluster_tx);
                 cluster_tx->consecutive_cluster_round_count = local_cluster_data.consecutive_cluster_round_count;
-                COOJA_DEBUG_PRINTF("catchup process tx1 %d", cluster_tx->consecutive_cluster_round_count);
                 return CHAOS_TX;
             }
         }
@@ -154,7 +150,6 @@ static chaos_state_t process(uint16_t round_count, uint16_t slot,
         cluster_tx->source_id = node_id;
         update_hop_count(cluster_tx);
         cluster_tx->consecutive_cluster_round_count = local_cluster_data.consecutive_cluster_round_count;
-        COOJA_DEBUG_PRINTF("catchup process tx2 %d", cluster_tx->consecutive_cluster_round_count);
     }
     return next_state;
 }
@@ -222,17 +217,13 @@ static void round_begin(const uint16_t round_count, const uint8_t app_id) {
     cluster_t initial_local_cluster_data;
     memset(&initial_local_cluster_data, 0, sizeof(cluster_t));
 
-    COOJA_DEBUG_PRINTF("catchup round begin 1: %d", local_cluster_data.consecutive_cluster_round_count);
     if (IS_INITIATOR()) {
         local_cluster_data.consecutive_cluster_round_count++;
-        COOJA_DEBUG_PRINTF("catchup round begin 2: %d", local_cluster_data.consecutive_cluster_round_count);
     } else {
-        COOJA_DEBUG_PRINTF("catchup round begin 3: %d", local_cluster_data.consecutive_cluster_round_count);
         if (local_cluster_data.consecutive_cluster_round_count != -1) {
             local_cluster_data.consecutive_cluster_round_count++;
         }
     }
-    COOJA_DEBUG_PRINTF("catchup round begin 4: %d", local_cluster_data.consecutive_cluster_round_count);
 
     invalid_rx_count = 0;
     restart_threshold = generate_restart_threshold();
