@@ -48,14 +48,15 @@
 #include "join.h"
 #include "testbed.h"
 #include "chaos-config.h"
+#include "chaos-cluster.h"
 
 #define ENABLE_COOJA_DEBUG COOJA
 #include "dev/cooja-debug.h"
 
 #if 1 //FAULTY_NODE_ID
-volatile uint8_t rx_pkt_crc_err[129] = {0};
-volatile uint8_t rx_pkt_copy[129] = {0};
-volatile join_debug_t join_debug_var = {0,0,0,0,0};
+// volatile uint8_t rx_pkt_crc_err[129] = {0};
+// volatile uint8_t rx_pkt_copy[129] = {0};
+// volatile join_debug_t join_debug_var = {0,0,0,0,0};
 #endif
 
 #ifndef JOIN_STRESS_TEST
@@ -163,41 +164,41 @@ static void do_sort_joined_nodes_map(){
   LEDS_OFF(LEDS_RED);
 }
 
-void join_print_nodes(void){
-  int i;
-  for( i=0; i<chaos_cluster_node_count; i++ ){
-    printf("%u:%u%s", joined_nodes_map[i][NODE_ID], joined_nodes_map[i][NODE_IDX], (((i+1) & 7) == 0) ? "\n" : ", " );
-  }
-}
+// void join_print_nodes(void){
+//   int i;
+//   for( i=0; i<chaos_cluster_node_count; i++ ){
+//     printf("%u:%u%s", joined_nodes_map[i][NODE_ID], joined_nodes_map[i][NODE_IDX], (((i+1) & 7) == 0) ? "\n" : ", " );
+//   }
+// }
 
-void join_init(){
-  //clear node information
-  chaos_cluster_node_index = 0;
-  chaos_cluster_node_count = 0;
+// void join_init(){
+//   //clear node information
+//   chaos_cluster_node_index = 0;
+//   chaos_cluster_node_count = 0;
 
-  //clear local state
-  commit_slot = 0;
-  off_slot = JOIN_ROUND_MAX_SLOTS;
-  complete_slot = 0;
-  complete = 0;
-  invalid_rx_count = 0;
-  tx_timeout_enabled = 0;
-  tx_count_complete = 0;
-  delta_at_slot = 0;
-  pending = 0;
-  is_join_round = 0;
+//   //clear local state
+//   commit_slot = 0;
+//   off_slot = JOIN_ROUND_MAX_SLOTS;
+//   complete_slot = 0;
+//   complete = 0;
+//   invalid_rx_count = 0;
+//   tx_timeout_enabled = 0;
+//   tx_count_complete = 0;
+//   delta_at_slot = 0;
+//   pending = 0;
+//   is_join_round = 0;
 
-  //initiator management
-  memset(&joined_nodes_map, 0, sizeof(joined_nodes_map));
-  memset(&joined_nodes_map_tmp, 0, sizeof(joined_nodes_map_tmp));
-  if( IS_INITIATOR() ){
-    chaos_cluster_node_index = 0;
-    joined_nodes[0] = node_id;
-    joined_nodes_map[0][NODE_IDX]=0;
-    joined_nodes_map[0][NODE_ID]=node_id;
-    chaos_cluster_node_count = 1;
-  }
-}
+//   //initiator management
+//   memset(&joined_nodes_map, 0, sizeof(joined_nodes_map));
+//   memset(&joined_nodes_map_tmp, 0, sizeof(joined_nodes_map_tmp));
+//   if( IS_INITIATOR() ){
+//     chaos_cluster_node_index = 0;
+//     joined_nodes[0] = node_id;
+//     joined_nodes_map[0][NODE_IDX]=0;
+//     joined_nodes_map[0][NODE_ID]=node_id;
+//     chaos_cluster_node_count = 1;
+//   }
+// }
 
 static inline int merge_lists(join_t* join_tx, join_t* join_rx) {
   uint8_t index_rx = 0;
@@ -559,37 +560,39 @@ static int get_flags_length(){
 
 static int is_pending( const uint16_t round_count ){
   //TODO: optimiziation, enable this after testing and bug fixing
-  if( round_count < JOIN_ROUNDS_AFTER_BOOTUP )
-  {
+  if( round_count < JOIN_ROUNDS_AFTER_BOOTUP && IS_CLUSTER_HEAD_ROUND()) {
     pending = 1;
+  } else if(!IS_CLUSTER_HEAD_ROUND()) {
+    pending = 0;
   }
+  COOJA_DEBUG_PRINTF("cluster, CLUSTER_join app pending: %d", pending);
   return pending;
   //return 1;
 }
 
-int join_last_round_is_complete( void ){
-  return complete_slot;
-}
+// int join_last_round_is_complete( void ){
+//   return complete_slot;
+// }
 
-uint16_t join_get_off_slot(){
-  return off_slot;
-}
+// uint16_t join_get_off_slot(){
+//   return off_slot;
+// }
 
-int join_is_in_round( void ){
-  return is_join_round;
-}
+// int join_is_in_round( void ){
+//   return is_join_round;
+// }
 
-uint16_t join_get_commit_slot(){
-  return commit_slot;
-}
+// uint16_t join_get_commit_slot(){
+//   return commit_slot;
+// }
 
-uint8_t join_get_slot_count_from_payload( void* payload ){
-  return ((join_t*)payload)->slot_count;
-}
+// uint8_t join_get_slot_count_from_payload( void* payload ){
+//   return ((join_t*)payload)->slot_count;
+// }
 
-uint8_t join_is_committed_from_payload( void* payload ){
-  return ((join_t*)payload)->commit;
-}
+// uint8_t join_is_committed_from_payload( void* payload ){
+//   return ((join_t*)payload)->commit;
+// }
 
 static void round_begin( const uint16_t round_number, const uint8_t app_id ){
   COOJA_DEBUG_PRINTF("join round_begin");

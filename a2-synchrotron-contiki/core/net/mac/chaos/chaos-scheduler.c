@@ -78,6 +78,11 @@ void scheduler_init(){
 }
 
 const chaos_app_t* scheduler_round_begin(const uint16_t round_count, uint8_t* app_id_ptr){
+  // if(strcmp(current_app->name, "join" && IS_CLUSTER_ROUND()) {
+
+  // } else if(strcmp(current_app->name, "cluster_join" && !IS_CLUSTER_ROUND)) {
+  //   current_app = 
+  // }
   current_app = next_app;
   current_app_id = next_app_id;
   if( IS_INITIATOR() && chaos_app_count > 0 ){

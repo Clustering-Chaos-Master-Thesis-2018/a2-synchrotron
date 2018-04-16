@@ -46,6 +46,7 @@ typedef uint16_t node_id_t;
 typedef uint8_t node_index_t;
 
 extern const chaos_app_t join;
+extern const chaos_app_t cluster_join;
 
 void join_init( void );
 int join_last_round_is_complete( void );

@@ -52,7 +52,7 @@ static inline int merge_lists(cluster_t* cluster_tx, cluster_t* cluster_rx);
 //The number of consecutive receive states we need to be in before forcing to send again.
 //In order to combat early termination. This should probably be changed to something more robust.
 #define CONSECUTIVE_RECEIVE_THRESHOLD 10
-#define CLUSTER_SERVICE_PENDING_THRESHOLD 14
+#define CLUSTER_SERVICE_PENDING_THRESHOLD 5
 
 //What is this
 #define FLAGS_LEN(node_count)   ((node_count / 8) + ((node_count % 8) ? 1 : 0))
@@ -106,7 +106,7 @@ static chaos_state_t process(uint16_t round_count, uint16_t slot,
     chaos_state_t next_state;
 
     // We are in association phase.
-    if(round_count < 4) {
+    if(round_count < 3) {
         return CHAOS_TX;
     }
 
