@@ -11,7 +11,8 @@ typedef uint8_t node_index_t;
     #include "cluster.h"
 
     #define IS_CLUSTER_JOIN()                    (is_cluster_service_running)
-    #define IS_CLUSTER_HEAD_ROUND()              (chaos_get_round_number() % 2 == 0 && HAS_CLUSTER_ID() && !IS_CLUSTER_JOIN())
+    #define IS_CLUSTER_HEAD_JOIN_ROUND()         (cluster_head_round_initiated)
+    #define IS_CLUSTER_HEAD_ROUND()              ((chaos_get_round_number() % 2 == 0 && !is_cluster_join_round && HAS_CLUSTER_ID() && !IS_CLUSTER_JOIN()) || IS_CLUSTER_HEAD_JOIN_ROUND())
     #define IS_SAME_CLUSTER(RECEIVED_CLUSTER_ID) (RECEIVED_CLUSTER_ID == chaos_get_cluster_id() \
                                                || RECEIVED_CLUSTER_ID == 0 \
                                                || chaos_get_cluster_id() == 0)
@@ -24,6 +25,10 @@ typedef uint8_t node_index_t;
 
     extern node_id_t cluster_id;
     extern uint8_t cluster_index;
+
+    extern uint8_t is_cluster_join_round;
+    extern uint8_t cluster_head_round_initiated;
+
 #endif /* CHAOS_CLUSTER */
 
 ALWAYS_INLINE node_id_t chaos_get_cluster_id(void);

@@ -52,7 +52,7 @@ static inline int merge_lists(cluster_t* cluster_tx, cluster_t* cluster_rx);
 //The number of consecutive receive states we need to be in before forcing to send again.
 //In order to combat early termination. This should probably be changed to something more robust.
 #define CONSECUTIVE_RECEIVE_THRESHOLD 10
-#define CLUSTER_SERVICE_PENDING_THRESHOLD 14
+#define CLUSTER_SERVICE_PENDING_THRESHOLD 7
 
 //What is this
 #define FLAGS_LEN(node_count)   ((node_count / 8) + ((node_count % 8) ? 1 : 0))
@@ -106,7 +106,7 @@ static chaos_state_t process(uint16_t round_count, uint16_t slot,
     chaos_state_t next_state;
 
     // We are in association phase.
-    if(round_count < 4) {
+    if(round_count < 3) {
         return CHAOS_TX;
     }
 
@@ -360,7 +360,7 @@ static ALWAYS_INLINE uint8_t prune_cluster_head_list(cluster_head_information_t*
     if(cluster_head_list[i].hop_count <= CLUSTER_COMPETITION_RADIUS) {
         merge[j++] = cluster_head_list[i];
     } else {
-        COOJA_DEBUG_PRINTF("cluster pruning id: %d, hop count %d\n", cluster_head_list[i].id, cluster_head_list[i].hop_count);
+        // COOJA_DEBUG_PRINTF("cluster pruning id: %d, hop count %d\n", cluster_head_list[i].id, cluster_head_list[i].hop_count);
     }
   }
   memcpy(cluster_head_list, merge, sizeof(merge));
@@ -378,7 +378,7 @@ static inline int merge_lists(cluster_t* cluster_tx, cluster_t* cluster_rx) {
 
   uint8_t size = prune_cluster_head_list(cluster_rx->cluster_head_list, cluster_rx->cluster_head_count);
   if(size != cluster_rx->cluster_head_count) {
-    COOJA_DEBUG_PRINTF("cluster prune before %u, after %u\n", cluster_rx->cluster_head_count, size);
+    // COOJA_DEBUG_PRINTF("cluster prune before %u, after %u\n", cluster_rx->cluster_head_count, size);
   }
   cluster_rx->cluster_head_count = size;
 

@@ -774,7 +774,7 @@ void chaos_slot(uint16_t* sync_slot, int* chaos_slot_status, chaos_state_t* chao
 
     rtimer_clock_t t_app_processing_end = DCO_NOW();
     const chaos_app_t* current_app = scheduler_get_current_app();
-    int is_join_app = strcmp(current_app->name, "join");
+    int is_join_app = strcmp(current_app->name, "join") || strcmp(current_app->name, "cluster_join_wrapper");
     if(*slot_number > *sync_slot){
       if((!chaos_apps[app_id]->requires_node_index || chaos_has_node_index) && !is_join_app){
         chaos_slot_timing_log_current[APP_PROCESSING] = t_app_processing_end - t_post_txrx_end;

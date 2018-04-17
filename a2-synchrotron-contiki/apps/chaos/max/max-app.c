@@ -60,7 +60,7 @@ CHAOS_APP(chaos_max_app, MAX_SLOT_LEN, MAX_ROUND_MAX_SLOTS, 1, max_is_pending, r
   #include "join.h"
   #if CHAOS_CLUSTER
     #include "cluster.h"
-    CHAOS_APPS(&cluster, &join, &chaos_max_app);
+    CHAOS_APPS(&cluster, &cluster_join_wrapper, &chaos_max_app);
   #else
     CHAOS_APPS(&join, &chaos_max_app);
   #endif /* CHAOS_CLUSTER */

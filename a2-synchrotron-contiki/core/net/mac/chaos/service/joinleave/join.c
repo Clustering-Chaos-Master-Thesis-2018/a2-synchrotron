@@ -141,14 +141,12 @@ enum {
 static node_id_t joined_nodes_map[MAX_NODE_COUNT][2] = { {0, 0} };
 static node_id_t joined_nodes_map_tmp[MAX_NODE_COUNT][2] = { {0, 0} };
 
-static void round_begin(const uint16_t round_count, const uint8_t id);
 static int is_pending(const uint16_t round_count);
-static void round_begin_sniffer(chaos_header_t* header);
-static void round_end_sniffer(const chaos_header_t* header);
 static int binary_search( uint16_t array[][2], int size, uint16_t search_id );
 static void merge_sort( uint16_t a[][2], uint16_t aux[][2], int hi, int lo );
 
-CHAOS_SERVICE(join, JOIN_SLOT_LEN, JOIN_ROUND_MAX_SLOTS, 0, is_pending, round_begin, round_begin_sniffer, round_end_sniffer);
+CHAOS_SERVICE(join, JOIN_SLOT_LEN, JOIN_ROUND_MAX_SLOTS, 0,
+              is_pending, round_begin, round_begin_sniffer, round_end_sniffer);
 
 static uint8_t bit_count(uint8_t u)
 {
@@ -171,10 +169,23 @@ void join_print_nodes(void){
 }
 
 void join_init(){
-  //clear node information
-  chaos_node_index = 0;
-  chaos_node_count = 0;
-  chaos_has_node_index = 0;
+#if CHAOS_CLUSTER
+  if(is_cluster_join_round) {
+    chaos_cluster_node_index = 0;
+    chaos_cluster_node_count = 0;
+  } else {
+    //clear node information
+    chaos_node_index = 0;
+    chaos_node_count = 0;
+    chaos_has_node_index = 0;
+  }
+
+#else /* !CHAOS_CLUSTER */
+    //clear node information
+    chaos_node_index = 0;
+    chaos_node_count = 0;
+    chaos_has_node_index = 0;
+#endif /* CHAOS_CLUSTER */
 
   //clear local state
   commit_slot = 0;
@@ -192,12 +203,24 @@ void join_init(){
   memset(&joined_nodes_map, 0, sizeof(joined_nodes_map));
   memset(&joined_nodes_map_tmp, 0, sizeof(joined_nodes_map_tmp));
   if( IS_INITIATOR() ){
+  #if CHAOS_CLUSTER
+    if(is_cluster_join_round) {
+      chaos_cluster_node_index = 1;
+      chaos_cluster_node_count = 1;
+    } else {
+      chaos_has_node_index = 1;
+      chaos_node_index = 0;
+      chaos_node_count = 1;
+    }
+
+  #else /* !CHAOS_CLUSTER */
     chaos_has_node_index = 1;
     chaos_node_index = 0;
+    chaos_node_count = 1;
+  #endif /* CHAOS_CLUSTER */
     joined_nodes[0] = node_id;
     joined_nodes_map[0][NODE_IDX]=0;
     joined_nodes_map[0][NODE_ID]=node_id;
-    chaos_node_count = 1;
   }
 }
 
@@ -594,8 +617,8 @@ uint8_t join_is_committed_from_payload( void* payload ){
   return ((join_t*)payload)->commit;
 }
 
-static void round_begin( const uint16_t round_number, const uint8_t app_id ){
-  COOJA_DEBUG_PRINTF("join round_begin");
+void round_begin( const uint16_t round_number, const uint8_t app_id ){
+  COOJA_DEBUG_PRINTF("cluster join round_begin");
 #if FAULTY_NODE_ID
   memset(&join_debug_var, 0, sizeof(join_debug_var));
   memset(rx_pkt_crc_err, 0, sizeof(rx_pkt_crc_err));
@@ -634,14 +657,14 @@ static void round_begin( const uint16_t round_number, const uint8_t app_id ){
   chaos_round(round_number, app_id, (const uint8_t const*)&join_data, sizeof(join_data), JOIN_SLOT_LEN_DCO, JOIN_ROUND_MAX_SLOTS, get_flags_length(), process);
 }
 
-static void round_begin_sniffer(chaos_header_t* header){
+void round_begin_sniffer(chaos_header_t* header){
   header->join = !chaos_get_has_node_index() /*&& !is_join_round*/;
   if( IS_INITIATOR() ){
     header->join |= pending /*&& !is_join_round*/;
   }
 }
 
-static void round_end_sniffer(const chaos_header_t* header){
+void round_end_sniffer(const chaos_header_t* header){
   pending |= IS_INITIATOR() && ( header->join || chaos_node_count < 2);
   is_join_round = 0;
   //TODO remove me later

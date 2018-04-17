@@ -46,6 +46,11 @@ typedef uint16_t node_id_t;
 typedef uint8_t node_index_t;
 
 extern const chaos_app_t join;
+extern const chaos_app_t cluster_join_wrapper;
+
+void round_begin(const uint16_t round_count, const uint8_t id);
+void round_begin_sniffer(chaos_header_t* header);
+void round_end_sniffer(const chaos_header_t* header);
 
 void join_init( void );
 int join_last_round_is_complete( void );
