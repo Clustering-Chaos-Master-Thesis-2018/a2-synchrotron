@@ -78,7 +78,7 @@ PROCESS_THREAD(chaos_max_app_process, ev, data)
 
   printf("starting powertrace\n");
   int n = 1; // 1 second reporting cycle
-  powertrace_start(CLOCK_SECOND * n); 
+  powertrace_start(CLOCK_SECOND * n);
 
 
   NETSTACK_MAC.on();
@@ -88,9 +88,7 @@ PROCESS_THREAD(chaos_max_app_process, ev, data)
 	while( 1 ){
 		PROCESS_YIELD();
 		if(chaos_get_has_node_index()){
-      printf("{rd %u res} max: %u, fin: %i/%i, node id: %u, n: %u\n", round_count_local, max_value, complete, off_slot, node_id, chaos_get_node_count());
-//      int latency = complete *
-//      printf("{rd %u prf} latency = %f, total slot time = %f\n", complete, off_slot);
+      printf("cluster_res: rd: %u, max: %u, fin: %i/%i, node_id: %u, n: %u, cluster_id: %u\n", round_count_local, max_value, complete, off_slot, node_id, chaos_get_node_count(), chaos_get_cluster_id());
 
       if(complete == 0){
         int i;
@@ -117,7 +115,7 @@ PROCESS_THREAD(chaos_max_app_process, ev, data)
       if(!chaos_has_node_index) {
         printf("{rd %u res} max: waiting to join, n: %u\n", round_count_local, chaos_get_node_count());
       } else {
-        printf("{rd %u res} max: is clustering round but has no cluster node index\n", round_count_local);
+        printf("{rd %u res} max: is cluster head round but has no cluster node index\n", round_count_local);
       }
 		}
 	}
@@ -128,7 +126,11 @@ static void round_begin(const uint16_t round_count, const uint8_t id){
 #if CHAOS_CLUSTER
   if(!IS_CLUSTER_HEAD() || (IS_CLUSTER_HEAD() && !IS_CLUSTER_HEAD_ROUND())) {
     max_value = node_id;
+  } else {
+    max_value = MAX(max_value, node_id);
   }
+#else
+  max_value = node_id;
 #endif /* CHAOS_CLUSTER */
   complete = max_round_begin(round_count, id, &max_value, &flags);
   off_slot = max_get_off_slot();

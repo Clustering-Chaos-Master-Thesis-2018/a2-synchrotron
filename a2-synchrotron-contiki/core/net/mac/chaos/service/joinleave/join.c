@@ -63,7 +63,7 @@ volatile join_debug_t join_debug_var = {0,0,0,0,0};
 #endif
 
 #ifndef JOIN_ROUNDS_AFTER_BOOTUP
-#define JOIN_ROUNDS_AFTER_BOOTUP (5)
+#define JOIN_ROUNDS_AFTER_BOOTUP (20)
 #endif
 
 #define JOIN_SLOT_LEN          (7*(RTIMER_SECOND/1000)+0*(RTIMER_SECOND/1000)/2)    //TODO needs calibration
@@ -397,6 +397,7 @@ static chaos_state_t process(uint16_t round_count, uint16_t slot,
         delta = 1;
         //drop local state
         memcpy(join_tx, join_rx, sizeof(join_t));
+        memcpy(join_rx, join_tx, sizeof(join_t));
         chaos_set_node_count(join_rx->node_count);
 
         //get the index

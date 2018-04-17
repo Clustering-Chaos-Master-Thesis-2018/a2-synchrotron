@@ -1,9 +1,31 @@
-if(!logpath) {
+
+if (!logpath) {
   logpath = "log/"
 }
+powerLogPath = logpath + "power/"
+roundLogPath = logpath + "round/"
+errorLogPath = logpath + "error/"
 
-if(!errorpath) {
-  errorpath = "error/"
+function csv_format_header_round_log(raw) {
+  cells = [];
+  var cells_with_label = raw.split(',');
+  for (var i = 0; i != cells_with_label.length; i++) {
+    parts = cells_with_label[i].split(':');
+    cells.push(parts[0].trim());
+  }
+
+  return cells.join(" ");
+}
+
+function csv_format_round_log(raw) {
+  cells = [];
+  var cells_with_label = raw.split(',');
+  for (var i = 0; i != cells_with_label.length; i++) {
+    parts = cells_with_label[i].split(':');
+    cells.push(parts[1].trim());
+  }
+
+  return cells.join(" ");
 }
 
 var imports = new JavaImporter(java.io, java.lang);
@@ -11,89 +33,71 @@ with (imports) {
 
      // Use JavaScript object as an associative array
      outputs = new Object();
-     errorOutputs = new Object();
-     isFirstPrintToFile = new Object();
-     
+
      while (true) {
 
-      //Has the output file been created.
+      //Has the output files been created.
       if(! outputs[id.toString()]){
-        
-        // BTW: FileWriter seems to be buffered.
-        outputs[id.toString()]= new FileWriter(logpath + "log_" + id +".txt");
-        errorOutputs[id.toString()]= new FileWriter(errorpath + "log_" + id +".txt");
-        outputs[id.toString()].write("[" + "\n");
-        isFirstPrintToFile[id.toString()] = true;
-      }
-      //Write to file.
-      //outputs[id.toString()].write(time + " " + msg + "\n");
-       
+        outputs[id.toString()] = new Object();
 
-      /* energy level readings
-         0 clock time
-         2 rime address
-         3 sequence number
-         4 accumulated CPU energy consumption
-         5 accumulated Low Power Mode energy consumption
-         6 accumulated transmission energy consumption
-         7 accumulated listen energy consumption
-         8 accumulated idle transmission energy consumption
-         9 accumulated idle listen energy consumption
-         10 CPU energy consumption for this cycle
-         11 LPM energy consumption for this cycle
-         12 transmission energy consumption for this cycle
-         13 listen energy consumption for this cycle
-         14 idle transmission energy consumption for this cycle
-         15 idle listen energy consumption for this cycle 
-       */
-      var rawJson = msg.substring(msg.indexOf(' ')+1);
-      var parsed = {status: "error"};
-      //outputs[id.toString()].write(msg + "\n");
-      //outputs[id.toString()].write(rawJson + "\n");
-      try {
-        parsed = JSON.parse(rawJson);
-        parsed.nodeid = id
-        
-        var s = " ";
-        
-        if (isFirstPrintToFile[id.toString()]) {
-          outputs[id.toString()].write(JSON.stringify(parsed) + "\n");
-          isFirstPrintToFile[id.toString()] = false;
+        outputs[id.toString()].power = new FileWriter(powerLogPath + "log_" + id +".txt");
+        outputs[id.toString()].power.write("[" + "\n");
+        outputs[id.toString()].isFirstPowerPrint = true;
+
+        outputs[id.toString()].round = new FileWriter(roundLogPath + "log_" + id +".txt");
+        outputs[id.toString()].isFirstRoundPrint = true;
+
+        outputs[id.toString()].error = new FileWriter(errorLogPath + "log_" + id +".txt");
+      }
+
+      var topic = msg.substring(0, msg.indexOf(' '));
+      var raw = msg.substring(msg.indexOf(' ')+1);
+
+      if (topic == "cluster_res:") {
+        if (outputs[id.toString()].isFirstRoundPrint) {
+          outputs[id.toString()].isFirstRoundPrint = false;
+          formatted_header = csv_format_header_round_log(raw);
+          outputs[id.toString()].round.write(formatted_header + "\n");
         }
-        outputs[id.toString()].write("," + JSON.stringify(parsed) + "\n");
-        
-        outputs[id.toString()].flush();
-      } catch (e) {
-        errorOutputs[id.toString()].write(e + "\n");          
-      }
-        
 
-      // var p = msg.trim().split(/\s+/) //.split(/\\s+/);
-      // var formatted = time + " " + p[0] + " " + p[1] + " " + p[2] + " " + p[3];
-      // outputs[id.toString()].write(msg + "\n");
-      // outputs[id.toString()].write(formatted + "\n");
-      
-      // outputs[id.toString()].write(time + " " + msg + "\n");
-        
+        formatted_row = csv_format_round_log(raw);
+        outputs[id.toString()].round.write(formatted_row + "\n");
+        outputs[id.toString()].round.flush();
+      } else if (topic == "power:") {
+
+        try {
+          var parsed = JSON.parse(raw);
+          parsed.nodeid = id
+
+          if (outputs[id.toString()].isFirstPowerPrint) {
+            outputs[id.toString()].power.write(JSON.stringify(parsed) + "\n");
+            outputs[id.toString()].isFirstPowerPrint = false;
+          }
+          outputs[id.toString()].power.write("," + JSON.stringify(parsed) + "\n");
+
+          outputs[id.toString()].power.flush();
+        } catch (e) {
+          outputs[id.toString()].error.write(e + "\n");
+        }
+
+      }
+
       try{
         //This is the tricky part. The Script is terminated using
         // an exception. This needs to be caught.
-        YIELD_THEN_WAIT_UNTIL(msg.startsWith("power"));
+        YIELD_THEN_WAIT_UNTIL(msg.startsWith("power:") || msg.startsWith("cluster_res:"));
         //YIELD();
       } catch (e) {
         //Close files.
 
-        for (var ids in errorOutputs){
-          errorOutputs[ids].close();
-        }
-
         for (var ids in outputs){
-          outputs[ids].write("]" + "\n");
-          outputs[ids].close();
+          outputs[ids].power.write("]" + "\n");
+          outputs[ids].round.close();
+          outputs[ids].power.close();
+          outputs[ids].error.close();
         }
         //Rethrow exception again, to end the script.
         throw('test script killed');
       }
      }
 }
-
