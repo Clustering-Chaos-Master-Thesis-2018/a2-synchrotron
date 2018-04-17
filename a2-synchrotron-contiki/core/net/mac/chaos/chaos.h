@@ -222,7 +222,7 @@ enum {
 #endif
 
 #if CHAOS_CLUSTER
-  #define IS_INITIATOR()  (IS_CLUSTER_HEAD() || (node_id == INITIATOR_NODE_ID && (IS_CLUSTER_JOIN() || chaos_get_cluster_id() == 0)))
+  #define IS_INITIATOR()  ((IS_CLUSTER_HEAD() && !IS_CLUSTER_JOIN()) || (node_id == INITIATOR_NODE_ID && (IS_CLUSTER_JOIN() || chaos_get_cluster_id() == 0)))
 #else
   #define IS_INITIATOR()    (node_id == INITIATOR_NODE_ID)
 #endif
