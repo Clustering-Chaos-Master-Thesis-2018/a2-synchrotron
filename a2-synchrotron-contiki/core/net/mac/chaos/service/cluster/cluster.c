@@ -121,7 +121,10 @@ static chaos_state_t process(uint16_t round_count, uint16_t slot,
     if(current_state == CHAOS_RX) {
         if(chaos_txrx_success) {
             invalid_rx_count = 0;
-            neighbour_list[cluster_rx->source_id]++;
+            if (cluster_rx->source_id < MAX_NODE_COUNT) {
+                neighbour_list[cluster_rx->source_id]++;
+            }
+
 
             if (local_cluster_data.consecutive_cluster_round_count == -1) {
                 local_cluster_data.consecutive_cluster_round_count = cluster_rx->consecutive_cluster_round_count;
