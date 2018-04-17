@@ -48,7 +48,7 @@ static cluster_head_information_t pick_best_cluster(const cluster_head_informati
 static int index_of(const cluster_head_information_t *cluster_head_list, uint8_t size, node_id_t value);
 static void log_cluster_heads(cluster_head_information_t *cluster_head_list, uint8_t cluster_head_count);
 static uint8_t filter_valid_cluster_heads(const cluster_head_information_t* cluster_head_list, uint8_t cluster_head_count, cluster_head_information_t* const output, uint8_t threshold);
-static float CH_probability(uint8_t doubling_count);
+static float CH_probability(int8_t doubling_count);
 static void heed_repeat(const cluster_head_information_t* cluster_head_list, uint8_t cluster_head_count, uint8_t consecutive_cluster_round_count);
 static void update_hop_count(cluster_t* tx_payload);
 
@@ -318,7 +318,10 @@ static uint8_t filter_valid_cluster_heads(const cluster_head_information_t* clus
     return j;
 }
 
-static float CH_probability(uint8_t doubling_count) {
+static float CH_probability(int8_t doubling_count) {
+    if (doubling_count < 0) {
+        doubling_count = 0;
+    }
     float prob = 1.0f*(1 << doubling_count) * base_CH_probability;
     return prob < 1.0f ? prob : 1.0f;
 }
