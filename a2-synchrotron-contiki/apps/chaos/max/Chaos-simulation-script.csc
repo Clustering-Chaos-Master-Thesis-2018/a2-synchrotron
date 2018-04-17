@@ -307,6 +307,7 @@ TIMEOUT(120000);
 powerLogPath = logpath + "power/"
 roundLogPath = logpath + "round/"
 errorLogPath = logpath + "error/"
+rawLogPath   = logpath + "raw/"
 
 function csv_format_header_round_log(raw) {
   cells = [];
@@ -350,7 +351,11 @@ with (imports) {
         outputs[id.toString()].isFirstRoundPrint = true;
 
         outputs[id.toString()].error = new FileWriter(errorLogPath + "log_" + id +".txt");
+
+        outputs[id.toString()].raw = new FileWriter(rawLogPath + "log_" + id +".txt");
       }
+
+      outputs[id.toString()].raw.write(msg + "\n");
 
       var topic = msg.substring(0, msg.indexOf(' '));
       var raw = msg.substring(msg.indexOf(' ')+1);
@@ -387,8 +392,8 @@ with (imports) {
       try{
         //This is the tricky part. The Script is terminated using
         // an exception. This needs to be caught.
-        YIELD_THEN_WAIT_UNTIL(msg.startsWith("power:") || msg.startsWith("cluster_res:"));
-        //YIELD();
+        //YIELD_THEN_WAIT_UNTIL(msg.startsWith("power:") || msg.startsWith("cluster_res:"));
+        YIELD(); // Always yield to write raw message.
       } catch (e) {
         //Close files.
 
