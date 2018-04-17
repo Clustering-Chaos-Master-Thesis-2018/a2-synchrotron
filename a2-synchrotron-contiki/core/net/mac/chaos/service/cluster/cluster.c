@@ -357,13 +357,6 @@ static void heed_repeat(const cluster_head_information_t* cluster_head_list, uin
             COOJA_DEBUG_PRINTF("cluster, I AM TENTATIVE\n");
         }
     }
-    // previous_CH_probability = CH_probability; is now calculated from the consecutive number of cluster rounds
-    // CH_probability = 2.0f * CH_probability; also calculated
-    // *consecutive_cluster_round_count += 1
-    //if(CH_probability >= 1.0f) {
-    //    CH_probability = 1.0f;
-    //}
-
 }
 
 static void round_end_sniffer(const chaos_header_t* header){
