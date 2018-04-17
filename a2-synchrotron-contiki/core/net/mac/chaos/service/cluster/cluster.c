@@ -370,7 +370,7 @@ static void heed_repeat(const cluster_head_information_t* cluster_head_list, uin
 
 static void round_end_sniffer(const chaos_header_t* header){
     if (is_cluster_service_running) {
-        is_cluster_service_running = 0;
+        is_cluster_service_running = is_pending(header->round_number + 1);
         heed_repeat(local_cluster_data.cluster_head_list, local_cluster_data.cluster_head_count, local_cluster_data.consecutive_cluster_round_count);
 
         if(cluster_head_state == FINAL) {
