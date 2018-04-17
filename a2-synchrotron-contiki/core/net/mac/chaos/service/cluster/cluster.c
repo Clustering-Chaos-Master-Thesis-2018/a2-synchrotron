@@ -324,9 +324,12 @@ static float CH_probability(uint8_t doubling_count) {
 }
 
 static void heed_repeat(const cluster_head_information_t* cluster_head_list, uint8_t cluster_head_count, uint8_t consecutive_cluster_round_count) {
+    float current_CH_prob = CH_probability(consecutive_cluster_round_count);
+
     char res[20];
-    ftoa(CH_probability(consecutive_cluster_round_count), res, 4);
+    ftoa(current_CH_prob, res, 4);
     COOJA_DEBUG_PRINTF("cluster heed_repeat CH_prob: %s", res);
+
     float previous_CH_probability = CH_probability(consecutive_cluster_round_count - 1);
     if(previous_CH_probability >= 1.0f) {
         return;
@@ -339,19 +342,19 @@ static void heed_repeat(const cluster_head_information_t* cluster_head_list, uin
         cluster_index = index_of(cluster_head_list, cluster_head_count, cluster_id);
 
         if(cluster_id == node_id) {
-            if(CH_probability(consecutive_cluster_round_count) >= 1.0f) {
+            if(current_CH_prob >= 1.0f) {
                 cluster_head_state = FINAL;
                 COOJA_DEBUG_PRINTF("cluster, I AM FINAL\n");
             } else {
                 cluster_head_state = TENTATIVE;
             }
         }
-    } else if(CH_probability(consecutive_cluster_round_count) >= 1.0f) {
+    } else if(current_CH_prob >= 1.0f) {
         cluster_head_state = FINAL;
         COOJA_DEBUG_PRINTF("cluster, I AM FINAL\n");
     } else {
         uint32_t precision = 1000;
-        uint32_t probability = CH_probability(consecutive_cluster_round_count) * precision;
+        uint32_t probability = current_CH_prob * precision;
         if(chaos_random_generator_fast() % precision <= probability) {
             cluster_head_state = TENTATIVE;
             COOJA_DEBUG_PRINTF("cluster, I AM TENTATIVE\n");
