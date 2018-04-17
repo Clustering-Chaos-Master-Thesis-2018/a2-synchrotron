@@ -80,6 +80,7 @@ ALWAYS_INLINE static uint32_t generate_restart_threshold() {
 
 uint32_t restart_threshold = 0;
 uint32_t invalid_rx_count = 0;
+uint8_t consecutive_rx = 0;
 
 uint8_t is_cluster_service_running = 0;
 
@@ -105,59 +106,71 @@ float calculate_initial_CH_prob(uint64_t total_energy_used) {
     return probability > min ? probability : min;
 }
 
+ALWAYS_INLINE static void update_rx_statistics(node_id_t source_id) {
+    if (source_id < MAX_NODE_COUNT) {
+        neighbour_list[source_id]++;
+    }
+}
+
+ALWAYS_INLINE static void prepare_tx(cluster_t* const cluster_tx) {
+    cluster_tx->source_id = node_id;
+    update_hop_count(cluster_tx);
+    cluster_tx->consecutive_cluster_round_count = local_cluster_data.consecutive_cluster_round_count;
+}
+
+static chaos_state_t handle_invalid_rx(cluster_t* const cluster_tx) {
+    invalid_rx_count++;
+    if(invalid_rx_count > restart_threshold) {
+        invalid_rx_count = 0;
+        restart_threshold = generate_restart_threshold();
+        prepare_tx(cluster_tx);
+        return CHAOS_TX;
+    }
+    return CHAOS_RX;
+}
+
+
 static chaos_state_t process(uint16_t round_count, uint16_t slot,
     chaos_state_t current_state, int chaos_txrx_success, size_t payload_length,
     uint8_t* rx_payload, uint8_t* tx_payload, uint8_t** app_flags){
-    chaos_state_t next_state;
-
-    // We are in association phase.
-    if(round_count < 4) {
-        return CHAOS_TX;
-    }
+    chaos_state_t next_state = CHAOS_RX;
 
     cluster_t* const cluster_rx = (cluster_t*) rx_payload;
     cluster_t* const cluster_tx = (cluster_t*) tx_payload;
 
+    if(current_state == CHAOS_INIT && IS_INITIATOR()) {
+        next_state = CHAOS_TX;
+    }
+
     if(current_state == CHAOS_RX) {
-        if(chaos_txrx_success) {
-            invalid_rx_count = 0;
-            if (cluster_rx->source_id < MAX_NODE_COUNT) {
-                neighbour_list[cluster_rx->source_id]++;
-            }
-
-
-            if (local_cluster_data.consecutive_cluster_round_count == -1) {
-                local_cluster_data.consecutive_cluster_round_count = cluster_rx->consecutive_cluster_round_count;
-            }
-        } else {
-            invalid_rx_count++;
-            if(invalid_rx_count > restart_threshold) {
-                invalid_rx_count = 0;
-                restart_threshold = generate_restart_threshold();
-                cluster_tx->source_id = node_id;
-                update_hop_count(cluster_tx);
-                cluster_tx->consecutive_cluster_round_count = local_cluster_data.consecutive_cluster_round_count;
-                return CHAOS_TX;
-            }
+        if(!chaos_txrx_success) {
+            return handle_invalid_rx(cluster_tx);
         }
 
+        invalid_rx_count = 0;
+        consecutive_rx++;
+        update_rx_statistics(cluster_rx->source_id);
 
+        if (local_cluster_data.consecutive_cluster_round_count == -1) {
+            local_cluster_data.consecutive_cluster_round_count = cluster_rx->consecutive_cluster_round_count;
+        }
+
+        if(is_cluster_head()) {
+            next_state = process_cluster_head(round_count, slot, current_state, chaos_txrx_success, payload_length, cluster_rx, cluster_tx, app_flags);
+        } else {
+            next_state = process_cluster_node(round_count, slot, current_state, chaos_txrx_success, payload_length, cluster_rx, cluster_tx, app_flags);
+        }
+
+    } else if(current_state == CHAOS_TX) {
+        consecutive_rx = 0;
     }
 
-    if(is_cluster_head()) {
-        next_state = process_cluster_head(round_count, slot, current_state, chaos_txrx_success, payload_length, cluster_rx, cluster_tx, app_flags);
-    } else {
-        next_state = process_cluster_node(round_count, slot, current_state, chaos_txrx_success, payload_length, cluster_rx, cluster_tx, app_flags);
-    }
+
     if(next_state == CHAOS_TX) {
-        cluster_tx->source_id = node_id;
-        update_hop_count(cluster_tx);
-        cluster_tx->consecutive_cluster_round_count = local_cluster_data.consecutive_cluster_round_count;
+        prepare_tx(cluster_tx);
     }
     return next_state;
 }
-
-static uint8_t consecutive_rx = 0;
 
 static void update_hop_count(cluster_t* tx_payload) {
     int i;
@@ -173,27 +186,24 @@ static chaos_state_t process_cluster_head(uint16_t round_count, uint16_t slot,
     uint8_t delta = 0;
     chaos_state_t next_state = CHAOS_RX;
 
-    if(current_state == CHAOS_RX) {
-        delta |= merge_lists(tx_payload, rx_payload);
-        set_best_available_hop_count(tx_payload, &local_cluster_data);
-        consecutive_rx++;
+    delta |= merge_lists(tx_payload, rx_payload);
+    set_best_available_hop_count(tx_payload, &local_cluster_data);
+    consecutive_rx++;
 
-        const int node_in_list = index_of(tx_payload->cluster_head_list, tx_payload->cluster_head_count, node_id);
-        if(node_in_list == -1) {
-            if(tx_payload->cluster_head_count < NODE_LIST_LEN) {
-                cluster_head_information_t info;
-                info.id = node_id;
-                info.hop_count = 0;
-                tx_payload->cluster_head_list[tx_payload->cluster_head_count++] = info;
-            }
+    const int node_in_list = index_of(tx_payload->cluster_head_list, tx_payload->cluster_head_count, node_id);
+    if(node_in_list == -1) {
+        if(tx_payload->cluster_head_count < NODE_LIST_LEN) {
+            cluster_head_information_t info;
+            info.id = node_id;
+            info.hop_count = 0;
+            tx_payload->cluster_head_list[tx_payload->cluster_head_count++] = info;
         }
-        merge_lists(&local_cluster_data, tx_payload);
-        if (delta || consecutive_rx == CONSECUTIVE_RECEIVE_THRESHOLD || node_in_list == -1) {
-            next_state = CHAOS_TX;
-        }
-    } else { /* CHAOS_TX */
-        consecutive_rx = 0;
     }
+    merge_lists(&local_cluster_data, tx_payload);
+    if (delta || consecutive_rx == CONSECUTIVE_RECEIVE_THRESHOLD || node_in_list == -1) {
+        next_state = CHAOS_TX;
+    }
+
 
     return next_state;
 }
@@ -204,13 +214,11 @@ static chaos_state_t process_cluster_node(uint16_t round_count, uint16_t slot,
     uint8_t delta = 0;
     chaos_state_t next_state = CHAOS_RX;
 
-    if (current_state == CHAOS_RX) {
-        delta |= merge_lists(tx_payload, rx_payload);
-        set_best_available_hop_count(tx_payload, &local_cluster_data);
-        merge_lists(&local_cluster_data, tx_payload);
-        if (delta) {
-            next_state = CHAOS_TX;
-        }
+    delta |= merge_lists(tx_payload, rx_payload);
+    set_best_available_hop_count(tx_payload, &local_cluster_data);
+    merge_lists(&local_cluster_data, tx_payload);
+    if (delta) {
+        next_state = CHAOS_TX;
     }
     return next_state;
 }
