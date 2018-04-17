@@ -412,12 +412,6 @@ static inline int merge_lists(cluster_t* cluster_tx, cluster_t* cluster_rx) {
   cluster_head_information_t merge[NODE_LIST_LEN];
   memset(merge, 0, sizeof(merge));
 
-  uint8_t size = prune_cluster_head_list(cluster_rx->cluster_head_list, cluster_rx->cluster_head_count);
-  if(size != cluster_rx->cluster_head_count) {
-    COOJA_DEBUG_PRINTF("cluster prune before %u, after %u\n", cluster_rx->cluster_head_count, size);
-  }
-  cluster_rx->cluster_head_count = size;
-
   while ((index_tx < cluster_tx->cluster_head_count || index_rx < cluster_rx->cluster_head_count ) && index_merge < NODE_LIST_LEN) {
     if (index_tx >= cluster_tx->cluster_head_count || (index_rx < cluster_rx->cluster_head_count && cluster_rx->cluster_head_list[index_rx].id < cluster_tx->cluster_head_list[index_tx].id)) {
       merge[index_merge] = cluster_rx->cluster_head_list[index_rx];
