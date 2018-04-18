@@ -464,7 +464,6 @@ chaos_do_rx( const uint8_t app_id ){
 void
 print_chaos_status_line(uint16_t round_number, uint8_t app_id) {
   static unsigned long last_cpu, last_lpm, last_transmit, last_listen;
-  //static unsigned long last_idle_transmit, last_idle_listen;
 
   unsigned long cpu, lpm, transmit, listen;
   unsigned long all_cpu, all_lpm, all_transmit, all_listen;
