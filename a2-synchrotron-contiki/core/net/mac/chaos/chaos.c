@@ -140,6 +140,12 @@ static uint8_t chaos_rank = CHAOS_MAX_RANK;
 /* lower is better */
 static uint8_t chaos_time_rank = CHAOS_MAX_RANK;
 
+/* Used when nodes acts as forwarders during CH rounds.
+   Counts the number of times no change was received (or invalid RX) and
+   turns off the node according to the current completion policy. */
+uint8_t no_flag_delta_count = 0;
+
+
 #if CHAOS_HW_SECURITY
 #include "net/linkaddr.h"
 static uint8_t *chaos_security_key = CHAOS_SECURITY_KEY;
@@ -759,14 +765,27 @@ void chaos_slot(uint16_t* sync_slot, int* chaos_slot_status, chaos_state_t* chao
       if( !flag_delta ){
         flag_delta |= memcmp(tx_header->payload, rx_header->payload, rx_header->length);
       }
+      /*
+        If we receive no delta for a set amount of rounds we power down to preserve energy.
+      */
+      if(!flag_delta) {
+        no_flag_delta_count++;
+      }
       if( flag_delta ){
         memcpy(tx_header->payload, rx_header->payload, rx_header->length);
+        no_flag_delta_count = 0;
         tx_header->length = rx_header->length;
         *chaos_state = CHAOS_TX;
         flag_delta = 0;
       }
+    } else if(*chaos_state == CHAOS_RX) {
+      no_flag_delta_count++;
     } else {
       *chaos_state = CHAOS_RX;
+    }
+
+    if(no_flag_delta_count > N_TX_COMPLETE) {
+      *chaos_state = CHAOS_OFF;
     }
 #endif /* NETSTACK_CONF_WITH_CHAOS_NODE_DYNAMIC */
 
