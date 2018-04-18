@@ -500,6 +500,7 @@ print_chaos_status_line(uint16_t round_number, uint8_t app_id) {
 
   PRINTF("chaos_round_report:"
     " round: %d,"
+    " is_cluster_head_round: %d,"
     " app: %s,"
     " all_cpu: %lu,"
     " all_lpm: %lu," // Low Power Mode, CPU does nothing. https://sourceforge.net/p/contiki/mailman/message/25957872/
@@ -511,6 +512,7 @@ print_chaos_status_line(uint16_t round_number, uint8_t app_id) {
     " listen: %lu,"
     "\n",
     round_number,
+    IS_CLUSTER_HEAD_ROUND(),
     chaos_apps[app_id]->name,
     all_cpu,
     all_lpm,
