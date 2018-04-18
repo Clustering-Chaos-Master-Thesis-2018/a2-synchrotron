@@ -15,7 +15,6 @@ typedef uint8_t node_index_t;
     #define IS_SAME_CLUSTER(RECEIVED_CLUSTER_ID) (RECEIVED_CLUSTER_ID == chaos_get_cluster_id() \
                                                || RECEIVED_CLUSTER_ID == 0 \
                                                || chaos_get_cluster_id() == 0)
-    #define IS_MAJOR_CLUSTER_HEAD()              (node_id == 1)
     #define IS_CLUSTER_HEAD()                    (node_id == chaos_get_cluster_id())
     #define HAS_CLUSTER_ID()                     (chaos_get_cluster_id() != 0)
 
