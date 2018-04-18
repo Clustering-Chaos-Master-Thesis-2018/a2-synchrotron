@@ -179,6 +179,28 @@ static void update_hop_count(cluster_t* tx_payload) {
     }
 }
 
+static uint8_t insert(cluster_head_information_t* list, uint8_t size, cluster_head_information_t elem) {
+    cluster_head_information_t new_list[NODE_LIST_LEN];
+
+    if (size == 0) {
+        list[0] = elem;
+        return 1;
+    }
+
+    uint8_t new_elem_added = 0;
+    uint8_t i, j;
+    for (i = 0, j = 0; i < size; ++i) {
+        if (elem.id < list[i].id && !new_elem_added) {
+            new_list[j++] = elem;
+            new_elem_added = 1;
+        }
+        new_list[j++] = list[i];
+    }
+    memcpy(list, new_list, sizeof(new_list));
+
+    return size+1;
+}
+
 static chaos_state_t process_cluster_head(uint16_t round_count, uint16_t slot,
     chaos_state_t current_state, int chaos_txrx_success, size_t payload_length,
     cluster_t* rx_payload, cluster_t* tx_payload, uint8_t** app_flags) {
@@ -196,7 +218,7 @@ static chaos_state_t process_cluster_head(uint16_t round_count, uint16_t slot,
             cluster_head_information_t info;
             info.id = node_id;
             info.hop_count = 0;
-            tx_payload->cluster_head_list[tx_payload->cluster_head_count++] = info;
+            tx_payload->cluster_head_count = insert(tx_payload->cluster_head_list, tx_payload->cluster_head_count, info);
         }
     }
     merge_lists(&local_cluster_data, tx_payload);
