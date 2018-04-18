@@ -140,10 +140,10 @@ static uint8_t chaos_rank = CHAOS_MAX_RANK;
 /* lower is better */
 static uint8_t chaos_time_rank = CHAOS_MAX_RANK;
 
-/* Used when nodes acts as forwarders during CH rounds.
-   Counts the number of times no change was received (or invalid RX) and
-   turns off the node according to the current completion policy. */
 #if CHAOS_CLUSTER
+/*Used when nodes acts as forwarders during CH rounds.
+  Counts the number of times no change was received (or invalid RX) and
+  turns off the node according to the current completion policy.*/
   uint8_t no_flag_delta_count = 0;
 
   #define IS_MY_CLUSTER() my_cluster
