@@ -114,8 +114,6 @@ PROCESS_THREAD(chaos_max_app_process, ev, data)
 		} else {
       if(!chaos_has_node_index) {
         printf("{rd %u res} max: waiting to join, n: %u\n", round_count_local, chaos_get_node_count());
-      } else {
-        printf("{rd %u res} max: is cluster head round but has no cluster node index\n", round_count_local);
       }
 		}
 	}

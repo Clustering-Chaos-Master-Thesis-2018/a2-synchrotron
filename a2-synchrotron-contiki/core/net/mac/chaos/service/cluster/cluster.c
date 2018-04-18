@@ -181,6 +181,7 @@ static void update_hop_count(cluster_t* tx_payload) {
 
 static uint8_t insert(cluster_head_information_t* list, uint8_t size, cluster_head_information_t elem) {
     cluster_head_information_t new_list[NODE_LIST_LEN];
+    memset(new_list, 0, sizeof(new_list));
 
     if (size == 0) {
         list[0] = elem;
@@ -196,9 +197,14 @@ static uint8_t insert(cluster_head_information_t* list, uint8_t size, cluster_he
         }
         new_list[j++] = list[i];
     }
+
+    if(!new_elem_added) {
+        new_list[j++] = elem;
+    }
+
     memcpy(list, new_list, sizeof(new_list));
 
-    return size+1;
+    return j;
 }
 
 static chaos_state_t process_cluster_head(uint16_t round_count, uint16_t slot,
@@ -424,7 +430,6 @@ static void round_end_sniffer(const chaos_header_t* header){
         init_node_index();
         log_cluster_heads(local_cluster_data.cluster_head_list, local_cluster_data.cluster_head_count);
     } else {
-        COOJA_DEBUG_PRINTF("resetting round count");
         local_cluster_data.consecutive_cluster_round_count = -1;
     }
 }
