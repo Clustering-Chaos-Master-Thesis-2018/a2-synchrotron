@@ -64,6 +64,7 @@
 #include "chaos-random-generator.h"
 
 #include "chaos-cluster.h"
+//#include "sys/compower.h"
 
 #define CHAOS_TX_RTIMER_GUARD 1
 #define CHAOS_RX_RTIMER_GUARD 1
@@ -461,6 +462,73 @@ chaos_do_rx( const uint8_t app_id ){
   return status;
 }
 
+void
+print_chaos_status_line(uint16_t round_number, uint8_t app_id) {
+  static unsigned long last_cpu, last_lpm, last_transmit, last_listen;
+  //static unsigned long last_idle_transmit, last_idle_listen;
+
+  unsigned long cpu, lpm, transmit, listen;
+  unsigned long all_cpu, all_lpm, all_transmit, all_listen;
+  //unsigned long idle_transmit, idle_listen;
+  //unsigned long all_idle_transmit, all_idle_listen;
+
+  /* Flush all energest times so we can read latest values */
+  energest_flush();
+  //compower_accumulate(&compower_idle_activity);
+  all_cpu = energest_type_time(ENERGEST_TYPE_CPU);
+  all_lpm = energest_type_time(ENERGEST_TYPE_LPM);
+  all_transmit = energest_type_time(ENERGEST_TYPE_TRANSMIT);
+  all_listen = energest_type_time(ENERGEST_TYPE_LISTEN);
+  //all_idle_transmit = compower_idle_activity.transmit;
+  //all_idle_listen = compower_idle_activity.listen;
+
+  cpu = all_cpu - last_cpu;
+  lpm = all_lpm - last_lpm;
+  transmit = all_transmit - last_transmit;
+  listen = all_listen - last_listen;
+  //idle_transmit = compower_idle_activity.transmit - last_idle_transmit;
+  //idle_listen = compower_idle_activity.listen - last_idle_listen;
+
+  last_cpu = energest_type_time(ENERGEST_TYPE_CPU);
+  last_lpm = energest_type_time(ENERGEST_TYPE_LPM);
+  last_transmit = energest_type_time(ENERGEST_TYPE_TRANSMIT);
+  last_listen = energest_type_time(ENERGEST_TYPE_LISTEN);
+  //last_idle_listen = compower_idle_activity.listen;
+  //last_idle_transmit = compower_idle_activity.transmit;
+
+  PRINTF("chaos_round_report:"
+    " round: %d,"
+    " app: %s,"
+    " all_cpu: %lu,"
+    " all_lpm: %lu," // Low Power Mode, CPU does nothing. https://sourceforge.net/p/contiki/mailman/message/25957872/
+    " all_transmit: %lu,"
+    " all_listen: %lu,"
+    //" all_idle_transmit: %lu,"
+    //" all_idle_listen: %lu,"
+    " cpu: %lu,"
+    " lpm: %lu,"
+    " transmit: %lu,"
+    " listen: %lu,"
+    //" idle_transmit: %lu,"
+    //" idle_listen: %lu,"
+    "\n",
+    round_number,
+    chaos_apps[app_id]->name,
+    all_cpu,
+    all_lpm,
+    all_transmit,
+    all_listen,
+    //all_idle_transmit,
+    //all_idle_listen,
+    cpu,
+    lpm,
+    transmit,
+    listen
+    //idle_transmit,
+    //idle_listen
+    );
+}
+
 uint16_t
 chaos_round(const uint16_t round_number, const uint8_t app_id, const uint8_t* const payload, const uint8_t payload_length_app, const rtimer_clock_t slot_length_app_dco,
     const uint16_t max_slots,  const uint8_t app_flags_len, process_callback_t process){
@@ -600,6 +668,9 @@ chaos_round(const uint16_t round_number, const uint8_t app_id, const uint8_t* co
       chaos_apps[i]->round_end_sniffer(tx_header);
     }
   }
+
+  print_chaos_status_line(round_number, app_id);
+
   CHAOS_LOG_ADD_MSG("{I}GT s%u r%u", RX_GUARD_TIME, ROUND_GUARD_TIME);
   CHAOS_LOG_ADD_MSG("{I}Pw %u #%u a%u p%u", CHAOS_TX_POWER, CHAOS_NUMBER_OF_CHANNELS, CHAOS_MULTI_CHANNEL_ADAPTIVE, CHAOS_MULTI_CHANNEL_PARALLEL_SEQUENCES);
   UNSET_PIN_ADC7;
