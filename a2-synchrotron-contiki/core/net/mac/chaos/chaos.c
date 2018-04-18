@@ -515,13 +515,6 @@ chaos_round(const uint16_t round_number, const uint8_t app_id, const uint8_t* co
     const uint16_t max_slots,  const uint8_t app_flags_len, process_callback_t process){
   RTIMER_DCO_SYNC();
 
-#if CHAOS_CLUSTER
-  if(!IS_CLUSTER_HEAD() && IS_CLUSTER_HEAD_ROUND()) {
-    /* Cluster head time, normal nodes keep quiet */
-    return 1;
-  }
-#endif /* CHAOS_CLUSTER */
-
   static vht_clock_t t_round_on = 0;
   round_start = VHT_NOW();
   round_rtimer = chaos_control_get_round_rtimer(); //TODO change all units to VHT
@@ -669,10 +662,12 @@ chaos_round(const uint16_t round_number, const uint8_t app_id, const uint8_t* co
 (const uint16_t round_number, const uint8_t app_id, const uint8_t* const payload, const uint8_t payload_length_app, const rtimer_clock_t slot_length_app_dco, const uint16_t max_slots,  const uint8_t app_flags_len){
 
 */
+
 ALWAYS_INLINE
 void chaos_slot(uint16_t* sync_slot, int* chaos_slot_status, chaos_state_t* chaos_state, uint16_t* slot_number, uint16_t round_number, uint8_t app_id, vht_clock_t slot_length_app, process_callback_t process) {
 
-    int my_cluster = 1;
+    uint8_t is_forwarder = 0;
+    uint8_t my_cluster = 1;
     t_slot_start_dco = DCO_NOW();
     t_slot_start = VHT_NOW();
 
@@ -726,12 +721,17 @@ void chaos_slot(uint16_t* sync_slot, int* chaos_slot_status, chaos_state_t* chao
     if(*chaos_slot_status == CHAOS_TXRX_OK && !IS_SAME_CLUSTER(rx_header->cluster_id) && !IS_CLUSTER_HEAD_ROUND() && !IS_CLUSTER_JOIN()) {
       my_cluster = 0;
     }
+
+    if(IS_CLUSTER_HEAD_ROUND() && !IS_CLUSTER_HEAD()) {
+      my_cluster = 0;
+      is_forwarder = 1;
+    }
   #endif /* CHAOS_CLUSTER */
 
       /* it could be a valid packet but an unexpected app id.
        * Shall we use it for synchronization anyway?
        * Now we don't */
-      if(my_cluster)  {
+      if(my_cluster || is_forwarder) {
         *chaos_slot_status = chaos_post_rx(*chaos_slot_status, app_id, round_synced, round_number);
       }
 
@@ -790,7 +790,7 @@ void chaos_slot(uint16_t* sync_slot, int* chaos_slot_status, chaos_state_t* chao
       chaos_slot_timing_log_min[timing_log_state] = MIN(chaos_slot_timing_log_current[timing_log_state], chaos_slot_timing_log_min[RX]);
     }
     /* process app */
-    if( (!chaos_apps[app_id]->requires_node_index || chaos_has_node_index) && my_cluster){
+    if( (!chaos_apps[app_id]->requires_node_index || chaos_get_has_node_index()) && my_cluster){
       *chaos_state = process(round_number, *slot_number, *chaos_state, (*chaos_slot_status == CHAOS_TXRX_OK), (*chaos_slot_status == CHAOS_TXRX_OK) ? CHAOS_PAYLOAD_LENGTH(rx_header) : 0, rx_header->payload, tx_header->payload, &app_flags);
       int app_do_sync = ( *chaos_state == CHAOS_RX_SYNC ) || ( *chaos_state == CHAOS_TX_SYNC );
       *chaos_state = ( *chaos_state == CHAOS_RX_SYNC ) ? *chaos_state = CHAOS_RX : (( *chaos_state == CHAOS_TX_SYNC ) ? *chaos_state = CHAOS_TX : *chaos_state);
