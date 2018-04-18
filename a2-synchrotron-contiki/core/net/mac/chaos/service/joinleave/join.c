@@ -635,7 +635,9 @@ static void round_begin( const uint16_t round_number, const uint8_t app_id ){
 }
 
 static void round_begin_sniffer(chaos_header_t* header){
-  header->join = !chaos_get_has_node_index() /*&& !is_join_round*/;
+  if(!IS_CLUSTER_HEAD()) {
+    header->join = !chaos_has_node_index /*&& !is_join_round*/;
+  }
   if( IS_INITIATOR() ){
     header->join |= pending /*&& !is_join_round*/;
   }

@@ -140,6 +140,19 @@ static uint8_t chaos_rank = CHAOS_MAX_RANK;
 /* lower is better */
 static uint8_t chaos_time_rank = CHAOS_MAX_RANK;
 
+#if CHAOS_CLUSTER
+/*Used when nodes acts as forwarders during CH rounds.
+  Counts the number of times no change was received (or invalid RX) and
+  turns off the node according to the current completion policy.*/
+  uint8_t no_flag_delta_count = 0;
+
+  #define IS_MY_CLUSTER() my_cluster
+  #define IS_FORWARDER() is_forwarder
+#else
+  #define IS_MY_CLUSTER() 1
+  #define IS_FORWARDER() 1
+#endif /* CHAOS_CLUSTER */
+
 #if CHAOS_HW_SECURITY
 #include "net/linkaddr.h"
 static uint8_t *chaos_security_key = CHAOS_SECURITY_KEY;
@@ -466,13 +479,6 @@ chaos_round(const uint16_t round_number, const uint8_t app_id, const uint8_t* co
     const uint16_t max_slots,  const uint8_t app_flags_len, process_callback_t process){
   RTIMER_DCO_SYNC();
 
-#if CHAOS_CLUSTER
-  if(!IS_CLUSTER_HEAD() && IS_CLUSTER_HEAD_ROUND()) {
-    /* Cluster head time, normal nodes keep quiet */
-    return 1;
-  }
-#endif /* CHAOS_CLUSTER */
-
   static vht_clock_t t_round_on = 0;
   round_start = VHT_NOW();
   round_rtimer = chaos_control_get_round_rtimer(); //TODO change all units to VHT
@@ -617,10 +623,15 @@ chaos_round(const uint16_t round_number, const uint8_t app_id, const uint8_t* co
 (const uint16_t round_number, const uint8_t app_id, const uint8_t* const payload, const uint8_t payload_length_app, const rtimer_clock_t slot_length_app_dco, const uint16_t max_slots,  const uint8_t app_flags_len){
 
 */
+
 ALWAYS_INLINE
 void chaos_slot(uint16_t* sync_slot, int* chaos_slot_status, chaos_state_t* chaos_state, uint16_t* slot_number, uint16_t round_number, uint8_t app_id, vht_clock_t slot_length_app, process_callback_t process) {
 
-    int my_cluster = 1;
+  #if CHAOS_CLUSTER
+    uint8_t is_forwarder = 0;
+    uint8_t my_cluster = 1;
+  #endif /* CHAOS_CLUSTER */
+
     t_slot_start_dco = DCO_NOW();
     t_slot_start = VHT_NOW();
 
@@ -674,12 +685,17 @@ void chaos_slot(uint16_t* sync_slot, int* chaos_slot_status, chaos_state_t* chao
     if(*chaos_slot_status == CHAOS_TXRX_OK && !IS_SAME_CLUSTER(rx_header->cluster_id) && !IS_CLUSTER_HEAD_ROUND() && !IS_CLUSTER_JOIN()) {
       my_cluster = 0;
     }
+
+    if(IS_CLUSTER_HEAD_ROUND() && !IS_CLUSTER_HEAD()) {
+      my_cluster = 0;
+      is_forwarder = 1;
+    }
   #endif /* CHAOS_CLUSTER */
 
       /* it could be a valid packet but an unexpected app id.
        * Shall we use it for synchronization anyway?
        * Now we don't */
-      if(my_cluster)  {
+      if(IS_MY_CLUSTER() || IS_FORWARDER()) {
         *chaos_slot_status = chaos_post_rx(*chaos_slot_status, app_id, round_synced, round_number);
       }
 
@@ -738,7 +754,7 @@ void chaos_slot(uint16_t* sync_slot, int* chaos_slot_status, chaos_state_t* chao
       chaos_slot_timing_log_min[timing_log_state] = MIN(chaos_slot_timing_log_current[timing_log_state], chaos_slot_timing_log_min[RX]);
     }
     /* process app */
-    if( (!chaos_apps[app_id]->requires_node_index || chaos_has_node_index) && my_cluster){
+    if( (!chaos_apps[app_id]->requires_node_index || chaos_get_has_node_index()) && IS_MY_CLUSTER()){
       *chaos_state = process(round_number, *slot_number, *chaos_state, (*chaos_slot_status == CHAOS_TXRX_OK), (*chaos_slot_status == CHAOS_TXRX_OK) ? CHAOS_PAYLOAD_LENGTH(rx_header) : 0, rx_header->payload, tx_header->payload, &app_flags);
       int app_do_sync = ( *chaos_state == CHAOS_RX_SYNC ) || ( *chaos_state == CHAOS_TX_SYNC );
       *chaos_state = ( *chaos_state == CHAOS_RX_SYNC ) ? *chaos_state = CHAOS_RX : (( *chaos_state == CHAOS_TX_SYNC ) ? *chaos_state = CHAOS_TX : *chaos_state);
@@ -759,15 +775,37 @@ void chaos_slot(uint16_t* sync_slot, int* chaos_slot_status, chaos_state_t* chao
       if( !flag_delta ){
         flag_delta |= memcmp(tx_header->payload, rx_header->payload, rx_header->length);
       }
+      /*
+        If we receive no delta for a set amount of rounds we power down to preserve energy.
+      */
+    #if CHAOS_CLUSTER
+      if(!flag_delta) {
+        no_flag_delta_count++;
+      }
+    #endif /* CHAOS_CLUSTER */
       if( flag_delta ){
         memcpy(tx_header->payload, rx_header->payload, rx_header->length);
+      #if CHAOS_CLUSTER
+        no_flag_delta_count = 0;
+      #endif /* CHAOS_CLUSTER */
         tx_header->length = rx_header->length;
         *chaos_state = CHAOS_TX;
         flag_delta = 0;
       }
-    } else {
+    }
+    #if CHAOS_CLUSTER
+     else if(*chaos_state == CHAOS_RX) {
+      no_flag_delta_count++;
+    }
+    #endif /* CHAOS_CLUSTER */
+    else {
       *chaos_state = CHAOS_RX;
     }
+  #if CHAOS_CLUSTER
+    if(no_flag_delta_count > N_TX_COMPLETE && IS_FORWARDER()) {
+      *chaos_state = CHAOS_OFF;
+    }
+  #endif /* CHAOS_CLUSTER */
 #endif /* NETSTACK_CONF_WITH_CHAOS_NODE_DYNAMIC */
 
     t_sfd_goal += slot_length_app;
