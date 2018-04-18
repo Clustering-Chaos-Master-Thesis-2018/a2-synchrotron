@@ -303,7 +303,7 @@ static void round_begin_sniffer(chaos_header_t* header){
 }
 
 ALWAYS_ACTUALLY_INLINE static void log_cluster_heads(cluster_head_information_t *cluster_head_list, uint8_t cluster_head_count) {
-    char str[200];
+    char str[600];
     cluster_head_information_t valid_cluster_heads[NODE_LIST_LEN];
     const uint8_t valid_cluster_head_count = filter_valid_cluster_heads(cluster_head_list, cluster_head_count, valid_cluster_heads, CLUSTER_COMPETITION_RADIUS);
     char res[20];
@@ -318,7 +318,7 @@ ALWAYS_ACTUALLY_INLINE static void log_cluster_heads(cluster_head_information_t 
 
     uint8_t i;
     for(i = 0; i < cluster_head_count; i++) {
-        char tmp[20];
+        char tmp[35];
         sprintf(tmp, (i == cluster_head_count-1 ? "%u -> (d: %u, rx_count: %u) ":"%u -> (d: %u, rx_count: %u), "),
             cluster_head_list[i].id,
             cluster_head_list[i].hop_count,
