@@ -64,7 +64,6 @@
 #include "chaos-random-generator.h"
 
 #include "chaos-cluster.h"
-//#include "sys/compower.h"
 
 #define CHAOS_TX_RTIMER_GUARD 1
 #define CHAOS_RX_RTIMER_GUARD 1
@@ -469,32 +468,23 @@ print_chaos_status_line(uint16_t round_number, uint8_t app_id) {
 
   unsigned long cpu, lpm, transmit, listen;
   unsigned long all_cpu, all_lpm, all_transmit, all_listen;
-  //unsigned long idle_transmit, idle_listen;
-  //unsigned long all_idle_transmit, all_idle_listen;
 
   /* Flush all energest times so we can read latest values */
   energest_flush();
-  //compower_accumulate(&compower_idle_activity);
   all_cpu = energest_type_time(ENERGEST_TYPE_CPU);
   all_lpm = energest_type_time(ENERGEST_TYPE_LPM);
   all_transmit = energest_type_time(ENERGEST_TYPE_TRANSMIT);
   all_listen = energest_type_time(ENERGEST_TYPE_LISTEN);
-  //all_idle_transmit = compower_idle_activity.transmit;
-  //all_idle_listen = compower_idle_activity.listen;
 
   cpu = all_cpu - last_cpu;
   lpm = all_lpm - last_lpm;
   transmit = all_transmit - last_transmit;
   listen = all_listen - last_listen;
-  //idle_transmit = compower_idle_activity.transmit - last_idle_transmit;
-  //idle_listen = compower_idle_activity.listen - last_idle_listen;
 
   last_cpu = energest_type_time(ENERGEST_TYPE_CPU);
   last_lpm = energest_type_time(ENERGEST_TYPE_LPM);
   last_transmit = energest_type_time(ENERGEST_TYPE_TRANSMIT);
   last_listen = energest_type_time(ENERGEST_TYPE_LISTEN);
-  //last_idle_listen = compower_idle_activity.listen;
-  //last_idle_transmit = compower_idle_activity.transmit;
 
   PRINTF("chaos_round_report:"
     " round: %d,"
@@ -503,14 +493,10 @@ print_chaos_status_line(uint16_t round_number, uint8_t app_id) {
     " all_lpm: %lu," // Low Power Mode, CPU does nothing. https://sourceforge.net/p/contiki/mailman/message/25957872/
     " all_transmit: %lu,"
     " all_listen: %lu,"
-    //" all_idle_transmit: %lu,"
-    //" all_idle_listen: %lu,"
     " cpu: %lu,"
     " lpm: %lu,"
     " transmit: %lu,"
     " listen: %lu,"
-    //" idle_transmit: %lu,"
-    //" idle_listen: %lu,"
     "\n",
     round_number,
     chaos_apps[app_id]->name,
@@ -518,14 +504,10 @@ print_chaos_status_line(uint16_t round_number, uint8_t app_id) {
     all_lpm,
     all_transmit,
     all_listen,
-    //all_idle_transmit,
-    //all_idle_listen,
     cpu,
     lpm,
     transmit,
     listen
-    //idle_transmit,
-    //idle_listen
     );
 }
 
