@@ -20,4 +20,7 @@ typedef enum {
 #undef CLUSTER_COMPETITION_RADIUS
 #define CLUSTER_COMPETITION_RADIUS _param_cluster_competition_radius
 
+#undef CLUSTER_RANDOMIZE_STARTING_ENERGY
+#define CLUSTER_RANDOMIZE_STARTING_ENERGY _param_randomize_starting_energy
+
 #endif /* CHAOS_CLUSTER_H */
