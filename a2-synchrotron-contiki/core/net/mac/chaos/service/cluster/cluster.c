@@ -232,7 +232,6 @@ static chaos_state_t process_cluster_head(uint16_t round_count, uint16_t slot,
         next_state = CHAOS_TX;
     }
 
-
     return next_state;
 }
 
