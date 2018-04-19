@@ -7,7 +7,7 @@ load_all_nodes_round_data <- function(test_path) {
   log_files <- rownames(info[info$size != 0, ])
   
   
-  tables <- lapply(log_files, function(path) read.table(path))
+  tables <- lapply(log_files, function(path) read.table(path, header = T))
   table = Reduce(function(x,y) merge(x,y, all=T), tables)
   colnames(table) <- c("round", "max", "fin", "node_id", "perceived_cluster_size", "cluster_id")
   return(table)
