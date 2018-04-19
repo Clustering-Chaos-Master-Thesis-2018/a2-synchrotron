@@ -19,8 +19,15 @@
 #include "lib.h"
 
 typedef struct __attribute__((packed)) {
-    uint8_t id;
-    uint8_t hop_count;
+    node_id_t id;
+    union {
+        uint8_t information;
+        struct {
+          uint8_t
+            hop_count :6,    /* The distance in hops to the cluster head */
+            status :2;     /* CH status, can either be TENTATIVE or FINAL */
+        };
+      };
 } cluster_head_information_t;
 
 typedef struct __attribute__((packed)) {
@@ -207,6 +214,15 @@ static uint8_t insert(cluster_head_information_t* list, uint8_t size, cluster_he
     return j;
 }
 
+ALWAYS_INLINE static uint8_t update_cluster_head_status(cluster_head_information_t* const cluster_head_list, uint8_t size, node_id_t node_id) {
+    const int index = index_of(cluster_head_list, size, node_id);
+    if(cluster_head_list[index].status != cluster_head_state) {
+        cluster_head_list[index].status = cluster_head_state;
+        return 1;
+    }
+    return 0;
+}
+
 static chaos_state_t process_cluster_head(uint16_t round_count, uint16_t slot,
     chaos_state_t current_state, int chaos_txrx_success, size_t payload_length,
     cluster_t* rx_payload, cluster_t* tx_payload, uint8_t** app_flags) {
@@ -224,9 +240,13 @@ static chaos_state_t process_cluster_head(uint16_t round_count, uint16_t slot,
             cluster_head_information_t info;
             info.id = node_id;
             info.hop_count = 0;
+            info.status = cluster_head_state;
             tx_payload->cluster_head_count = insert(tx_payload->cluster_head_list, tx_payload->cluster_head_count, info);
         }
     }
+
+    delta = update_cluster_head_status(tx_payload->cluster_head_list, tx_payload->cluster_head_count, node_id);;
+
     merge_lists(&local_cluster_data, tx_payload);
     if (delta || consecutive_rx == CONSECUTIVE_RECEIVE_THRESHOLD || node_in_list == -1) {
         next_state = CHAOS_TX;
