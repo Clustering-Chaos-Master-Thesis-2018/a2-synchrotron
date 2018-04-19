@@ -34,6 +34,9 @@ createTestInfoRow <- function(testSuitePath, testName) {
 #' @param testSuitePath The path to a test suite.
 #' @return a data field with columns testName, simulationFile and the test directory path.
 generateLocationPlotsForTestSuite <- function(testSuitePath) {
+  if (!dir.exists(testSuitePath)) {
+    stop("Bad path, testsuite does not exists.")
+  }
   tests <- testNames(testSuitePath)
   rows <- lapply(tests, Curry(createTestInfoRow, testSuitePath))
   

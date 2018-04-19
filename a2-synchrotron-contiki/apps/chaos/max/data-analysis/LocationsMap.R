@@ -1,4 +1,4 @@
-require(xml2)
+library(xml2)
 library(RColorBrewer) # For unique colors
 library(plyr)
 
