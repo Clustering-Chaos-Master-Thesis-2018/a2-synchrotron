@@ -290,9 +290,6 @@ ALWAYS_INLINE static uint8_t calculate_smalles_hop_count(const cluster_head_info
 static node_id_t pick_best_cluster(const cluster_head_information_t *cluster_head_list, uint8_t size) {
     cluster_head_information_t valid_cluster_heads[NODE_LIST_LEN];
     uint8_t smallest_hop_count = calculate_smalles_hop_count(cluster_head_list, size);
-    if(cluster_head_state == TENTATIVE || cluster_head_state == FINAL) {
-        return node_id;
-    }
     const uint8_t valid_cluster_head_count = filter_valid_cluster_heads(cluster_head_list, size, valid_cluster_heads, smallest_hop_count);;
 
     uint8_t i;
@@ -391,8 +388,13 @@ static void heed_repeat(const cluster_head_information_t* cluster_head_list, uin
     cluster_head_information_t valid_cluster_heads[NODE_LIST_LEN];
     uint8_t valid_cluster_head_count = filter_valid_cluster_heads(cluster_head_list, cluster_head_count, valid_cluster_heads, CLUSTER_COMPETITION_RADIUS);
     if(valid_cluster_head_count > 0) {
-        cluster_id = pick_best_cluster(valid_cluster_heads, valid_cluster_head_count);
-        cluster_index = index_of(cluster_head_list, cluster_head_count, cluster_id);
+        if(cluster_head_state == TENTATIVE || cluster_head_state == FINAL) {
+            cluster_id = node_id;
+            cluster_index = index_of(cluster_head_list, cluster_head_count, node_id);
+        } else {
+            cluster_id = pick_best_cluster(valid_cluster_heads, valid_cluster_head_count);
+            cluster_index = index_of(cluster_head_list, cluster_head_count, cluster_id);
+        }
 
         if(cluster_id == node_id) {
             if(current_CH_prob >= 1.0f) {
