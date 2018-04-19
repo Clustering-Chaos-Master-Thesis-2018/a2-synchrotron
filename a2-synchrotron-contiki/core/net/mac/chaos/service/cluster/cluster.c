@@ -276,7 +276,7 @@ ALWAYS_INLINE static int is_pending(const uint16_t round_count) {
     return round_count <= CLUSTER_SERVICE_PENDING_THRESHOLD;
 }
 
-ALWAYS_INLINE static uint8_t calculate_smalles_hop_count(const cluster_head_information_t *cluster_head_list, uint8_t size) {
+ALWAYS_INLINE static uint8_t calculate_smallest_hop_count(const cluster_head_information_t *cluster_head_list, uint8_t size) {
     uint8_t i;
     uint8_t smallest_hop_count = 255;
     for(i = 0; i < size; ++i) {
@@ -289,7 +289,7 @@ ALWAYS_INLINE static uint8_t calculate_smalles_hop_count(const cluster_head_info
 
 static node_id_t pick_best_cluster(const cluster_head_information_t *cluster_head_list, uint8_t size) {
     cluster_head_information_t valid_cluster_heads[NODE_LIST_LEN];
-    uint8_t smallest_hop_count = calculate_smalles_hop_count(cluster_head_list, size);
+    uint8_t smallest_hop_count = calculate_smallest_hop_count(cluster_head_list, size);
     const uint8_t valid_cluster_head_count = filter_valid_cluster_heads(cluster_head_list, size, valid_cluster_heads, smallest_hop_count);;
 
     uint8_t i;
