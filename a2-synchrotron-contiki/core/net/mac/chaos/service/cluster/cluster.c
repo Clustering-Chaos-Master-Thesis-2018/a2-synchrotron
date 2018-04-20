@@ -88,6 +88,7 @@ ALWAYS_INLINE static uint32_t generate_restart_threshold() {
 uint32_t restart_threshold = 0;
 uint32_t invalid_rx_count = 0;
 uint8_t consecutive_rx = 0;
+uint8_t got_valid_rx = 0;
 
 uint8_t is_cluster_service_running = 0;
 
@@ -127,7 +128,7 @@ ALWAYS_INLINE static void prepare_tx(cluster_t* const cluster_tx) {
 
 static chaos_state_t handle_invalid_rx(cluster_t* const cluster_tx) {
     invalid_rx_count++;
-    if(invalid_rx_count > restart_threshold) {
+    if(invalid_rx_count > restart_threshold && got_valid_rx) {
         invalid_rx_count = 0;
         restart_threshold = generate_restart_threshold();
         prepare_tx(cluster_tx);
@@ -153,7 +154,7 @@ static chaos_state_t process(uint16_t round_count, uint16_t slot,
         if(!chaos_txrx_success) {
             return handle_invalid_rx(cluster_tx);
         }
-
+        got_valid_rx = 1;
         invalid_rx_count = 0;
         consecutive_rx++;
         update_rx_statistics(cluster_rx->source_id);
