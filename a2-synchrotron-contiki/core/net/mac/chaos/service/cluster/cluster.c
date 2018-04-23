@@ -294,7 +294,7 @@ static void round_begin(const uint16_t round_count, const uint8_t app_id) {
     invalid_rx_count = 0;
     restart_threshold = generate_restart_threshold();
 
-    chaos_round(round_count, app_id, (const uint8_t const*)&initial_local_cluster_data, sizeof(initial_local_cluster_data), (7*(RTIMER_SECOND/1000)+0*(RTIMER_SECOND/1000)/2) * CLOCK_PHI, JOIN_ROUND_MAX_SLOTS, get_flags_length(), process);
+    chaos_round(round_count, app_id, (const uint8_t const*)&initial_local_cluster_data, sizeof(initial_local_cluster_data), (7*(RTIMER_SECOND/1000)+0*(RTIMER_SECOND/1000)/2) * CLOCK_PHI, CLUSTER_ROUND_MAX_SLOTS, get_flags_length(), process);
 }
 
 ALWAYS_INLINE static int is_pending(const uint16_t round_count) {

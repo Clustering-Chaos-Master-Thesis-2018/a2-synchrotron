@@ -45,11 +45,13 @@
 #define CHAOS_RESTART_MAX 10
 
 #if COOJA
+#define CLUSTER_ROUND_MAX_SLOTS (127)
 #define MAX_ROUND_MAX_SLOTS   (127)
 //join parameters
 #define JOIN_ROUND_MAX_SLOTS   (127)
 #define JOIN_ROUNDS_AFTER_BOOTUP (10)
 #else
+#define CLUSTER_ROUND_MAX_SLOTS (200)
 #define MAX_ROUND_MAX_SLOTS   (254)
 //join parameters
 #define JOIN_ROUND_MAX_SLOTS   (200)
