@@ -250,7 +250,7 @@ static chaos_state_t process_cluster_head(uint16_t round_count, uint16_t slot,
     delta = update_cluster_head_status(tx_payload->cluster_head_list, tx_payload->cluster_head_count, node_id);;
 
     merge_lists(&local_cluster_data, tx_payload);
-    if (delta || consecutive_rx == CONSECUTIVE_RECEIVE_THRESHOLD || node_in_list == -1) {
+    if (delta || consecutive_rx == CONSECUTIVE_RECEIVE_THRESHOLD || node_in_list == -1 && got_valid_rx) {
         next_state = CHAOS_TX;
     }
 
@@ -266,13 +266,14 @@ static chaos_state_t process_cluster_node(uint16_t round_count, uint16_t slot,
     delta |= merge_lists(tx_payload, rx_payload);
     set_best_available_hop_count(tx_payload, &local_cluster_data);
     merge_lists(&local_cluster_data, tx_payload);
-    if (delta) {
+    if (delta && got_valid_rx) {
         next_state = CHAOS_TX;
     }
     return next_state;
 }
 
 static void round_begin(const uint16_t round_count, const uint8_t app_id) {
+    got_valid_rx = 0;
     is_cluster_service_running = 1;
     cluster_t initial_local_cluster_data;
     memset(&initial_local_cluster_data, 0, sizeof(cluster_t));
