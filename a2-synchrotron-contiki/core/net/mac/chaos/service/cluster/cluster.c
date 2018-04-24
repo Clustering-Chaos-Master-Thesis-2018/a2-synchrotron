@@ -264,7 +264,7 @@ static chaos_state_t process_cluster_head(uint16_t round_count, uint16_t slot,
     delta = update_cluster_head_status(tx_payload->cluster_head_list, tx_payload->cluster_head_count, node_id);;
 
     merge_lists(&local_cluster_data, tx_payload);
-    if (delta || consecutive_rx == CONSECUTIVE_RECEIVE_THRESHOLD || node_in_list == -1 && got_valid_rx) {
+    if ((delta || consecutive_rx == CONSECUTIVE_RECEIVE_THRESHOLD || node_in_list == -1) && got_valid_rx) {
         next_state = CHAOS_TX;
     }
 
