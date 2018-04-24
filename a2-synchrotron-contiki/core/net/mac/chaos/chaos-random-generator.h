@@ -46,6 +46,7 @@
 
 uint32_t chaos_random_generator_produce();
 uint32_t chaos_random_generator_fast();
+uint32_t chaos_random_generator_fast_range(uint32_t from, uint32_t to);
 void chaos_random_generator_set_seed(uint32_t seed);
 void chaos_random_generator_init(void);
 void chaos_random_generator_update_table();

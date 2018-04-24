@@ -132,3 +132,9 @@ uint32_t
 chaos_random_generator_fast() {
   return random_table[random_idx++ % CHAOS_RND_TABLE_SIZE];
 }
+
+uint32_t
+chaos_random_generator_fast_range(uint32_t from, uint32_t to) {
+  uint32_t range = to - from;
+  return chaos_random_generator_fast() % range + from;
+}
