@@ -173,12 +173,10 @@ static chaos_state_t process(uint16_t round_count, uint16_t slot,
     if (tentativeAnnouncementSlot != -1) {
         uint8_t demote = another_announced_CH_noticed(cluster_rx->cluster_head_list, cluster_rx->cluster_head_count);
         if (demote) {
-            COOJA_DEBUG_PRINTF("Found another CH, demotion")
             tentativeAnnouncementSlot = -1; // Demote
         } else if (slot >= tentativeAnnouncementSlot) {
             tentativeAnnouncementSlot = -1;
             cluster_head_state = TENTATIVE;
-            COOJA_DEBUG_PRINTF("cluster, I AM TENTATIVE, slot %d should be tx\n", slot+1);
             set_next_state(&next_state, CHAOS_TX);
         }
     }
