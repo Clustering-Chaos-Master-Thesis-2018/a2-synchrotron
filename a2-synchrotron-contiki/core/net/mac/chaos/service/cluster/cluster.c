@@ -44,6 +44,7 @@ cluster_t local_cluster_data = {
 uint16_t neighbour_list[MAX_NODE_COUNT];
 
 unsigned long total_energy_used = 0;
+static int8_t tentativeAnnouncementSlot = -1;
 
 static chaos_state_t process_cluster_head(uint16_t, uint16_t, chaos_state_t, int, size_t, cluster_t*, cluster_t*, uint8_t**);
 static chaos_state_t process_cluster_node(uint16_t, uint16_t, chaos_state_t, int, size_t, cluster_t*, cluster_t*, uint8_t**);
@@ -136,6 +137,23 @@ static chaos_state_t handle_invalid_rx(cluster_t* const cluster_tx) {
     return CHAOS_RX;
 }
 
+uint8_t another_announced_CH_noticed(cluster_head_information_t* cluster_head_list, uint8_t cluster_head_count) {
+    int i;
+    for (i = 0; i < cluster_head_count; ++i) {
+        if (cluster_head_list[i].status == TENTATIVE || cluster_head_list[i].status == FINAL) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+// Cannot be demoted to RX if TX has ever been decided
+void set_next_state(chaos_state_t* next, chaos_state_t next_candidate) {
+    if (*next == CHAOS_TX) {
+        return;
+    }
+    *next = next_candidate;
+}
 
 static chaos_state_t process(uint16_t round_count, uint16_t slot,
     chaos_state_t current_state, int chaos_txrx_success, size_t payload_length,
@@ -146,7 +164,21 @@ static chaos_state_t process(uint16_t round_count, uint16_t slot,
     cluster_t* const cluster_tx = (cluster_t*) tx_payload;
 
     if(current_state == CHAOS_INIT && IS_INITIATOR()) {
-        next_state = CHAOS_TX;
+        set_next_state(&next_state, CHAOS_TX);
+    }
+
+
+    if (tentativeAnnouncementSlot != -1) {
+        uint8_t demote = another_announced_CH_noticed(cluster_rx->cluster_head_list, cluster_rx->cluster_head_count);
+        if (demote) {
+            COOJA_DEBUG_PRINTF("Found another CH, demotion")
+            tentativeAnnouncementSlot = -1; // Demote
+        } else if (slot >= tentativeAnnouncementSlot) {
+            tentativeAnnouncementSlot = -1;
+            cluster_head_state = TENTATIVE;
+            COOJA_DEBUG_PRINTF("cluster, I AM TENTATIVE, slot %d should be tx\n", slot+1);
+            set_next_state(&next_state, CHAOS_TX);
+        }
     }
 
     if(current_state == CHAOS_RX) {
@@ -163,9 +195,10 @@ static chaos_state_t process(uint16_t round_count, uint16_t slot,
         }
 
         if(is_cluster_head()) {
-            next_state = process_cluster_head(round_count, slot, current_state, chaos_txrx_success, payload_length, cluster_rx, cluster_tx, app_flags);
+            set_next_state(&next_state, process_cluster_head(round_count, slot, current_state, chaos_txrx_success, payload_length, cluster_rx, cluster_tx, app_flags));
+
         } else {
-            next_state = process_cluster_node(round_count, slot, current_state, chaos_txrx_success, payload_length, cluster_rx, cluster_tx, app_flags);
+            set_next_state(&next_state, process_cluster_node(round_count, slot, current_state, chaos_txrx_success, payload_length, cluster_rx, cluster_tx, app_flags));
         }
 
     } else if(current_state == CHAOS_TX) {
@@ -436,8 +469,8 @@ static void heed_repeat(const cluster_head_information_t* cluster_head_list, uin
         uint32_t precision = 1000;
         uint32_t probability = current_CH_prob * precision;
         if(chaos_random_generator_fast() % precision <= probability) {
-            cluster_head_state = TENTATIVE;
-            COOJA_DEBUG_PRINTF("cluster, I AM TENTATIVE\n");
+            tentativeAnnouncementSlot = chaos_random_generator_fast_range(0, CLUSTER_ROUND_MAX_SLOTS/2);
+            COOJA_DEBUG_PRINTF("cluster, I AM TENTATIVE, decided to become CH in slot %d\n", tentativeAnnouncementSlot);
         }
     }
 }
