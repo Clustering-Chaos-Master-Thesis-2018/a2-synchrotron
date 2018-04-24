@@ -93,6 +93,7 @@ ifeq ($(CONTIKI_WITH_CHAOS),1)
   endif 
   ifeq ($(CHAOS_CLUSTER), 1)
     MODULES += core/net/mac/chaos/service/cluster
+    MODULES += core/net/mac/chaos/service/associate
   endif
   MODULES += core/net/mac/chaos/lib/timing-unit-test/rx-test    
   MODULES += core/net/mac/chaos/lib/timing-unit-test/tx-test    
