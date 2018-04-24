@@ -78,8 +78,8 @@ uint8_t is_cluster_service_running = 0;
 
 float base_CH_probability = -1.0f;
 //Average energy used per round * some number of rounds
-uint64_t MAX_ENERGY = (uint64_t)30000 * (uint64_t)1000;
-float C_PROB = 0.005f;
+const uint64_t MAX_ENERGY = (uint64_t)30000 * (uint64_t)1000;
+const float C_PROB = 0.005f;
 
 CHState cluster_head_state = NOT_INITIALIZED;
 
@@ -287,8 +287,12 @@ static chaos_state_t process_cluster_node(uint16_t round_count, uint16_t slot,
 }
 
 static void round_begin(const uint16_t round_count, const uint8_t app_id) {
+    restart_threshold = generate_restart_threshold();
+    invalid_rx_count = 0;
+    consecutive_rx = 0;
     got_valid_rx = 0;
     is_cluster_service_running = 1;
+
     cluster_t initial_local_cluster_data;
     memset(&initial_local_cluster_data, 0, sizeof(cluster_t));
 
@@ -307,9 +311,6 @@ static void round_begin(const uint16_t round_count, const uint8_t app_id) {
     #endif /* CLUSTER_RANDOMIZE_STARTING_ENERGY */
         base_CH_probability = calculate_initial_CH_prob(total_energy_used);
     }
-
-    invalid_rx_count = 0;
-    restart_threshold = generate_restart_threshold();
 
     chaos_round(round_count, app_id, (const uint8_t const*)&initial_local_cluster_data, sizeof(initial_local_cluster_data), CLUSTER_SLOT_LEN_DCO, CLUSTER_ROUND_MAX_SLOTS, get_flags_length(), process);
 }
