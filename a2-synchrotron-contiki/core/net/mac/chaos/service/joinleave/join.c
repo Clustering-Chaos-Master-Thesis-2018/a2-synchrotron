@@ -133,7 +133,7 @@ static uint16_t off_slot = 0;
 static uint16_t complete_slot = 0;
 
 //initiator management
-static uint8_t is_join_round = 0; // only used on initiator
+uint8_t is_join_round = 0; // only used on initiator
 static node_id_t joined_nodes[MAX_NODE_COUNT] = { 0 };
 enum {
   NODE_ID = 0, NODE_IDX = 1
