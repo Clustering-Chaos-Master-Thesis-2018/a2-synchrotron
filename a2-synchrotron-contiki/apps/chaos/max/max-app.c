@@ -124,6 +124,8 @@ static void round_begin(const uint16_t round_count, const uint8_t id){
 #if CHAOS_CLUSTER
   if(!IS_CLUSTER_HEAD() || (IS_CLUSTER_HEAD() && !IS_CLUSTER_HEAD_ROUND())) {
     max_value = node_id;
+  } else if(IS_FORWARDER()) {
+    max_value = 0;
   } else {
     max_value = MAX(max_value, node_id);
   }

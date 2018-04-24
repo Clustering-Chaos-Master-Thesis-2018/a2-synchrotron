@@ -451,10 +451,11 @@ static void round_end_sniffer(const chaos_header_t* header){
         heed_repeat(local_cluster_data.cluster_head_list, local_cluster_data.cluster_head_count, local_cluster_data.consecutive_cluster_round_count);
 
         if(cluster_head_state == FINAL) {
-            if(chaos_cluster_node_count < local_cluster_data.cluster_head_count) {
-                chaos_cluster_node_count = local_cluster_data.cluster_head_count;
-                chaos_cluster_node_index = node_id - 1;
-            }
+            chaos_cluster_node_count = local_cluster_data.cluster_head_count;
+            chaos_cluster_node_index = cluster_index;
+            COOJA_DEBUG_PRINTF("setting chaos cluster node index %d", chaos_cluster_node_index);
+        } else {
+            chaos_cluster_node_count = local_cluster_data.cluster_head_count;
         }
         init_node_index();
         log_cluster_heads(local_cluster_data.cluster_head_list, local_cluster_data.cluster_head_count);

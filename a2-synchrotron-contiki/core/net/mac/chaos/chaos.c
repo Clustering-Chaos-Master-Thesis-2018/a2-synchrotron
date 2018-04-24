@@ -147,10 +147,8 @@ static uint8_t chaos_time_rank = CHAOS_MAX_RANK;
   uint8_t no_flag_delta_count = 0;
 
   #define IS_MY_CLUSTER() my_cluster
-  #define IS_FORWARDER() is_forwarder
 #else
   #define IS_MY_CLUSTER() 1
-  #define IS_FORWARDER() 1
 #endif /* CHAOS_CLUSTER */
 
 #if CHAOS_HW_SECURITY
@@ -682,7 +680,6 @@ ALWAYS_INLINE
 void chaos_slot(uint16_t* sync_slot, int* chaos_slot_status, chaos_state_t* chaos_state, uint16_t* slot_number, uint16_t round_number, uint8_t app_id, vht_clock_t slot_length_app, process_callback_t process) {
 
   #if CHAOS_CLUSTER
-    uint8_t is_forwarder = 0;
     uint8_t my_cluster = 1;
   #endif /* CHAOS_CLUSTER */
 
@@ -740,10 +737,6 @@ void chaos_slot(uint16_t* sync_slot, int* chaos_slot_status, chaos_state_t* chao
       my_cluster = 0;
     }
 
-    if(IS_CLUSTER_HEAD_ROUND() && !IS_CLUSTER_HEAD()) {
-      my_cluster = 0;
-      is_forwarder = 1;
-    }
   #endif /* CHAOS_CLUSTER */
 
       /* it could be a valid packet but an unexpected app id.
@@ -808,7 +801,7 @@ void chaos_slot(uint16_t* sync_slot, int* chaos_slot_status, chaos_state_t* chao
       chaos_slot_timing_log_min[timing_log_state] = MIN(chaos_slot_timing_log_current[timing_log_state], chaos_slot_timing_log_min[RX]);
     }
     /* process app */
-    if( (!chaos_apps[app_id]->requires_node_index || chaos_get_has_node_index()) && IS_MY_CLUSTER()){
+    if( ((!chaos_apps[app_id]->requires_node_index || chaos_get_has_node_index()) && IS_MY_CLUSTER()) || IS_FORWARDER()){
       *chaos_state = process(round_number, *slot_number, *chaos_state, (*chaos_slot_status == CHAOS_TXRX_OK), (*chaos_slot_status == CHAOS_TXRX_OK) ? CHAOS_PAYLOAD_LENGTH(rx_header) : 0, rx_header->payload, tx_header->payload, &app_flags);
       int app_do_sync = ( *chaos_state == CHAOS_RX_SYNC ) || ( *chaos_state == CHAOS_TX_SYNC );
       *chaos_state = ( *chaos_state == CHAOS_RX_SYNC ) ? *chaos_state = CHAOS_RX : (( *chaos_state == CHAOS_TX_SYNC ) ? *chaos_state = CHAOS_TX : *chaos_state);
@@ -829,37 +822,16 @@ void chaos_slot(uint16_t* sync_slot, int* chaos_slot_status, chaos_state_t* chao
       if( !flag_delta ){
         flag_delta |= memcmp(tx_header->payload, rx_header->payload, rx_header->length);
       }
-      /*
-        If we receive no delta for a set amount of rounds we power down to preserve energy.
-      */
-    #if CHAOS_CLUSTER
-      if(!flag_delta) {
-        no_flag_delta_count++;
-      }
-    #endif /* CHAOS_CLUSTER */
       if( flag_delta ){
         memcpy(tx_header->payload, rx_header->payload, rx_header->length);
-      #if CHAOS_CLUSTER
-        no_flag_delta_count = 0;
-      #endif /* CHAOS_CLUSTER */
         tx_header->length = rx_header->length;
         *chaos_state = CHAOS_TX;
         flag_delta = 0;
       }
     }
-    #if CHAOS_CLUSTER
-     else if(*chaos_state == CHAOS_RX) {
-      no_flag_delta_count++;
-    }
-    #endif /* CHAOS_CLUSTER */
     else {
       *chaos_state = CHAOS_RX;
     }
-  #if CHAOS_CLUSTER
-    if(no_flag_delta_count > N_TX_COMPLETE && IS_FORWARDER()) {
-      *chaos_state = CHAOS_OFF;
-    }
-  #endif /* CHAOS_CLUSTER */
 #endif /* NETSTACK_CONF_WITH_CHAOS_NODE_DYNAMIC */
 
     t_sfd_goal += slot_length_app;

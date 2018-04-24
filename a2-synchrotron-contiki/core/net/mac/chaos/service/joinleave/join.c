@@ -133,7 +133,7 @@ static uint16_t off_slot = 0;
 static uint16_t complete_slot = 0;
 
 //initiator management
-static uint8_t is_join_round = 0; // only used on initiator
+uint8_t is_join_round = 0; // only used on initiator
 static node_id_t joined_nodes[MAX_NODE_COUNT] = { 0 };
 enum {
   NODE_ID = 0, NODE_IDX = 1
@@ -269,7 +269,7 @@ static inline void add_node(join_t* join_tx, uint8_t i, uint8_t chaos_node_count
   }
   //add only if we have have space for it
   if(chaos_node_count < MAX_NODE_COUNT) {
-    join_tx->index[i] = chaos_get_node_count();
+    join_tx->index[i] = chaos_node_count;
     joined_nodes[chaos_node_count] = join_tx->slot[i];
     //joined_nodes_map will be sorted later
     joined_nodes_map[chaos_node_count][NODE_ID] = join_tx->slot[i];
@@ -279,14 +279,14 @@ static inline void add_node(join_t* join_tx, uint8_t i, uint8_t chaos_node_count
     join_tx->overflow = 1;
   }
   //XXX insert the 2nd bug again
-  //chaos_node_count_before_commit = chaos_get_node_count();
+  //chaos_node_count_before_commit = chaos_node_count;
   return;
 }
 
 //only executed by initiator
 static inline void commit(join_t* join_tx) {
   COOJA_DEBUG_STR("commit!");
-  uint8_t chaos_node_count_before_commit = chaos_get_node_count();
+  uint8_t chaos_node_count_before_commit = chaos_node_count;
   int i;
   for (i = 0; i < join_tx->slot_count; i++) {
     if( !join_tx->index[i] && join_tx->slot[i] ){
@@ -296,11 +296,11 @@ static inline void commit(join_t* join_tx) {
   //reset flags
   memset(join_tx->flags, 0, sizeof(join_tx->flags));
   //commit on my flag
-  unsigned int array_index = chaos_get_node_index() / 8;
-  unsigned int array_offset = chaos_get_node_index() % 8;
+  unsigned int array_index = chaos_node_index / 8;
+  unsigned int array_offset = chaos_node_index % 8;
   join_tx->flags[array_index] |= 1 << (array_offset);
   //update phase and node_count
-  join_tx->node_count = chaos_get_node_count();
+  join_tx->node_count = chaos_node_count;
   join_tx->commit = 1;
 }
 
@@ -398,14 +398,14 @@ static chaos_state_t process(uint16_t round_count, uint16_t slot,
         //drop local state
         memcpy(join_tx, join_rx, sizeof(join_t));
         memcpy(join_rx, join_tx, sizeof(join_t));
-        chaos_set_node_count(join_rx->node_count);
+        chaos_node_count = join_rx->node_count;
 
         //get the index
-        if( !chaos_get_has_node_index() ){
+        if( !chaos_has_node_index ){
           int i;
           for (i = 0; i < join_rx->slot_count; i++) {
             if (join_rx->slot[i] == node_id) {
-              chaos_set_node_index(join_rx->index[i]);
+              chaos_node_index = join_rx->index[i];
               chaos_has_node_index = 1;
               LEDS_ON(LEDS_RED);
               break;
@@ -414,9 +414,9 @@ static chaos_state_t process(uint16_t round_count, uint16_t slot,
         }
 
         //set the commit flag
-        if( chaos_get_has_node_index() ){
-          unsigned int array_index = chaos_get_node_index() / 8;
-          unsigned int array_offset = chaos_get_node_index() % 8;
+        if( chaos_has_node_index ){
+          unsigned int array_index = chaos_node_index / 8;
+          unsigned int array_offset = chaos_node_index % 8;
           join_tx->flags[array_index] |= 1 << (array_offset);
         } else {
           join_tx->overflow = 1;
@@ -595,7 +595,6 @@ uint8_t join_is_committed_from_payload( void* payload ){
 }
 
 static void round_begin( const uint16_t round_number, const uint8_t app_id ){
-  COOJA_DEBUG_PRINTF("join round_begin");
 #if FAULTY_NODE_ID
   memset(&join_debug_var, 0, sizeof(join_debug_var));
   memset(rx_pkt_crc_err, 0, sizeof(rx_pkt_crc_err));
@@ -619,16 +618,16 @@ static void round_begin( const uint16_t round_number, const uint8_t app_id ){
 #endif
 
   if( IS_INITIATOR() ){
-    join_data.node_count = chaos_get_node_count();
-    unsigned int array_index = chaos_get_node_index() / 8;
-    unsigned int array_offset = chaos_get_node_index() % 8;
+    join_data.node_count = chaos_node_count;
+    unsigned int array_index = chaos_node_index / 8;
+    unsigned int array_offset = chaos_node_index % 8;
     join_data.flags[array_index] |= 1 << (array_offset);
-  } else if( !chaos_get_has_node_index() ){
+  } else if( !chaos_has_node_index ){
     join_data.slot[0] = node_id;
     join_data.slot_count = 1;
   } else {
-    unsigned int array_index = chaos_get_node_index() / 8;
-    unsigned int array_offset = chaos_get_node_index() % 8;
+    unsigned int array_index = chaos_node_index / 8;
+    unsigned int array_offset = chaos_node_index % 8;
     join_data.flags[array_index] |= 1 << (array_offset);
   }
   chaos_round(round_number, app_id, (const uint8_t const*)&join_data, sizeof(join_data), JOIN_SLOT_LEN_DCO, JOIN_ROUND_MAX_SLOTS, get_flags_length(), process);
