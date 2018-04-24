@@ -165,6 +165,7 @@ static chaos_state_t process(uint16_t round_count, uint16_t slot,
     cluster_t* const cluster_tx = (cluster_t*) tx_payload;
 
     if(current_state == CHAOS_INIT && IS_INITIATOR()) {
+        got_valid_rx = 1;
         set_next_state(&next_state, CHAOS_TX);
     }
 
