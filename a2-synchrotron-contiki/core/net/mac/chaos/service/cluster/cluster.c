@@ -104,6 +104,13 @@ ALWAYS_INLINE static void update_rx_statistics(node_id_t source_id) {
     }
 }
 
+static void update_hop_count(cluster_t* tx_payload) {
+    uint8_t i;
+    for(i = 0; i < tx_payload->cluster_head_count; ++i) {
+        tx_payload->cluster_head_list[i].hop_count++;
+    }
+}
+
 ALWAYS_INLINE static void prepare_tx(cluster_t* const cluster_tx) {
     cluster_tx->source_id = node_id;
     update_hop_count(cluster_tx);
@@ -193,13 +200,6 @@ static chaos_state_t process(uint16_t round_count, uint16_t slot,
         prepare_tx(cluster_tx);
     }
     return next_state;
-}
-
-static void update_hop_count(cluster_t* tx_payload) {
-    int i;
-    for(i = 0; i < tx_payload->cluster_head_count; ++i) {
-        tx_payload->cluster_head_list[i].hop_count++;
-    }
 }
 
 static uint8_t insert(cluster_head_information_t* list, uint8_t size, cluster_head_information_t elem) {
@@ -476,22 +476,6 @@ static void round_end_sniffer(const chaos_header_t* header){
     } else {
         local_cluster_data.consecutive_cluster_round_count = -1;
     }
-}
-
-static ALWAYS_INLINE uint8_t prune_cluster_head_list(cluster_head_information_t* cluster_head_list, uint8_t length) {
-  cluster_head_information_t merge[NODE_LIST_LEN];
-  memset(merge, 0, sizeof(merge));
-
-  int i, j = 0;
-  for (i = 0; i < length; ++i)  {
-    if(cluster_head_list[i].hop_count <= CLUSTER_COMPETITION_RADIUS) {
-        merge[j++] = cluster_head_list[i];
-    } else {
-        COOJA_DEBUG_PRINTF("cluster pruning id: %d, hop count %d\n", cluster_head_list[i].id, cluster_head_list[i].hop_count);
-    }
-  }
-  memcpy(cluster_head_list, merge, sizeof(merge));
-  return j;
 }
 
 static inline int merge_lists(cluster_t* cluster_tx, cluster_t* cluster_rx) {
