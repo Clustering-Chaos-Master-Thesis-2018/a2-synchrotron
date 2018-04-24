@@ -40,7 +40,9 @@ static inline int merge_lists(cluster_t* cluster_tx, cluster_t* cluster_rx);
 #define CONSECUTIVE_RECEIVE_THRESHOLD 10
 #define CLUSTER_SERVICE_PENDING_THRESHOLD 14
 
-//What is this
+#define CLUSTER_SLOT_LEN          (7*(RTIMER_SECOND/1000)+0*(RTIMER_SECOND/1000)/2)
+#define CLUSTER_SLOT_LEN_DCO      (CLUSTER_SLOT_LEN*CLOCK_PHI)
+
 #define FLAGS_LEN(node_count)   ((node_count / 8) + ((node_count % 8) ? 1 : 0))
 #define LAST_FLAGS(node_count)  ((1 << ((((node_count) - 1) % 8) + 1)) - 1)
 #define FLAG_SUM(node_count)  ((((node_count) - 1) / 8 * 0xFF) + LAST_FLAGS(node_count))
@@ -48,7 +50,7 @@ static inline int merge_lists(cluster_t* cluster_tx, cluster_t* cluster_rx);
 #define CHAOS_RESTART_MAX 10
 #define CHAOS_RESTART_MIN 4
 
-CHAOS_SERVICE(cluster, (7*(RTIMER_SECOND/1000)+0*(RTIMER_SECOND/1000)/2), 260 , 0, is_pending, round_begin, round_begin_sniffer, round_end_sniffer);
+CHAOS_SERVICE(cluster, CLUSTER_SLOT_LEN, CLUSTER_ROUND_MAX_SLOTS, 0, is_pending, round_begin, round_begin_sniffer, round_end_sniffer);
 
 ALWAYS_INLINE static int get_flags_length(){
   return FLAGS_LEN(MAX_NODE_COUNT);
@@ -61,6 +63,11 @@ ALWAYS_INLINE static uint32_t generate_restart_threshold() {
 cluster_t local_cluster_data = {
     .consecutive_cluster_round_count = -1
 };
+
+uint16_t neighbour_list[MAX_NODE_COUNT];
+
+unsigned long total_energy_used = 0;
+static int8_t tentativeAnnouncementSlot = -1;
 
 uint32_t restart_threshold = 0;
 uint32_t invalid_rx_count = 0;
@@ -304,7 +311,7 @@ static void round_begin(const uint16_t round_count, const uint8_t app_id) {
     invalid_rx_count = 0;
     restart_threshold = generate_restart_threshold();
 
-    chaos_round(round_count, app_id, (const uint8_t const*)&initial_local_cluster_data, sizeof(initial_local_cluster_data), (7*(RTIMER_SECOND/1000)+0*(RTIMER_SECOND/1000)/2) * CLOCK_PHI, CLUSTER_ROUND_MAX_SLOTS, get_flags_length(), process);
+    chaos_round(round_count, app_id, (const uint8_t const*)&initial_local_cluster_data, sizeof(initial_local_cluster_data), CLUSTER_SLOT_LEN_DCO, CLUSTER_ROUND_MAX_SLOTS, get_flags_length(), process);
 }
 
 ALWAYS_INLINE static int is_pending(const uint16_t round_count) {
