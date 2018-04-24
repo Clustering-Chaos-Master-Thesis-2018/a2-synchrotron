@@ -147,10 +147,8 @@ static uint8_t chaos_time_rank = CHAOS_MAX_RANK;
   uint8_t no_flag_delta_count = 0;
 
   #define IS_MY_CLUSTER() my_cluster
-  #define IS_FORWARDER() is_forwarder
 #else
   #define IS_MY_CLUSTER() 1
-  #define IS_FORWARDER() 1
 #endif /* CHAOS_CLUSTER */
 
 #if CHAOS_HW_SECURITY
@@ -682,7 +680,6 @@ ALWAYS_INLINE
 void chaos_slot(uint16_t* sync_slot, int* chaos_slot_status, chaos_state_t* chaos_state, uint16_t* slot_number, uint16_t round_number, uint8_t app_id, vht_clock_t slot_length_app, process_callback_t process) {
 
   #if CHAOS_CLUSTER
-    uint8_t is_forwarder = 0;
     uint8_t my_cluster = 1;
   #endif /* CHAOS_CLUSTER */
 
@@ -740,10 +737,6 @@ void chaos_slot(uint16_t* sync_slot, int* chaos_slot_status, chaos_state_t* chao
       my_cluster = 0;
     }
 
-    if(IS_CLUSTER_HEAD_ROUND() && !IS_CLUSTER_HEAD()) {
-      my_cluster = 0;
-      is_forwarder = 1;
-    }
   #endif /* CHAOS_CLUSTER */
 
       /* it could be a valid packet but an unexpected app id.
