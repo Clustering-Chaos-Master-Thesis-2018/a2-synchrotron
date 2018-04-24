@@ -57,7 +57,7 @@ ALWAYS_INLINE static int get_flags_length(){
 }
 
 ALWAYS_INLINE static uint32_t generate_restart_threshold() {
-    return chaos_random_generator_fast() % (CHAOS_RESTART_MAX - CHAOS_RESTART_MIN) + CHAOS_RESTART_MIN;
+    return chaos_random_generator_fast_range(CHAOS_RESTART_MIN, CHAOS_RESTART_MAX);
 }
 
 cluster_t local_cluster_data = {
@@ -302,7 +302,7 @@ static void round_begin(const uint16_t round_count, const uint8_t app_id) {
 
     if(base_CH_probability < 0) {
     #if CLUSTER_RANDOMIZE_STARTING_ENERGY
-        uint8_t energy_coef = chaos_random_generator_fast() % CLUSTER_RANDOMIZE_STARTING_ENERGY;
+        uint8_t energy_coef = chaos_random_generator_fast_range(0, CLUSTER_RANDOMIZE_STARTING_ENERGY);
         total_energy_used = MAX_ENERGY * ((float)energy_coef / 100.0f);
     #endif /* CLUSTER_RANDOMIZE_STARTING_ENERGY */
         base_CH_probability = calculate_initial_CH_prob(total_energy_used);
@@ -452,7 +452,7 @@ static void heed_repeat(const cluster_head_information_t* cluster_head_list, uin
     } else {
         uint32_t precision = 1000;
         uint32_t probability = current_CH_prob * precision;
-        if(chaos_random_generator_fast() % precision <= probability) {
+        if(chaos_random_generator_fast_range(0, precision) <= probability) {
             tentativeAnnouncementSlot = chaos_random_generator_fast_range(0, CLUSTER_ROUND_MAX_SLOTS/2);
             COOJA_DEBUG_PRINTF("cluster, I AM TENTATIVE, decided to become CH in slot %d\n", tentativeAnnouncementSlot);
         }
