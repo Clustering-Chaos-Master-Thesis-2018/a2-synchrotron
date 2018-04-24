@@ -416,6 +416,13 @@ static float CH_probability(int8_t doubling_count) {
     return prob < 1.0f ? prob : 1.0f;
 }
 
+static void set_global_cluster_variables(const cluster_head_information_t* cluster_head_list, uint8_t cluster_head_count) {
+    cluster_head_information_t valid_cluster_heads[NODE_LIST_LEN];
+    const uint8_t valid_cluster_head_count = filter_valid_cluster_heads(cluster_head_list, cluster_head_count, valid_cluster_heads, CLUSTER_COMPETITION_RADIUS);
+    cluster_id = is_cluster_head() ? node_id : pick_best_cluster(valid_cluster_heads, valid_cluster_head_count);
+    cluster_index = index_of(cluster_head_list, cluster_head_count, cluster_id);
+}
+
 static void heed_repeat(const cluster_head_information_t* cluster_head_list, uint8_t cluster_head_count, uint8_t consecutive_cluster_round_count) {
     float current_CH_prob = CH_probability(consecutive_cluster_round_count);
 
@@ -423,21 +430,18 @@ static void heed_repeat(const cluster_head_information_t* cluster_head_list, uin
     ftoa(current_CH_prob, res, 4);
     COOJA_DEBUG_PRINTF("cluster heed_repeat CH_prob: %s", res);
 
-    float previous_CH_probability = CH_probability(consecutive_cluster_round_count - 1);
-    if(previous_CH_probability >= 1.0f) {
-        return;
-    }
-
     cluster_head_information_t valid_cluster_heads[NODE_LIST_LEN];
     uint8_t valid_cluster_head_count = filter_valid_cluster_heads(cluster_head_list, cluster_head_count, valid_cluster_heads, CLUSTER_COMPETITION_RADIUS);
-    if(valid_cluster_head_count > 0) {
-        if(cluster_head_state == TENTATIVE || cluster_head_state == FINAL) {
-            cluster_id = node_id;
-            cluster_index = index_of(cluster_head_list, cluster_head_count, node_id);
-        } else {
-            cluster_id = pick_best_cluster(valid_cluster_heads, valid_cluster_head_count);
-            cluster_index = index_of(cluster_head_list, cluster_head_count, cluster_id);
+
+    float previous_CH_probability = CH_probability(consecutive_cluster_round_count - 1);
+    if(previous_CH_probability >= 1.0f) {
+        if(valid_cluster_head_count > 0) {
+            set_global_cluster_variables(cluster_head_list, cluster_head_count);
         }
+        return;
+    }
+    if(valid_cluster_head_count > 0) {
+        set_global_cluster_variables(cluster_head_list, cluster_head_count);
 
         if(cluster_id == node_id) {
             if(current_CH_prob >= 1.0f) {
