@@ -23,4 +23,23 @@ typedef enum {
 #undef CLUSTER_RANDOMIZE_STARTING_ENERGY
 #define CLUSTER_RANDOMIZE_STARTING_ENERGY _param_randomize_starting_energy
 
+typedef struct __attribute__((packed)) {
+    node_id_t id;
+    union {
+        uint8_t information;
+        struct {
+          uint8_t
+            hop_count :6,    /* The distance in hops to the cluster head */
+            status :2;     /* CH status, can either be TENTATIVE or FINAL */
+        };
+      };
+} cluster_head_information_t;
+
+typedef struct __attribute__((packed)) {
+    uint8_t cluster_head_count;
+    uint8_t source_id;
+    int8_t consecutive_cluster_round_count;
+    cluster_head_information_t cluster_head_list[NODE_LIST_LEN];
+} cluster_t;
+
 #endif /* CHAOS_CLUSTER_H */

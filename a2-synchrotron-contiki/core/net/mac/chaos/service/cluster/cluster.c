@@ -18,34 +18,6 @@
 
 #include "lib.h"
 
-typedef struct __attribute__((packed)) {
-    node_id_t id;
-    union {
-        uint8_t information;
-        struct {
-          uint8_t
-            hop_count :6,    /* The distance in hops to the cluster head */
-            status :2;     /* CH status, can either be TENTATIVE or FINAL */
-        };
-      };
-} cluster_head_information_t;
-
-typedef struct __attribute__((packed)) {
-    uint8_t cluster_head_count;
-    uint8_t source_id;
-    int8_t consecutive_cluster_round_count;
-    cluster_head_information_t cluster_head_list[NODE_LIST_LEN];
-} cluster_t;
-
-cluster_t local_cluster_data = {
-    .consecutive_cluster_round_count = -1
-};
-
-uint16_t neighbour_list[MAX_NODE_COUNT];
-
-unsigned long total_energy_used = 0;
-static int8_t tentativeAnnouncementSlot = -1;
-
 static chaos_state_t process_cluster_head(uint16_t, uint16_t, chaos_state_t, int, size_t, cluster_t*, cluster_t*, uint8_t**);
 static chaos_state_t process_cluster_node(uint16_t, uint16_t, chaos_state_t, int, size_t, cluster_t*, cluster_t*, uint8_t**);
 static void round_begin(const uint16_t round_count, const uint8_t id);
@@ -85,6 +57,10 @@ ALWAYS_INLINE static int get_flags_length(){
 ALWAYS_INLINE static uint32_t generate_restart_threshold() {
     return chaos_random_generator_fast() % (CHAOS_RESTART_MAX - CHAOS_RESTART_MIN) + CHAOS_RESTART_MIN;
 }
+
+cluster_t local_cluster_data = {
+    .consecutive_cluster_round_count = -1
+};
 
 uint32_t restart_threshold = 0;
 uint32_t invalid_rx_count = 0;
