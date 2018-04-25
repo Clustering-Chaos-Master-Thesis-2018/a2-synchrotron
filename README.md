@@ -1,3 +1,14 @@
+# Clustering
+
+Further development of the A2-Synchrotron. Implements the HEED clustering protocol.
+
+From '/a2-synchrotron-contiki/apps/chaos/max" run:
+```
+./runTests.py dev 'make cooja log=0 printf=1 tx=31 mch=1 pch=0 sec=0 src=2 sync=0 failure=0 dynamic=1 initiator=1 interval=29 max_node_count=32 cluster=1 cluster_competition_radius=1 randomize_starting_energy=0' 60
+```
+The runTests.py script creates a new folder in the tests directory (child directory of max), runs the simulations in tests/simulation_files for a set amount of time and embeds the simulationScript.js file in the simulation file.
+
+
 # A2-Synchrotron
 
 # Network-wide Consensus Utilizing the Capture Effect in Low-power Wireless Networks
