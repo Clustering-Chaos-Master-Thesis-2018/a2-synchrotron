@@ -8,6 +8,7 @@ import concurrent.futures
 import re
 import xml.etree.ElementTree as ET
 import shutil
+import argparse
 
 RUN_TEST_COMMAND = ["./runTest"]
 TEST_DIRECTORY = "tests"
@@ -27,7 +28,7 @@ LOCAL_LOG_DIRECTORY = "log"
 LOCAL_COOJA_LOG_FILE = "cooja.log"
 LOCAL_TEST_INFORMATION_FILE = "information.txt"
 # Time is in seconds.
-SIMULATION_TIMEOUT = sys.argv[2] if len(sys.argv) > 2 else 60
+#SIMULATION_TIMEOUT = sys.argv[2] if len(sys.argv) > 2 else 60
 
 GET_COMMIT_HASH = ["git", "log", "-n 1", "--pretty=format:\"%h\""]
 
@@ -75,7 +76,7 @@ def create_script_plugin_tree(root):
     return script_tag
 
 
-def create_local_simulation_files(test_suite_folder, output_folder):
+def create_local_simulation_files(test_suite_folder, output_folder, simulation_timeout):
     """ Inserts the simulation script into the csc files and saves
         the new csc files to the output_folder."""
     simulation_files = get_global_simulation_files(GLOBAL_SIMULATION_DIRECTORY)
@@ -106,7 +107,7 @@ def create_local_simulation_files(test_suite_folder, output_folder):
 
         log_path = create_log_path_variable(
             test_suite_folder, os.path.basename(simulation_file))
-        timeout_call = create_timeout_function_call(SIMULATION_TIMEOUT)
+        timeout_call = create_timeout_function_call(simulation_timeout)
         script_tag.text = "".join(
             [log_path, timeout_call, simulation_script]
         )
@@ -117,11 +118,11 @@ def create_local_simulation_files(test_suite_folder, output_folder):
     return local_files
 
 
-def run_test(test_suite_folder, file):
+def run_test(test_suite_folder, file, simulation_timeout):
     path = create_local_test_folder(test_suite_folder, file)
-    # print("Running test: " + os.path.basename(file) + " for " + str(SIMULATION_TIMEOUT) + " seconds... ", end="", flush=True)
+    # print("Running test: " + os.path.basename(file) + " for " + str(simulation_timeout) + " seconds... ", end="", flush=True)
     print(
-        f"Running test: {os.path.basename(file)} for {str(SIMULATION_TIMEOUT)} seconds... ",
+        f"Running test: {os.path.basename(file)} for {str(simulation_timeout)} seconds... ",
         end="", flush=True
     )
 
@@ -147,20 +148,30 @@ def run_test(test_suite_folder, file):
         return None
 
 
-def format_test_suite_name(args):
-    name = (f"{args[1]}_" if len(args) > 1 else "")
-    return f"{name}{datetime.datetime.now():%Y-%m-%d_%H:%M:%S}"
+def format_test_suite_name(name):
+    return f"{name}_{datetime.datetime.now():%Y-%m-%d_%H:%M:%S}"
+
+def run_make_command(make_command):
+    if not make_command.startswith("make clean"):
+        subprocess.check_call("make clean".split())
+    subprocess.check_call(make_command.split())
 
 def main(args):
-    test_suite_name = format_test_suite_name(args)
+    parser=argparse.ArgumentParser()
+    parser.add_argument('name', help='Name of the test, e.g. "50-nodes-comp-radius-1". A timestamp will be appended to this. If the name is "dev" no timestamp is appended.')
+    parser.add_argument('build_command', help='Command used to build the .sky file. Make clean is run before building.')
+    parser.add_argument('sim_time', help='How long time should be simulated. In seconds.')
+    args=parser.parse_args()
 
-    if len(args) > 1 and args[1] == "dev":
-        test_suite_name = "dev"
+    test_suite_name = 'dev' if args.name == 'dev' else format_test_suite_name(args.name)
+
+    run_make_command(args.build_command)
+    simulation_timeout = args.sim_time
 
     test_suite_folder, simulation_folder = create_test_suite_folder_structure(
         test_suite_name)
     local_files = create_local_simulation_files(
-        test_suite_folder, simulation_folder)
+        test_suite_folder, simulation_folder, simulation_timeout)
     shutil.copyfile("max-app.sky", os.path.join(test_suite_folder, "max-app.sky"))
     print("Running test suite: " + test_suite_name +
           " with " + str(len(local_files)) + " test(s)")
@@ -170,7 +181,7 @@ def main(args):
     with concurrent.futures.ThreadPoolExecutor() as executor:
             # Start the load operations and mark each future with its URL
         future_to_test = {executor.submit(
-            run_test, test_suite_folder, file): file for file in local_files}
+            run_test, test_suite_folder, file, simulation_timeout): file for file in local_files}
         for test in concurrent.futures.as_completed(future_to_test):
             file = future_to_test[test]
             data = test.result()
@@ -185,8 +196,9 @@ def main(args):
     commit_hash = subprocess.check_output(GET_COMMIT_HASH)
     information = f"""Name: {test_suite_name}
         Time: {datetime.datetime.now():%Y-%m-%d_%H:%M:%S}
-        Timeout: {SIMULATION_TIMEOUT} seconds
+        Timeout: {simulation_timeout} seconds
         Commit: {commit_hash}
+        build_command: {args.build_command}
         #Tests: {len(local_files)}\n"""
 
     information += test_statistics
