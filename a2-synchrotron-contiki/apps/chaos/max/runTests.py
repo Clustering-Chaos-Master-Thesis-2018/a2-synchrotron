@@ -86,6 +86,15 @@ def create_local_simulation_files(test_suite_folder, output_folder, simulation_t
     with open(SCRIPT_FILE) as file:
         simulation_script = file.read()
 
+    print("")
+    for i, sim_file in enumerate(simulation_files):
+        print(f"{i}: {sim_file}")
+    tests = input("Which simulations do you want to run? (e.g. '0,1,3', leave empty to run all)\n>")
+    if tests:
+        test_numbers = list(map(int, tests.split(",")))
+        simulation_files = [simulation_files[x] for x in test_numbers]
+
+
     for simulation_file in simulation_files:
         output_file_path = os.path.join(
             output_folder, os.path.basename(simulation_file))
