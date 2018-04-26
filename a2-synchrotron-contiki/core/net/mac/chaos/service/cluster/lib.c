@@ -2,8 +2,17 @@
 #include<math.h>
 
 #include "lib.h"
-// C program for implementation of ftoa()
 
+uint16_t sum(const uint16_t* array, uint8_t size) {
+    uint16_t total = 0;
+    uint8_t i;
+    for(i = 0; i < size; ++i) {
+        total += array[i];
+    }
+    return  total;
+}
+
+// C program for implementation of ftoa()
 int ipow(int base, int exp) {
     int result = 1;
     while (exp)

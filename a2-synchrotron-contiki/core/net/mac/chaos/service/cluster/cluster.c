@@ -65,6 +65,7 @@ cluster_t local_cluster_data = {
 };
 
 uint16_t neighbour_list[MAX_NODE_COUNT];
+uint16_t neighbour_total_rx_count[MAX_NODE_COUNT];
 
 unsigned long total_energy_used = 0;
 static int8_t tentativeAnnouncementSlot = -1;
@@ -97,9 +98,10 @@ float calculate_initial_CH_prob(uint64_t total_energy_used) {
     return probability > min ? probability : min;
 }
 
-ALWAYS_INLINE static void update_rx_statistics(node_id_t source_id) {
+ALWAYS_INLINE static void update_rx_statistics(node_id_t source_id, uint16_t total_rx) {
     if (source_id < MAX_NODE_COUNT) {
         neighbour_list[source_id]++;
+        neighbour_total_rx_count[source_id] = total_rx;
     }
 }
 
@@ -114,6 +116,7 @@ ALWAYS_INLINE static void prepare_tx(cluster_t* const cluster_tx) {
     cluster_tx->source_id = node_id;
     update_hop_count(cluster_tx);
     cluster_tx->consecutive_cluster_round_count = local_cluster_data.consecutive_cluster_round_count;
+    cluster_tx->total_rx_count = sum(neighbour_list, MAX_NODE_COUNT);
 }
 
 static chaos_state_t handle_invalid_rx(cluster_t* const cluster_tx) {
@@ -184,7 +187,6 @@ static chaos_state_t process(uint16_t round_count, uint16_t slot,
 
         if(is_cluster_head()) {
             set_next_state(&next_state, process_cluster_head(round_count, slot, current_state, chaos_txrx_success, payload_length, cluster_rx, cluster_tx, app_flags));
-
         } else {
             set_next_state(&next_state, process_cluster_node(round_count, slot, current_state, chaos_txrx_success, payload_length, cluster_rx, cluster_tx, app_flags));
         }
@@ -404,17 +406,15 @@ ALWAYS_ACTUALLY_INLINE static void log_rx_count() {
         }
     }
 
-    uint16_t total = 0;
+    char tmp[20];
     for(i = 0; i < number_of_nodes_in_network + 5; i++) {
-        char tmp[20];
-        total += neighbour_list[i];
         sprintf(tmp, (i == number_of_nodes_in_network-1 ? "%u ":"%u, "), neighbour_list[i]);
         strcat(str, tmp);
     }
-    char tmp[20];
-    sprintf(tmp, "total: %u", total);
+
+    sprintf(tmp, "total: %u]\n", sum(neighbour_list, number_of_nodes_in_network));
     strcat(str, tmp);
-    strcat(str, "]\n");
+
     PRINTF(str);
 }
 
