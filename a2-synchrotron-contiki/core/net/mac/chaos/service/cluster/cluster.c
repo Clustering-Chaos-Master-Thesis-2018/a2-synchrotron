@@ -71,7 +71,6 @@ static int8_t tentativeAnnouncementSlot = -1;
 
 uint32_t restart_threshold = 0;
 uint32_t invalid_rx_count = 0;
-uint8_t consecutive_rx = 0;
 uint8_t got_valid_rx = 0;
 
 uint8_t is_cluster_service_running = 0;
@@ -177,7 +176,6 @@ static chaos_state_t process(uint16_t round_count, uint16_t slot,
         }
         got_valid_rx = 1;
         invalid_rx_count = 0;
-        consecutive_rx++;
         update_rx_statistics(cluster_rx->source_id);
 
         if (local_cluster_data.consecutive_cluster_round_count == -1) {
@@ -190,9 +188,6 @@ static chaos_state_t process(uint16_t round_count, uint16_t slot,
         } else {
             set_next_state(&next_state, process_cluster_node(round_count, slot, current_state, chaos_txrx_success, payload_length, cluster_rx, cluster_tx, app_flags));
         }
-
-    } else if(current_state == CHAOS_TX) {
-        consecutive_rx = 0;
     }
 
 
@@ -248,7 +243,6 @@ static chaos_state_t process_cluster_head(uint16_t round_count, uint16_t slot,
 
     delta |= merge_lists(tx_payload, rx_payload);
     set_best_available_hop_count(tx_payload, &local_cluster_data);
-    consecutive_rx++;
 
     const int node_in_list = index_of(tx_payload->cluster_head_list, tx_payload->cluster_head_count, node_id);
     if(node_in_list == -1) {
@@ -264,7 +258,7 @@ static chaos_state_t process_cluster_head(uint16_t round_count, uint16_t slot,
     delta = update_cluster_head_status(tx_payload->cluster_head_list, tx_payload->cluster_head_count, node_id);;
 
     merge_lists(&local_cluster_data, tx_payload);
-    if ((delta || consecutive_rx == CONSECUTIVE_RECEIVE_THRESHOLD || node_in_list == -1) && got_valid_rx) {
+    if ((delta || node_in_list == -1) && got_valid_rx) {
         next_state = CHAOS_TX;
     }
 
@@ -289,7 +283,6 @@ static chaos_state_t process_cluster_node(uint16_t round_count, uint16_t slot,
 static void round_begin(const uint16_t round_count, const uint8_t app_id) {
     restart_threshold = generate_restart_threshold();
     invalid_rx_count = 0;
-    consecutive_rx = 0;
     got_valid_rx = 0;
     is_cluster_service_running = 1;
 
