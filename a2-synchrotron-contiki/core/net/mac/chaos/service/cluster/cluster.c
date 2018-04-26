@@ -252,13 +252,14 @@ static chaos_state_t process_cluster_head(uint16_t round_count, uint16_t slot,
             info.hop_count = 0;
             info.status = cluster_head_state;
             tx_payload->cluster_head_count = insert(tx_payload->cluster_head_list, tx_payload->cluster_head_count, info);
+            delta |= 1;
         }
     }
 
-    delta = update_cluster_head_status(tx_payload->cluster_head_list, tx_payload->cluster_head_count, node_id);;
+    delta |= update_cluster_head_status(tx_payload->cluster_head_list, tx_payload->cluster_head_count, node_id);;
 
     merge_lists(&local_cluster_data, tx_payload);
-    if ((delta || node_in_list == -1) && got_valid_rx) {
+    if (delta && got_valid_rx) {
         next_state = CHAOS_TX;
     }
 
