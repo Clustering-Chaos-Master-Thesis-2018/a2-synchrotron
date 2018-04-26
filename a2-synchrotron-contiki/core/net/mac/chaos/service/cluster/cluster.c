@@ -398,6 +398,32 @@ ALWAYS_ACTUALLY_INLINE static void log_cluster_heads(cluster_head_information_t 
     PRINTF(str);
 }
 
+ALWAYS_ACTUALLY_INLINE static void log_rx_count() {
+    char str[300];
+    sprintf(str, "rx_count [ ");
+
+    uint8_t i;
+    uint8_t number_of_nodes_in_network = 0;
+    for(i = 0; i < MAX_NODE_COUNT; ++i) { 
+        if(neighbour_list[i] > 0) {
+            number_of_nodes_in_network = i;
+        }
+    }
+
+    uint16_t total = 0;
+    for(i = 0; i < number_of_nodes_in_network + 5; i++) {
+        char tmp[20];
+        total += neighbour_list[i];
+        sprintf(tmp, (i == number_of_nodes_in_network-1 ? "%u ":"%u, "), neighbour_list[i]);
+        strcat(str, tmp);
+    }
+    char tmp[20];
+    sprintf(tmp, "total: %u", total);
+    strcat(str, tmp);
+    strcat(str, "]\n");
+    PRINTF(str);
+}
+
 static uint8_t filter_valid_cluster_heads(const cluster_head_information_t* cluster_head_list, uint8_t cluster_head_count, cluster_head_information_t* const output, uint8_t threshold) {
     uint8_t i, j = 0;
     for(i = 0; i < cluster_head_count; ++i) {
@@ -478,6 +504,7 @@ static void round_end_sniffer(const chaos_header_t* header){
         }
         init_node_index();
         log_cluster_heads(local_cluster_data.cluster_head_list, local_cluster_data.cluster_head_count);
+        log_rx_count();
     } else {
         local_cluster_data.consecutive_cluster_round_count = -1;
     }
