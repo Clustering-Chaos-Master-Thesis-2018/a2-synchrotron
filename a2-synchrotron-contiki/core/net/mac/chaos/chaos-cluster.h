@@ -14,7 +14,7 @@ typedef uint8_t node_index_t;
     #define IS_CLUSTER_HEAD_ROUND()              (chaos_get_round_number() % 2 == 0 && HAS_CLUSTER_ID() && !IS_CLUSTER_JOIN() && !is_join_round)
     #define IS_SAME_CLUSTER(RECEIVED_CLUSTER_ID) (RECEIVED_CLUSTER_ID == chaos_get_cluster_id() \
                                                || RECEIVED_CLUSTER_ID == 0 \
-                                               || chaos_get_cluster_id() == 0)
+                                               || !HAS_CLUSTER_ID())
     #define IS_CLUSTER_HEAD()                    (node_id == chaos_get_cluster_id())
     #define HAS_CLUSTER_ID()                     (chaos_get_cluster_id() != 0)
     #define IS_FORWARDER()                       (IS_CLUSTER_HEAD_ROUND() && !IS_CLUSTER_HEAD())
