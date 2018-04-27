@@ -3,13 +3,49 @@
 
 #include "lib.h"
 
-uint16_t sum(const uint16_t* array, uint8_t size) {
+uint16_t sum(const uint16_t* const array, uint8_t size) {
     uint16_t total = 0;
     uint8_t i;
     for(i = 0; i < size; ++i) {
         total += array[i];
     }
     return  total;
+}
+
+
+uint16_t max(const uint16_t* const array, uint8_t size) {
+    uint16_t max = 0;
+    uint8_t i;
+    for(i = 0; i < size; ++i) {
+        if(array[i] > max) {
+            max = array[i];
+        }
+    }
+    return  max;
+}
+
+
+uint16_t min(const uint16_t* const array, uint8_t size) {
+    uint16_t min = 65535;
+    uint8_t i;
+    for(i = 0; i < size; ++i) {
+         if(array[i] > 0 && array[i] < min) {
+            min = array[i];
+        }
+    }
+    return  min;
+}
+
+
+uint8_t count_filled_slots(const uint16_t* const array, uint8_t size) {
+    uint8_t total = 0;
+    uint8_t i;
+    for(i = 0; i < size; ++i) {
+        if(array[i] > 0) {
+            total += 1;
+        }
+    }
+    return total;
 }
 
 // C program for implementation of ftoa()
