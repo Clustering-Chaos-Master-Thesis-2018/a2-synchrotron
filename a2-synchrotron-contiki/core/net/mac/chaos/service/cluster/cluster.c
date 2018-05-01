@@ -234,6 +234,19 @@ ALWAYS_INLINE static uint8_t update_cluster_head_status(cluster_head_information
     return 0;
 }
 
+ALWAYS_INLINE static uint8_t cluster_head_exists(cluster_head_information_t* const cluster_head_list, uint8_t size, node_id_t cluster_id) {
+    return index_of(cluster_head_list, size, cluster_id) != -1;
+}
+
+ALWAYS_INLINE static cluster_head_information_t create_cluster_head(node_id_t node_id, CHState cluster_head_state) {
+    cluster_head_information_t cluster_head_information;
+    cluster_head_information.id = node_id;
+    cluster_head_information.hop_count = 0;
+    cluster_head_information.status = cluster_head_state;
+
+    return cluster_head_information;
+}
+
 static chaos_state_t process_cluster_head(uint16_t round_count, uint16_t slot,
     chaos_state_t current_state, int chaos_txrx_success, size_t payload_length,
     cluster_t* rx_payload, cluster_t* tx_payload, uint8_t** app_flags) {
@@ -244,16 +257,9 @@ static chaos_state_t process_cluster_head(uint16_t round_count, uint16_t slot,
     delta |= merge_lists(tx_payload, rx_payload);
     set_best_available_hop_count(tx_payload, &local_cluster_data);
 
-    const int node_in_list = index_of(tx_payload->cluster_head_list, tx_payload->cluster_head_count, node_id);
-    if(node_in_list == -1) {
-        if(tx_payload->cluster_head_count < NODE_LIST_LEN) {
-            cluster_head_information_t info;
-            info.id = node_id;
-            info.hop_count = 0;
-            info.status = cluster_head_state;
-            tx_payload->cluster_head_count = insert(tx_payload->cluster_head_list, tx_payload->cluster_head_count, info);
-            delta |= 1;
-        }
+    if(!cluster_head_exists(tx_payload->cluster_head_list, tx_payload->cluster_head_count, node_id) && tx_payload->cluster_head_count < NODE_LIST_LEN) {
+        tx_payload->cluster_head_count = insert(tx_payload->cluster_head_list, tx_payload->cluster_head_count, create_cluster_head(node_id, cluster_head_state));
+        delta |= 1;
     }
 
     delta |= update_cluster_head_status(tx_payload->cluster_head_list, tx_payload->cluster_head_count, node_id);;
