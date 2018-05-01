@@ -227,7 +227,7 @@ static uint8_t insert(cluster_head_information_t* list, uint8_t size, cluster_he
 
 ALWAYS_INLINE static uint8_t update_cluster_head_status(cluster_head_information_t* const cluster_head_list, uint8_t size, node_id_t node_id) {
     const int index = index_of(cluster_head_list, size, node_id);
-    if(cluster_head_list[index].status != cluster_head_state) {
+    if(index > 0 && index < size && cluster_head_list[index].status != cluster_head_state) {
         cluster_head_list[index].status = cluster_head_state;
         return 1;
     }
