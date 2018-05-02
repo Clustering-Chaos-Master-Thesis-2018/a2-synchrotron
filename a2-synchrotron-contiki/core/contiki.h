@@ -35,7 +35,7 @@
 #define CONTIKI_H_
 
 #define ALWAYS_INLINE inline
-#define ALWAYS_ACTUALLY_INLINE __attribute__((always_inline))
+#define ALWAYS_ACTUALLY_INLINE inline
 
 #include "contiki-version.h"
 #include "contiki-conf.h"
