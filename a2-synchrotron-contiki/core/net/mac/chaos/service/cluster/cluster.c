@@ -25,7 +25,6 @@ static int is_pending(const uint16_t round_count);
 static void round_begin_sniffer(chaos_header_t* header);
 static void round_end_sniffer(const chaos_header_t* header);
 static node_id_t pick_best_cluster(const cluster_head_information_t *cluster_head_list, uint8_t size);
-static int index_of(const cluster_head_information_t *cluster_head_list, uint8_t size, node_id_t value);
 static void log_cluster_heads(cluster_head_information_t *cluster_head_list, uint8_t cluster_head_count);
 static uint8_t filter_valid_cluster_heads(const cluster_head_information_t* cluster_head_list, uint8_t cluster_head_count, cluster_head_information_t* const output, uint8_t threshold);
 static float CH_probability(int8_t doubling_count);
@@ -230,7 +229,7 @@ static uint8_t insert(cluster_head_information_t* list, uint8_t size, cluster_he
 }
 
 ALWAYS_INLINE static uint8_t update_cluster_head_status(cluster_head_information_t* const cluster_head_list, uint8_t size, node_id_t node_id) {
-    const int index = index_of(cluster_head_list, size, node_id);
+    const int16_t index = index_of(cluster_head_list, size, node_id);
     if(index > 0 && index < size && cluster_head_list[index].status != cluster_head_state) {
         cluster_head_list[index].status = cluster_head_state;
         return 1;
@@ -347,16 +346,6 @@ static node_id_t pick_best_cluster(const cluster_head_information_t *cluster_hea
         }
     }
     return biggest_rx_id;
-}
-
-ALWAYS_ACTUALLY_INLINE static int index_of(const cluster_head_information_t *array, uint8_t size, node_id_t value) {
-    uint8_t i;
-    for(i = 0; i < size; ++i) {
-        if (array[i].id == value) {
-            return i;
-        }
-    }
-    return -1;
 }
 
 static void round_begin_sniffer(chaos_header_t* header){

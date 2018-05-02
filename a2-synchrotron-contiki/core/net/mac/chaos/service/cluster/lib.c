@@ -3,6 +3,8 @@
 
 #include "lib.h"
 
+#include "contiki.h"
+
 uint16_t sum(const uint16_t* const array, uint8_t size) {
     uint16_t total = 0;
     uint8_t i;
@@ -46,6 +48,16 @@ uint8_t count_filled_slots(const uint16_t* const array, uint8_t size) {
         }
     }
     return total;
+}
+
+ALWAYS_ACTUALLY_INLINE int16_t index_of(const cluster_head_information_t *array, uint8_t size, node_id_t value) {
+    uint8_t i;
+    for(i = 0; i < size; ++i) {
+        if (array[i].id == value) {
+            return i;
+        }
+    }
+    return -1;
 }
 
 // C program for implementation of ftoa()
