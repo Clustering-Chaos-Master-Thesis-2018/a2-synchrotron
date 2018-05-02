@@ -28,7 +28,7 @@ typedef enum {
 #define MAX_NODE_COUNT 254
 #endif
 
-uint16_t neighbour_list[MAX_NODE_COUNT];
+extern uint16_t neighbour_list[MAX_NODE_COUNT];
 
 typedef struct __attribute__((packed)) {
     node_id_t id;

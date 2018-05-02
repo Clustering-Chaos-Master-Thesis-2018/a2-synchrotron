@@ -65,6 +65,7 @@ cluster_t local_cluster_data = {
 };
 
 uint16_t neighbour_total_rx_count[MAX_NODE_COUNT] = {0};
+uint16_t neighbour_list[MAX_NODE_COUNT] = {0};
 
 unsigned long total_energy_used = 0;
 static int8_t tentativeAnnouncementSlot = -1;
@@ -191,6 +192,8 @@ static chaos_state_t process(uint16_t round_count, uint16_t slot,
         }
     }
 
+    set_best_available_hop_count(cluster_tx, &local_cluster_data);
+    merge_lists(&local_cluster_data, cluster_tx);
 
     if(next_state == CHAOS_TX) {
         prepare_tx(cluster_tx);
@@ -256,7 +259,6 @@ static chaos_state_t process_cluster_head(uint16_t round_count, uint16_t slot,
     chaos_state_t next_state = CHAOS_RX;
 
     delta |= merge_lists(tx_payload, rx_payload);
-    set_best_available_hop_count(tx_payload, &local_cluster_data);
 
     if(!cluster_head_exists(tx_payload->cluster_head_list, tx_payload->cluster_head_count, node_id) && tx_payload->cluster_head_count < NODE_LIST_LEN) {
         tx_payload->cluster_head_count = insert(tx_payload->cluster_head_list, tx_payload->cluster_head_count, create_cluster_head(node_id, cluster_head_state));
@@ -265,7 +267,6 @@ static chaos_state_t process_cluster_head(uint16_t round_count, uint16_t slot,
 
     delta |= update_cluster_head_status(tx_payload->cluster_head_list, tx_payload->cluster_head_count, node_id);;
 
-    merge_lists(&local_cluster_data, tx_payload);
     if (delta && got_valid_rx) {
         next_state = CHAOS_TX;
     }
@@ -280,8 +281,6 @@ static chaos_state_t process_cluster_node(uint16_t round_count, uint16_t slot,
     chaos_state_t next_state = CHAOS_RX;
 
     delta |= merge_lists(tx_payload, rx_payload);
-    set_best_available_hop_count(tx_payload, &local_cluster_data);
-    merge_lists(&local_cluster_data, tx_payload);
     if (delta && got_valid_rx) {
         next_state = CHAOS_TX;
     }
