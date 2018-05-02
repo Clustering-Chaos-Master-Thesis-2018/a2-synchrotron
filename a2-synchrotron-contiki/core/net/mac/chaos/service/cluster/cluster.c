@@ -64,6 +64,8 @@ cluster_t local_cluster_data = {
     .consecutive_cluster_round_count = -1
 };
 
+uint16_t neighbour_total_rx_count[MAX_NODE_COUNT] = {0};
+
 unsigned long total_energy_used = 0;
 static int8_t tentativeAnnouncementSlot = -1;
 
@@ -95,9 +97,10 @@ float calculate_initial_CH_prob(uint64_t total_energy_used) {
     return probability > min ? probability : min;
 }
 
-ALWAYS_INLINE static void update_rx_statistics(node_id_t source_id) {
+ALWAYS_INLINE static void update_rx_statistics(node_id_t source_id, uint16_t total_rx) {
     if (source_id < MAX_NODE_COUNT) {
         neighbour_list[source_id]++;
+        neighbour_total_rx_count[source_id] = total_rx;
     }
 }
 
@@ -112,6 +115,7 @@ ALWAYS_INLINE static void prepare_tx(cluster_t* const cluster_tx) {
     cluster_tx->source_id = node_id;
     update_hop_count(cluster_tx);
     cluster_tx->consecutive_cluster_round_count = local_cluster_data.consecutive_cluster_round_count;
+    cluster_tx->total_rx_count = sum(neighbour_list, MAX_NODE_COUNT);
 }
 
 static chaos_state_t handle_invalid_rx(cluster_t* const cluster_tx) {
@@ -174,7 +178,7 @@ static chaos_state_t process(uint16_t round_count, uint16_t slot,
         }
         got_valid_rx = 1;
         invalid_rx_count = 0;
-        update_rx_statistics(cluster_rx->source_id);
+        update_rx_statistics(cluster_rx->source_id, sum(neighbour_list, MAX_NODE_COUNT));
 
         if (local_cluster_data.consecutive_cluster_round_count == -1) {
             local_cluster_data.consecutive_cluster_round_count = cluster_rx->consecutive_cluster_round_count;
@@ -182,7 +186,6 @@ static chaos_state_t process(uint16_t round_count, uint16_t slot,
 
         if(is_cluster_head()) {
             set_next_state(&next_state, process_cluster_head(round_count, slot, current_state, chaos_txrx_success, payload_length, cluster_rx, cluster_tx, app_flags));
-
         } else {
             set_next_state(&next_state, process_cluster_node(round_count, slot, current_state, chaos_txrx_success, payload_length, cluster_rx, cluster_tx, app_flags));
         }
@@ -396,6 +399,41 @@ ALWAYS_ACTUALLY_INLINE static void log_cluster_heads(cluster_head_information_t 
     PRINTF(str);
 }
 
+ALWAYS_ACTUALLY_INLINE static void log_rx_count() {
+    char str[900];
+    sprintf(str, "rx_count [ ");
+
+    uint8_t i;
+    uint8_t largest_id_in_network = 0;
+    for(i = 0; i < MAX_NODE_COUNT; ++i) { 
+        if(neighbour_list[i] > 0) {
+            largest_id_in_network = i;
+        }
+    }
+
+    const uint16_t rx_sum = sum(neighbour_total_rx_count, MAX_NODE_COUNT);
+    const uint8_t number_of_nodes = count_filled_slots(neighbour_total_rx_count, MAX_NODE_COUNT);
+    uint16_t rx_average = 0;
+    if(number_of_nodes > 0) {
+        rx_average = rx_sum / count_filled_slots(neighbour_total_rx_count, MAX_NODE_COUNT);
+    }
+
+    const uint16_t rx_min = min(neighbour_total_rx_count, MAX_NODE_COUNT);
+    const uint16_t rx_max = max(neighbour_total_rx_count, MAX_NODE_COUNT);
+
+    char tmp[35];
+    for(i = 0; i < largest_id_in_network; i++) {
+        sprintf(tmp, (i == largest_id_in_network-1 ? "%u ":"%u, "), neighbour_list[i]);
+        strcat(str, tmp);
+    }
+
+    char end_line[80];
+    sprintf(end_line, "total: %u, average: %u, min: %u, max: %u]\n", sum(neighbour_list, MAX_NODE_COUNT), rx_average, rx_min, rx_max);
+    strcat(str, end_line);
+
+    PRINTF(str);
+}
+
 static uint8_t filter_valid_cluster_heads(const cluster_head_information_t* cluster_head_list, uint8_t cluster_head_count, cluster_head_information_t* const output, uint8_t threshold) {
     uint8_t i, j = 0;
     for(i = 0; i < cluster_head_count; ++i) {
@@ -476,6 +514,7 @@ static void round_end_sniffer(const chaos_header_t* header){
         }
         init_node_index();
         log_cluster_heads(local_cluster_data.cluster_head_list, local_cluster_data.cluster_head_count);
+        log_rx_count();
     } else {
         local_cluster_data.consecutive_cluster_round_count = -1;
     }

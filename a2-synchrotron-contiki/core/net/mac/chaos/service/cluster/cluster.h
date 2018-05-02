@@ -27,6 +27,7 @@ typedef enum {
 #ifndef MAX_NODE_COUNT
 #define MAX_NODE_COUNT 254
 #endif
+
 uint16_t neighbour_list[MAX_NODE_COUNT];
 
 typedef struct __attribute__((packed)) {
@@ -44,6 +45,7 @@ typedef struct __attribute__((packed)) {
 typedef struct __attribute__((packed)) {
     uint8_t cluster_head_count;
     uint8_t source_id;
+    uint16_t total_rx_count;
     int8_t consecutive_cluster_round_count;
     cluster_head_information_t cluster_head_list[NODE_LIST_LEN];
 } cluster_t;
