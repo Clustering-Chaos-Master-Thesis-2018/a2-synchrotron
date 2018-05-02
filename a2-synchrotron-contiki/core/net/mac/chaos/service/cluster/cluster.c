@@ -56,15 +56,13 @@ ALWAYS_INLINE static int get_flags_length(){
   return FLAGS_LEN(MAX_NODE_COUNT);
 }
 
-ALWAYS_INLINE static uint32_t generate_restart_threshold() {
+ALWAYS_INLINE uint32_t generate_restart_threshold() {
     return chaos_random_generator_fast_range(CHAOS_RESTART_MIN, CHAOS_RESTART_MAX);
 }
 
 cluster_t local_cluster_data = {
     .consecutive_cluster_round_count = -1
 };
-
-uint16_t neighbour_list[MAX_NODE_COUNT];
 
 unsigned long total_energy_used = 0;
 static int8_t tentativeAnnouncementSlot = -1;
