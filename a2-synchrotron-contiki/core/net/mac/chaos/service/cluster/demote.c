@@ -44,12 +44,14 @@ ALWAYS_INLINE static int get_flags_length(){
   return FLAGS_LEN(MAX_NODE_COUNT);
 }
 
-// Cannot be demoted to RX if TX has ever been decided
-void set_next_state(chaos_state_t* next, chaos_state_t next_candidate) {
-    if (*next == CHAOS_TX) {
-        return;
+static int16_t index_of(const node_id_t const *array, uint8_t size, node_id_t value) {
+    uint8_t i;
+    for(i = 0; i < size; ++i) {
+        if (array[i] == value) {
+            return i;
+        }
     }
-    *next = next_candidate;
+    return -1;
 }
 
 static chaos_state_t process(uint16_t round_count, uint16_t slot,
@@ -83,6 +85,14 @@ static chaos_state_t process(uint16_t round_count, uint16_t slot,
             }
             if(!found) {
                 cluster_tx->demoted_cluster_heads[cluster_tx->node_count++] = cluster_rx->demoted_cluster_heads[i];
+                delta = 1;
+            }
+        }
+
+        if(demoted) {
+            int16_t node_in_list = index_of(cluster_tx->demoted_cluster_heads, cluster_tx->node_count, node_id);
+            if(node_in_list == -1) {
+                cluster_tx->demoted_cluster_heads[cluster_tx->node_count++] = node_id;
                 delta = 1;
             }
         }

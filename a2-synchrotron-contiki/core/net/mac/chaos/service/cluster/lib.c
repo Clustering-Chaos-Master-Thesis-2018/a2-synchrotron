@@ -50,14 +50,44 @@ uint8_t count_filled_slots(const uint16_t* const array, uint8_t size) {
     return total;
 }
 
-ALWAYS_ACTUALLY_INLINE int16_t index_of(const cluster_head_information_t *array, uint8_t size, node_id_t value) {
+uint8_t calculate_smallest_hop_count(const cluster_head_information_t const *cluster_head_list, uint8_t size) {
     uint8_t i;
+    uint8_t smallest_hop_count = 255;
     for(i = 0; i < size; ++i) {
-        if (array[i].id == value) {
-            return i;
+        if(cluster_head_list[i].hop_count < smallest_hop_count) {
+            smallest_hop_count = cluster_head_list[i].hop_count;
         }
     }
-    return -1;
+    return smallest_hop_count;
+}
+
+uint8_t filter_valid_cluster_heads(const cluster_head_information_t* const cluster_head_list, uint8_t cluster_head_count, cluster_head_information_t* const output, uint8_t threshold) {
+    uint8_t i, output_size = 0;
+    for(i = 0; i < cluster_head_count; ++i) {
+        if(cluster_head_list[i].hop_count <= threshold) {
+            output[output_size++] = cluster_head_list[i];
+        }
+    }
+    return output_size;
+}
+
+node_id_t pick_best_cluster(const cluster_head_information_t *cluster_head_list, uint8_t size) {
+    cluster_head_information_t valid_cluster_heads[NODE_LIST_LEN];
+    uint8_t smallest_hop_count = calculate_smallest_hop_count(cluster_head_list, size);
+    const uint8_t valid_cluster_head_count = filter_valid_cluster_heads(cluster_head_list, size, valid_cluster_heads, smallest_hop_count);;
+
+    uint8_t i;
+    uint16_t biggest_rx_count = 0;
+    node_id_t biggest_rx_id = 0;
+    for(i = 0; i < valid_cluster_head_count; ++i) {
+        const node_id_t node_id = valid_cluster_heads[i].id;
+        const uint16_t curent_rx_count = neighbour_list[node_id];
+        if(curent_rx_count > biggest_rx_count) {
+            biggest_rx_count = curent_rx_count;
+            biggest_rx_id = node_id;
+        }
+    }
+    return biggest_rx_id;
 }
 
 // C program for implementation of ftoa()

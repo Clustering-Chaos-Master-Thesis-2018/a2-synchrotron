@@ -56,5 +56,6 @@ typedef struct __attribute__((packed)) {
 } demote_cluster_t;
 
 ALWAYS_INLINE uint32_t generate_restart_threshold();
+void set_global_cluster_variables(const cluster_head_information_t* cluster_head_list, uint8_t cluster_head_count);
 
 #endif /* CHAOS_CLUSTER_H */
