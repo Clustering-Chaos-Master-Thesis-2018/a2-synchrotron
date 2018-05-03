@@ -2,8 +2,83 @@
 #include<math.h>
 
 #include "lib.h"
-// C program for implementation of ftoa()
 
+uint16_t sum(const uint16_t* const array, uint8_t size) {
+    uint16_t total = 0;
+    uint8_t i;
+    for(i = 0; i < size; ++i) {
+        total += array[i];
+    }
+    return  total;
+}
+
+
+uint16_t max(const uint16_t* const array, uint8_t size) {
+    uint16_t max = 0;
+    uint8_t i;
+    for(i = 0; i < size; ++i) {
+        if(array[i] > max) {
+            max = array[i];
+        }
+    }
+    return  max;
+}
+
+
+uint16_t min(const uint16_t* const array, uint8_t size) {
+    uint16_t min = 65535;
+    uint8_t i;
+    for(i = 0; i < size; ++i) {
+         if(array[i] > 0 && array[i] < min) {
+            min = array[i];
+        }
+    }
+    return  min;
+}
+
+float mean(const uint16_t* const array, uint8_t size) {
+    const uint8_t filled_slots = count_filled_slots(array, size);
+    return filled_slots > 0 ? ((float)sum(array, size) / (float)filled_slots) : 0;
+}
+
+float standard_deviation(const uint16_t* const array, uint8_t size) {
+    const float m = mean(array, size);
+    uint8_t i;
+    float squared_differences_sum = 0;
+    uint8_t elems_count = 0;
+    for (i = 0; i < size; ++i) {
+        if (array[i] > 0) {
+            elems_count++;
+            float a = array[i];
+            squared_differences_sum += (a - m)*(a - m);
+        }
+    }
+    return (float)sqrt(squared_differences_sum/(elems_count-1));
+}
+
+uint8_t last_filled_index(const uint16_t* const array, uint8_t size) {
+    uint8_t i;
+    uint8_t largest_id_index = 0;
+    for(i = 0; i < size; ++i) {
+        if(array[i] > 0) {
+            largest_id_index = i;
+        }
+    }
+    return largest_id_index;
+}
+
+uint8_t count_filled_slots(const uint16_t* const array, uint8_t size) {
+    uint8_t total = 0;
+    uint8_t i;
+    for(i = 0; i < size; ++i) {
+        if(array[i] > 0) {
+            total += 1;
+        }
+    }
+    return total;
+}
+
+// C program for implementation of ftoa()
 int ipow(int base, int exp) {
     int result = 1;
     while (exp)

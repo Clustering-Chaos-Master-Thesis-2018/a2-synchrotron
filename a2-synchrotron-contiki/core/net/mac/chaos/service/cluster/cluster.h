@@ -35,6 +35,7 @@ typedef struct __attribute__((packed)) {
 typedef struct __attribute__((packed)) {
     uint8_t cluster_head_count;
     uint8_t source_id;
+    uint16_t total_rx_count;
     int8_t consecutive_cluster_round_count;
     cluster_head_information_t cluster_head_list[NODE_LIST_LEN];
 } cluster_t;
