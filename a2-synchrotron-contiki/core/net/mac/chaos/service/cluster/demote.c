@@ -81,7 +81,7 @@ static chaos_state_t process(uint16_t round_count, uint16_t slot,
         uint8_t i, j = 0;
         uint8_t found = 0;
         for(i = 0; i < cluster_rx->node_count; ++i) {
-            for(j = 0; j < cluster_tx->node_count; ++i) {
+            for(j = 0; j < cluster_tx->node_count; ++j) {
                 if(cluster_tx->demoted_cluster_heads[j] == cluster_rx->demoted_cluster_heads[i]) {
                     found = 1;
                 }
