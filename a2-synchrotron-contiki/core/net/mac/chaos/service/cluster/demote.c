@@ -109,13 +109,29 @@ static chaos_state_t process(uint16_t round_count, uint16_t slot,
 }
 
 
+ALWAYS_INLINE uint8_t should_demote(uint8_t neighbour_count, uint8_t joined_nodes_count) {
+    return joined_nodes_count < 4 /*&& neighbour_count > 8*/;
+}
+
 static void round_begin(const uint16_t round_count, const uint8_t app_id) {
     got_valid_rx = 0;
     invalid_rx_count = 0;
+    demote_service_running = 1;
     restart_threshold = generate_restart_threshold();
 
     demote_cluster_t initial_demote_data;
-    memset(&initial_demote_data, 0, sizeof(cluster_t));
+
+    memset(&initial_demote_data, 0, sizeof(demote_cluster_t));
+
+    const uint8_t count = count_filled_slots(neighbour_list, MAX_NODE_COUNT);
+    if(IS_CLUSTER_HEAD() && should_demote(count, chaos_node_count)) {
+        COOJA_DEBUG_PRINTF("cluster demoting myself, chaos_node_count: %u < 4", chaos_node_count);
+        initial_demote_data.demoted_cluster_heads[initial_demote_data.node_count++] = node_id;
+        demoted = 1;
+        cluster_head_state = NOT_INITIALIZED;
+    } else {
+        demoted = 0;
+    }
 
     chaos_round(round_count, app_id, (const uint8_t const*)&initial_demote_data, sizeof(initial_demote_data), CLUSTER_SLOT_LEN_DCO, CLUSTER_ROUND_MAX_SLOTS, get_flags_length(), process);
 }
@@ -128,8 +144,46 @@ static void round_begin_sniffer(chaos_header_t* header){
 }
 
 
-static void round_end_sniffer(const chaos_header_t* header){
+uint8_t filter_demoted_cluster_heads(const cluster_head_information_t* const cluster_head_list, uint8_t cluster_head_count, cluster_head_information_t* const output, const demote_cluster_t* const demoted_packet) {
+    uint8_t i, j, output_size = 0, found = 0;
+    for(i = 0; i < cluster_head_count; ++i) {
+        found = 0;
+        for(j = 0; j < demoted_packet->node_count; ++j) {
+            if(cluster_head_list[i].id == demoted_packet->demoted_cluster_heads[j]) {
+                found = 1;
+                break;
+            }
+        }
+        if(!found) {
+            output[output_size++] = cluster_head_list[i];
+        }
+    }
+    return output_size;
+}
 
+static void round_end_sniffer(const chaos_header_t* header){
+    if(!demote_service_running) {
+        return;
+    }
+    demote_service_running = is_pending(header->round_number + 1);
+    const demote_cluster_t* payload = (demote_cluster_t*)header->payload;
+
+    cluster_head_information_t filtered_cluster_heads[NODE_LIST_LEN];
+    cluster_head_information_t valid_cluster_heads[NODE_LIST_LEN];
+
+    const uint8_t output_size = filter_demoted_cluster_heads(local_cluster_data.cluster_head_list, local_cluster_data.cluster_head_count, filtered_cluster_heads, payload);
+    if(output_size == local_cluster_data.cluster_head_count) {
+        return;
+    }
+    volatile uint8_t valid_cluster_head_count = filter_valid_cluster_heads(filtered_cluster_heads, output_size, valid_cluster_heads, CLUSTER_COMPETITION_RADIUS);
+    if(valid_cluster_head_count == 0) {
+        COOJA_DEBUG_PRINTF("No valid cluster heads left after demotion, doing nothing");
+    } else {
+        set_global_cluster_variables(filtered_cluster_heads, output_size);
+        chaos_cluster_node_count = output_size;
+        init_node_index();
+        COOJA_DEBUG_PRINTF("cluster head demoted, changing to cluster: %u, index: %u, new_cluster_count: %u", cluster_id, cluster_index, chaos_cluster_node_count);
+    }
 }
 
 static chaos_state_t handle_invalid_rx() {
