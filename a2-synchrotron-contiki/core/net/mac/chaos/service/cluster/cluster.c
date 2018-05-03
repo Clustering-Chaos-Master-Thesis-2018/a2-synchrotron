@@ -398,32 +398,27 @@ ALWAYS_ACTUALLY_INLINE static void log_rx_count() {
     char str[900];
     sprintf(str, "rx_count [ ");
 
-    uint8_t i;
-    uint8_t largest_id_in_network = 0;
-    for(i = 0; i < MAX_NODE_COUNT; ++i) { 
-        if(neighbour_list[i] > 0) {
-            largest_id_in_network = i;
-        }
-    }
+    const uint8_t number_of_nodes = count_filled_slots(neighbour_list, MAX_NODE_COUNT);
 
-    const uint16_t rx_sum = sum(neighbour_total_rx_count, MAX_NODE_COUNT);
-    const uint8_t number_of_nodes = count_filled_slots(neighbour_total_rx_count, MAX_NODE_COUNT);
-    uint16_t rx_average = 0;
-    if(number_of_nodes > 0) {
-        rx_average = rx_sum / count_filled_slots(neighbour_total_rx_count, MAX_NODE_COUNT);
-    }
+    const uint16_t rx_sum = sum(neighbour_list, MAX_NODE_COUNT);
+    const uint16_t rx_min = min(neighbour_list, MAX_NODE_COUNT);
+    const uint16_t rx_max = max(neighbour_list, MAX_NODE_COUNT);
 
-    const uint16_t rx_min = min(neighbour_total_rx_count, MAX_NODE_COUNT);
-    const uint16_t rx_max = max(neighbour_total_rx_count, MAX_NODE_COUNT);
+    char rx_average_string[20];
+    ftoa(mean(neighbour_list, MAX_NODE_COUNT), rx_average_string, 4);
+    char rx_sd_string[20];
+    ftoa(standard_deviation(neighbour_list, MAX_NODE_COUNT), rx_sd_string, 4);
 
+    uint8_t largest_id_in_network = last_filled_index(neighbour_list, MAX_NODE_COUNT);
     char tmp[35];
-    for(i = 0; i < largest_id_in_network; i++) {
-        sprintf(tmp, (i == largest_id_in_network-1 ? "%u ":"%u, "), neighbour_list[i]);
+    uint8_t i;
+    for(i = 0; i <= largest_id_in_network; i++) {
+        sprintf(tmp, (i == largest_id_in_network ? "%u ":"%u, "), neighbour_list[i]);
         strcat(str, tmp);
     }
 
     char end_line[80];
-    sprintf(end_line, "total: %u, average: %u, min: %u, max: %u]\n", sum(neighbour_list, MAX_NODE_COUNT), rx_average, rx_min, rx_max);
+    sprintf(end_line, "total: %u, mean: %s, min: %u, max: %u, sd: %s]\n", rx_sum, rx_average_string, rx_min, rx_max, rx_sd_string);
     strcat(str, end_line);
 
     PRINTF(str);
