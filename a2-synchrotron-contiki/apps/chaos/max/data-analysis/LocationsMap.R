@@ -11,28 +11,30 @@ plotNodeLocations <- function(simulationFilePath, clusterHeads=c(), node_cluster
   root <- read_xml(simulationFilePath)
   motes <- xml_find_all(root, ".//mote")
   
-  ids <- as.numeric(xml_text(xml_find_all(root, ".//id")))
-  xs  <- as.double(xml_text(xml_find_all(root, ".//x")))
-  ys  <- as.double(xml_text(xml_find_all(root, ".//y")))
+  # Fetch data from xml file
+  node_id <- as.numeric(xml_text(xml_find_all(root, ".//id")))
+  x  <- as.double(xml_text(xml_find_all(root, ".//x")))
+  y  <- as.double(xml_text(xml_find_all(root, ".//y")))
+  nodes <- data.frame(node_id,x,y)
   
+  # Merge data from log files with data from xml file
+  nodes <- merge(node_cluster_map, nodes, by = "node_id", all = TRUE)
+  
+  # Mapping from cluster_id to color index
+  clusters <- unique(nodes[["cluster_id"]])
+  minColors <- order(clusters)
+  
+  # Add color column
   # Get distinguishable colors
   qual_col_pals = brewer.pal.info[brewer.pal.info$category == 'qual',]
   col_vector = unlist(mapply(brewer.pal, qual_col_pals$maxcolors, rownames(qual_col_pals)))
-  
-  # Cluster ids need to be in the order of the node_ids when plotting.
-  sortedByNodeId <- node_cluster_map[order(node_cluster_map["node_id"]),]
+  nodes$node_color_indexes <- mapvalues(nodes[["cluster_id"]], from=clusters, to=minColors)
+  nodes$color <- with(nodes, col_vector[node_color_indexes])
 
-  # Mapping from cluster_id to color index
-  clusters <- unique(sortedByNodeId[["cluster_id"]])
-  minColors <- order(clusters)
-  node_color_indexes <- mapvalues(sortedByNodeId[["cluster_id"]], from=clusters, to=minColors)
+  # Add size column
+  nodes$node_sizes <- rep(2,length(nodes[["node_id"]]))
+  nodes$node_sizes <- replace(nodes$node_sizes, clusterHeads, 5)
   
-  # Get the colors by index.
-  node_colors <- col_vector[node_color_indexes]
-
-  node_sizes <- rep(2,length(ids))
-  node_sizes <- replace(node_sizes, clusterHeads, 5)
-  
-  plot(ys~xs, ylim = rev(range(ys)), asp=1, col=node_colors, pch=16, cex=node_sizes, xlab="x", ylab="y")
-  #text(ys~xs, labels=ids, col="white") # Write node_id on top of the nodes
+  plot(nodes$y~nodes$x, ylim = rev(range(nodes$y)), asp=1, col=nodes$color, pch=16, cex=nodes$node_sizes, xlab="x", ylab="y")
+  text(nodes$y~nodes$x, labels=nodes$node_id, col="black") # Write node_id on top of the nodes
 }

@@ -13,7 +13,7 @@ extern const chaos_app_t demote;
 
 
 #ifndef NODE_LIST_LEN
-#define NODE_LIST_LEN 50  //describes how many nodes can become clusterheads.
+#define NODE_LIST_LEN 30  //describes how many nodes can become clusterheads.
 #endif
 
 typedef enum {
@@ -31,14 +31,11 @@ typedef enum {
 
 typedef struct __attribute__((packed)) {
     node_id_t id;
-    union {
-        uint8_t information;
-        struct {
-          uint8_t
-            hop_count :6,    /* The distance in hops to the cluster head */
-            status :2;     /* CH status, can either be TENTATIVE or FINAL */
-        };
-      };
+    struct __attribute__((packed)) {
+      uint8_t
+        hop_count :6,    /* The distance in hops to the cluster head */
+        status :2;     /* CH status, can either be TENTATIVE or FINAL */
+    };
 } cluster_head_information_t;
 
 typedef struct __attribute__((packed)) {

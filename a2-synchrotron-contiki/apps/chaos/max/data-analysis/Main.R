@@ -50,7 +50,7 @@ generateLocationPlotsForTestSuite <- function(testSuitePath) {
     clusters <- clusterHeadIds(roundData)
     
     # Create node to cluster map
-    a <- !duplicated(roundData[c("node_id","cluster_id")])
+    a <- !duplicated(roundData[c("node_id")])
     roundDataSub <- subset(roundData, a)
     node_cluster_map <- roundDataSub[c("node_id","cluster_id")]
     
