@@ -4,8 +4,13 @@
 #include "chaos-control.h"
 #include "node.h"
 
+#ifndef MAX_NODE_COUNT
+#define MAX_NODE_COUNT 254
+#endif
+
 extern const chaos_app_t cluster;
-extern uint8_t is_cluster_service_running;
+extern const chaos_app_t demote;
+
 
 #ifndef NODE_LIST_LEN
 #define NODE_LIST_LEN 50  //describes how many nodes can become clusterheads.
@@ -23,12 +28,6 @@ typedef enum {
 
 #undef CLUSTER_RANDOMIZE_STARTING_ENERGY
 #define CLUSTER_RANDOMIZE_STARTING_ENERGY _param_randomize_starting_energy
-
-#ifndef MAX_NODE_COUNT
-#define MAX_NODE_COUNT 254
-#endif
-
-extern uint16_t neighbour_list[MAX_NODE_COUNT];
 
 typedef struct __attribute__((packed)) {
     node_id_t id;
@@ -57,5 +56,11 @@ typedef struct __attribute__((packed)) {
 
 ALWAYS_INLINE uint32_t generate_restart_threshold();
 void set_global_cluster_variables(const cluster_head_information_t* cluster_head_list, uint8_t cluster_head_count);
+
+extern uint8_t is_cluster_service_running;
+extern uint16_t neighbour_list[MAX_NODE_COUNT];
+extern cluster_t local_cluster_data;
+extern CHState cluster_head_state;
+
 
 #endif /* CHAOS_CLUSTER_H */

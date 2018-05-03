@@ -68,9 +68,9 @@ uint16_t neighbour_list[MAX_NODE_COUNT] = {0};
 unsigned long total_energy_used = 0;
 static int8_t tentativeAnnouncementSlot = -1;
 
-uint32_t restart_threshold = 0;
-uint32_t invalid_rx_count = 0;
-uint8_t got_valid_rx = 0;
+static uint32_t restart_threshold = 0;
+static uint32_t invalid_rx_count = 0;
+static uint8_t got_valid_rx = 0;
 
 uint8_t is_cluster_service_running = 0;
 

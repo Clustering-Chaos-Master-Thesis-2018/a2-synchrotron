@@ -20,16 +20,19 @@
 
 static void round_begin(const uint16_t round_count, const uint8_t id);
 static int is_pending(const uint16_t round_count);
+static int16_t index_of(const node_id_t const *array, uint8_t size, node_id_t value);
 static void round_begin_sniffer(chaos_header_t* header);
 static void round_end_sniffer(const chaos_header_t* header);
 static chaos_state_t handle_invalid_rx();
 
-uint32_t restart_threshold = 0;
-uint32_t invalid_rx_count = 0;
-uint8_t got_valid_rx = 0;
+static uint8_t demoted = 0;
+static uint32_t restart_threshold = 0;
+static uint32_t invalid_rx_count = 0;
+static uint8_t got_valid_rx = 0;
+static uint8_t demote_service_running = 0;
 
 
-#define DEMOTE_SERVICE_PENDING_THRESHOLD 21
+#define DEMOTE_SERVICE_PENDING_THRESHOLD 18
 
 #define CLUSTER_SLOT_LEN          (7*(RTIMER_SECOND/1000)+0*(RTIMER_SECOND/1000)/2)
 #define CLUSTER_SLOT_LEN_DCO      (CLUSTER_SLOT_LEN*CLOCK_PHI)
