@@ -175,7 +175,7 @@ static void round_end_sniffer(const chaos_header_t* header){
     if(output_size == local_cluster_data.cluster_head_count) {
         return;
     }
-    volatile uint8_t valid_cluster_head_count = filter_valid_cluster_heads(filtered_cluster_heads, output_size, valid_cluster_heads, CLUSTER_COMPETITION_RADIUS);
+    const uint8_t valid_cluster_head_count = filter_valid_cluster_heads(filtered_cluster_heads, output_size, valid_cluster_heads, CLUSTER_COMPETITION_RADIUS);
     if(valid_cluster_head_count == 0) {
         COOJA_DEBUG_PRINTF("No valid cluster heads left after demotion, doing nothing");
     } else {
