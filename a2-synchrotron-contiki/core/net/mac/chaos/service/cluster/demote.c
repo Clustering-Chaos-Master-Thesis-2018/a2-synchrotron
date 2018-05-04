@@ -57,6 +57,25 @@ static int16_t index_of(const node_id_t const *array, uint8_t size, node_id_t va
     return -1;
 }
 
+static uint8_t merge(node_id_t* src, uint8_t src_size, node_id_t* dst, uint8_t dst_size, uint8_t* delta) {
+    uint8_t i, j = 0;
+    uint8_t found = 0;
+    *delta |= src_size != dst_size;
+    for(i = 0; i < src_size; ++i) {
+        for(j = 0; j < dst_size; ++j) {
+            if(src[i] == dst[j]) {
+                found = 1;
+                break;
+            }
+        }
+        if(!found) {
+            dst[dst_size++] = src[i];
+            *delta |= 1;
+        }
+    }
+    return dst_size;
+}
+
 static chaos_state_t process(uint16_t round_count, uint16_t slot,
     chaos_state_t current_state, int chaos_txrx_success, size_t payload_length,
     uint8_t* rx_payload, uint8_t* tx_payload, uint8_t** app_flags){
@@ -78,25 +97,13 @@ static chaos_state_t process(uint16_t round_count, uint16_t slot,
         }
         got_valid_rx = 1;
         invalid_rx_count = 0;
-        uint8_t i, j = 0;
-        uint8_t found = 0;
-        for(i = 0; i < cluster_rx->node_count; ++i) {
-            for(j = 0; j < cluster_tx->node_count; ++j) {
-                if(cluster_tx->demoted_cluster_heads[j] == cluster_rx->demoted_cluster_heads[i]) {
-                    found = 1;
-                }
-            }
-            if(!found) {
-                cluster_tx->demoted_cluster_heads[cluster_tx->node_count++] = cluster_rx->demoted_cluster_heads[i];
-                delta = 1;
-            }
-        }
+        cluster_tx->node_count = merge(cluster_rx->demoted_cluster_heads, cluster_rx->node_count, cluster_tx->demoted_cluster_heads, cluster_tx->node_count, &delta);
 
         if(demoted) {
             int16_t node_in_list = index_of(cluster_tx->demoted_cluster_heads, cluster_tx->node_count, node_id);
             if(node_in_list == -1) {
                 cluster_tx->demoted_cluster_heads[cluster_tx->node_count++] = node_id;
-                delta = 1;
+                delta |= 1;
             }
         }
     }
@@ -119,21 +126,20 @@ static void round_begin(const uint16_t round_count, const uint8_t app_id) {
     demote_service_running = 1;
     restart_threshold = generate_restart_threshold();
 
-    demote_cluster_t initial_demote_data;
-
-    memset(&initial_demote_data, 0, sizeof(demote_cluster_t));
 
     const uint8_t count = count_filled_slots(neighbour_list, MAX_NODE_COUNT);
     if(IS_CLUSTER_HEAD() && should_demote(count, chaos_node_count)) {
         COOJA_DEBUG_PRINTF("cluster demoting myself, chaos_node_count: %u < 4", chaos_node_count);
-        initial_demote_data.demoted_cluster_heads[initial_demote_data.node_count++] = node_id;
+        if(index_of(local_demote_data.demoted_cluster_heads, local_demote_data.node_count, node_id) == -1) {
+            local_demote_data.demoted_cluster_heads[local_demote_data.node_count++] = node_id;
+        }
         demoted = 1;
         cluster_head_state = NOT_INITIALIZED;
     } else {
         demoted = 0;
     }
 
-    chaos_round(round_count, app_id, (const uint8_t const*)&initial_demote_data, sizeof(initial_demote_data), CLUSTER_SLOT_LEN_DCO, CLUSTER_ROUND_MAX_SLOTS, get_flags_length(), process);
+    chaos_round(round_count, app_id, (const uint8_t const*)&local_demote_data, sizeof(local_demote_data), CLUSTER_SLOT_LEN_DCO, CLUSTER_ROUND_MAX_SLOTS, get_flags_length(), process);
 }
 
 ALWAYS_INLINE static int is_pending(const uint16_t round_count) {
@@ -165,24 +171,30 @@ static void round_end_sniffer(const chaos_header_t* header){
     if(!demote_service_running) {
         return;
     }
+
+    demote_cluster_t* payload = (demote_cluster_t*)header->payload;
+    uint8_t delta = 0;
+    local_demote_data.node_count = merge(local_demote_data.demoted_cluster_heads, local_demote_data.node_count, payload->demoted_cluster_heads, payload->node_count, &delta);
+
     demote_service_running = is_pending(header->round_number + 1);
-    const demote_cluster_t* payload = (demote_cluster_t*)header->payload;
+    if(!demote_service_running) {
 
-    cluster_head_information_t filtered_cluster_heads[NODE_LIST_LEN];
-    cluster_head_information_t valid_cluster_heads[NODE_LIST_LEN];
+        cluster_head_information_t filtered_cluster_heads[NODE_LIST_LEN];
+        cluster_head_information_t valid_cluster_heads[NODE_LIST_LEN];
 
-    const uint8_t output_size = filter_demoted_cluster_heads(local_cluster_data.cluster_head_list, local_cluster_data.cluster_head_count, filtered_cluster_heads, payload);
-    if(output_size == local_cluster_data.cluster_head_count) {
-        return;
-    }
-    const uint8_t valid_cluster_head_count = filter_valid_cluster_heads(filtered_cluster_heads, output_size, valid_cluster_heads, CLUSTER_COMPETITION_RADIUS);
-    if(valid_cluster_head_count == 0) {
-        COOJA_DEBUG_PRINTF("No valid cluster heads left after demotion, doing nothing");
-    } else {
-        set_global_cluster_variables(filtered_cluster_heads, output_size);
-        chaos_cluster_node_count = output_size;
-        init_node_index();
-        COOJA_DEBUG_PRINTF("cluster head demoted, changing to cluster: %u, index: %u, new_cluster_count: %u", cluster_id, cluster_index, chaos_cluster_node_count);
+        const uint8_t output_size = filter_demoted_cluster_heads(local_cluster_data.cluster_head_list, local_cluster_data.cluster_head_count, filtered_cluster_heads, &local_demote_data);
+        if(output_size == local_cluster_data.cluster_head_count) {
+            return;
+        }
+        const uint8_t valid_cluster_head_count = filter_valid_cluster_heads(filtered_cluster_heads, output_size, valid_cluster_heads, CLUSTER_COMPETITION_RADIUS);
+        if(valid_cluster_head_count == 0) {
+            COOJA_DEBUG_PRINTF("No valid cluster heads left after demotion, doing nothing");
+        } else {
+            set_global_cluster_variables(filtered_cluster_heads, output_size);
+            chaos_cluster_node_count = output_size;
+            init_node_index();
+            COOJA_DEBUG_PRINTF("cluster head demoted, changing to cluster: %u, index: %u, new_cluster_count: %u", cluster_id, cluster_index, chaos_cluster_node_count);
+        }
     }
 }
 
