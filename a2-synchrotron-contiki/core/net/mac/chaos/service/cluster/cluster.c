@@ -27,7 +27,7 @@ static void round_end_sniffer(const chaos_header_t* header);
 ALWAYS_ACTUALLY_INLINE static int16_t index_of(const cluster_head_information_t *array, uint8_t size, node_id_t value);
 static void log_cluster_heads(cluster_head_information_t *cluster_head_list, uint8_t cluster_head_count);
 static float CH_probability(int8_t doubling_count);
-static void heed_repeat(const cluster_head_information_t* cluster_head_list, uint8_t cluster_head_count, uint8_t consecutive_cluster_round_count);
+static void heed_repeat(const cluster_head_information_t* cluster_head_list, uint8_t cluster_head_count, int8_t consecutive_cluster_round_count);
 static void update_hop_count(cluster_t* tx_payload);
 
 static inline uint8_t set_best_available_hop_count(cluster_t* destination, const cluster_t* source);
@@ -411,7 +411,7 @@ void set_global_cluster_variables(const cluster_head_information_t* cluster_head
     cluster_index = index_of(cluster_head_list, cluster_head_count, cluster_id);
 }
 
-static void heed_repeat(const cluster_head_information_t* cluster_head_list, uint8_t cluster_head_count, uint8_t consecutive_cluster_round_count) {
+static void heed_repeat(const cluster_head_information_t* cluster_head_list, uint8_t cluster_head_count, int8_t consecutive_cluster_round_count) {
     float current_CH_prob = CH_probability(consecutive_cluster_round_count);
 
     char res[20];
