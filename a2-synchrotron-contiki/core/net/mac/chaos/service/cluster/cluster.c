@@ -337,40 +337,41 @@ static void round_begin_sniffer(chaos_header_t* header){
     total_energy_used += all_cpu + all_lpm + all_transmit + all_listen + all_idle_transmit + all_idle_listen;
 }
 
-ALWAYS_ACTUALLY_INLINE static void log_cluster_heads(cluster_head_information_t *cluster_head_list, uint8_t cluster_head_count) {
-    char str[600];
-    cluster_head_information_t valid_cluster_heads[NODE_LIST_LEN];
-    const uint8_t valid_cluster_head_count = filter_valid_cluster_heads(cluster_head_list, cluster_head_count, valid_cluster_heads, CLUSTER_COMPETITION_RADIUS);
-    char res[20];
-    ftoa(CH_probability(local_cluster_data.consecutive_cluster_round_count), res, 4);
-    sprintf(str, "cluster: rd: %u, CH election probability: %s, cluster_head_count: %u, valid_cluster_head_count: %u, picked_cluster: %u, cluster_index: %u.\n available_clusters: [ ",
-     chaos_get_round_number(),
-     res,
-     cluster_head_count,
-     valid_cluster_head_count,
-     cluster_id,
-     cluster_index);
+static void log_cluster_heads(cluster_head_information_t *cluster_head_list, uint8_t cluster_head_count) {
+    char cluster_head_list_str[350];
+    strcat(cluster_head_list_str, "available_clusters: (hop_count, rx_count) [ ");
 
     uint8_t i;
     for(i = 0; i < cluster_head_count; i++) {
-        char tmp[35];
-        sprintf(tmp, (i == cluster_head_count-1 ? "%u -> (d: %u, rx_count: %u) ":"%u -> (d: %u, rx_count: %u), "),
+        char tmp[15];
+        sprintf(tmp, (i == cluster_head_count-1 ? "%u (%u, %u) ":"%u (%u, %u), "),
             cluster_head_list[i].id,
             cluster_head_list[i].hop_count,
             neighbour_list[cluster_head_list[i].id]);
 
-        strcat(str, tmp);
+        strcat(cluster_head_list_str, tmp);
     }
 
-    strcat(str, "]\n");
-    PRINTF(str);
+    char ch_prob_str[20];
+    ftoa(CH_probability(local_cluster_data.consecutive_cluster_round_count), ch_prob_str, 4);
+
+    cluster_head_information_t valid_cluster_heads[NODE_LIST_LEN];
+    const uint8_t valid_cluster_head_count = filter_valid_cluster_heads(cluster_head_list, cluster_head_count, valid_cluster_heads, CLUSTER_COMPETITION_RADIUS);
+    strcat(cluster_head_list_str, "]\n");
+
+    PRINTF("cluster: rd: %u, prob: %s, CH_count: %u, valid_CH_count: %u, picked: %u, cluster_index: %u\n",
+        chaos_get_round_number(),
+        ch_prob_str,
+        cluster_head_count,
+        valid_cluster_head_count,
+        cluster_id,
+        cluster_index);
+    PRINTF(cluster_head_list_str);
 }
 
-ALWAYS_ACTUALLY_INLINE static void log_rx_count() {
-    char str[900];
-    sprintf(str, "rx_count [ ");
-
-    const uint8_t number_of_nodes = count_filled_slots(neighbour_list, MAX_NODE_COUNT);
+static void log_rx_count() {
+    char rx_counts_str[300];
+    sprintf(rx_counts_str, "rx_count [");
 
     const uint16_t rx_sum = sum(neighbour_list, MAX_NODE_COUNT);
     const uint16_t rx_min = min(neighbour_list, MAX_NODE_COUNT);
@@ -382,18 +383,16 @@ ALWAYS_ACTUALLY_INLINE static void log_rx_count() {
     ftoa(standard_deviation(neighbour_list, MAX_NODE_COUNT), rx_sd_string, 4);
 
     uint8_t largest_id_in_network = last_filled_index(neighbour_list, MAX_NODE_COUNT);
-    char tmp[35];
+    char tmp[5];
     uint8_t i;
     for(i = 0; i <= largest_id_in_network; i++) {
         sprintf(tmp, (i == largest_id_in_network ? "%u ":"%u, "), neighbour_list[i]);
-        strcat(str, tmp);
+        strcat(rx_counts_str, tmp);
     }
 
-    char end_line[80];
-    sprintf(end_line, "total: %u, mean: %s, min: %u, max: %u, sd: %s]\n", rx_sum, rx_average_string, rx_min, rx_max, rx_sd_string);
-    strcat(str, end_line);
-
-    PRINTF(str);
+    strcat(rx_counts_str, "]\n");
+    PRINTF(rx_counts_str);
+    PRINTF("total: %u, mean: %s, min: %u, max: %u, sd: %s]\n", rx_sum, rx_average_string, rx_min, rx_max, rx_sd_string);
 }
 
 static float CH_probability(int8_t doubling_count) {
@@ -416,7 +415,7 @@ static void heed_repeat(const cluster_head_information_t* cluster_head_list, uin
 
     char res[20];
     ftoa(current_CH_prob, res, 4);
-    COOJA_DEBUG_PRINTF("cluster heed_repeat CH_prob: %s", res);
+    COOJA_DEBUG_PRINTF("cluster heed_repeat CH_prob: %s\n", res);
 
     cluster_head_information_t valid_cluster_heads[NODE_LIST_LEN];
     uint8_t valid_cluster_head_count = filter_valid_cluster_heads(cluster_head_list, cluster_head_count, valid_cluster_heads, CLUSTER_COMPETITION_RADIUS);
