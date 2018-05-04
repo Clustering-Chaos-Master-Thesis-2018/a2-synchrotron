@@ -45,7 +45,6 @@
 #include "chaos-control.h"
 #include "node.h"
 #include "max.h"
-#include "powertrace.h"
 
 static uint16_t max_value = 0;
 static uint16_t round_count_local = 0;
@@ -75,11 +74,6 @@ PROCESS_THREAD(chaos_max_app_process, ev, data)
 {
 	PROCESS_BEGIN();
   printf("{boot} Max Test Application\n");
-
-  printf("starting powertrace\n");
-  int n = 1; // 1 second reporting cycle
-  powertrace_start(CLOCK_SECOND * n);
-
 
   NETSTACK_MAC.on();
 #if FAULTY_NODE_ID

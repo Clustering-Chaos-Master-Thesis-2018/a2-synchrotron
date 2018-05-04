@@ -18,8 +18,6 @@ endif
 
 CFLAGS += -DPROJECT_CONF_H=\"project-conf.h\"
 
-APPS += powertrace
-
 CONTIKI = ../../..
 include $(CONTIKI)/Makefile.include
 
