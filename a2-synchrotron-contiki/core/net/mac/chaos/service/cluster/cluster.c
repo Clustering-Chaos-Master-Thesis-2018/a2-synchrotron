@@ -24,12 +24,10 @@ static void round_begin(const uint16_t round_count, const uint8_t id);
 static int is_pending(const uint16_t round_count);
 static void round_begin_sniffer(chaos_header_t* header);
 static void round_end_sniffer(const chaos_header_t* header);
-static node_id_t pick_best_cluster(const cluster_head_information_t *cluster_head_list, uint8_t size);
-static int index_of(const cluster_head_information_t *cluster_head_list, uint8_t size, node_id_t value);
+ALWAYS_ACTUALLY_INLINE static int16_t index_of(const cluster_head_information_t *array, uint8_t size, node_id_t value);
 static void log_cluster_heads(cluster_head_information_t *cluster_head_list, uint8_t cluster_head_count);
-static uint8_t filter_valid_cluster_heads(const cluster_head_information_t* cluster_head_list, uint8_t cluster_head_count, cluster_head_information_t* const output, uint8_t threshold);
 static float CH_probability(int8_t doubling_count);
-static void heed_repeat(const cluster_head_information_t* cluster_head_list, uint8_t cluster_head_count, uint8_t consecutive_cluster_round_count);
+static void heed_repeat(const cluster_head_information_t* cluster_head_list, uint8_t cluster_head_count, int8_t consecutive_cluster_round_count);
 static void update_hop_count(cluster_t* tx_payload);
 
 static inline uint8_t set_best_available_hop_count(cluster_t* destination, const cluster_t* source);
@@ -56,7 +54,7 @@ ALWAYS_INLINE static int get_flags_length(){
   return FLAGS_LEN(MAX_NODE_COUNT);
 }
 
-ALWAYS_INLINE static uint32_t generate_restart_threshold() {
+ALWAYS_INLINE uint32_t generate_restart_threshold() {
     return chaos_random_generator_fast_range(CHAOS_RESTART_MIN, CHAOS_RESTART_MAX);
 }
 
@@ -64,15 +62,15 @@ cluster_t local_cluster_data = {
     .consecutive_cluster_round_count = -1
 };
 
-uint16_t neighbour_list[MAX_NODE_COUNT] = {0};
 uint16_t neighbour_total_rx_count[MAX_NODE_COUNT] = {0};
+uint16_t neighbour_list[MAX_NODE_COUNT] = {0};
 
 unsigned long total_energy_used = 0;
 static int8_t tentativeAnnouncementSlot = -1;
 
-uint32_t restart_threshold = 0;
-uint32_t invalid_rx_count = 0;
-uint8_t got_valid_rx = 0;
+static uint32_t restart_threshold = 0;
+static uint32_t invalid_rx_count = 0;
+static uint8_t got_valid_rx = 0;
 
 uint8_t is_cluster_service_running = 0;
 
@@ -192,6 +190,8 @@ static chaos_state_t process(uint16_t round_count, uint16_t slot,
         }
     }
 
+    set_best_available_hop_count(cluster_tx, &local_cluster_data);
+    merge_lists(&local_cluster_data, cluster_tx);
 
     if(next_state == CHAOS_TX) {
         prepare_tx(cluster_tx);
@@ -227,8 +227,18 @@ static uint8_t insert(cluster_head_information_t* list, uint8_t size, cluster_he
     return j;
 }
 
+ALWAYS_ACTUALLY_INLINE static int16_t index_of(const cluster_head_information_t *array, uint8_t size, node_id_t value) {
+    uint8_t i;
+    for(i = 0; i < size; ++i) {
+        if (array[i].id == value) {
+            return i;
+        }
+    }
+    return -1;
+}
+
 ALWAYS_INLINE static uint8_t update_cluster_head_status(cluster_head_information_t* const cluster_head_list, uint8_t size, node_id_t node_id) {
-    const int index = index_of(cluster_head_list, size, node_id);
+    const int16_t index = index_of(cluster_head_list, size, node_id);
     if(index > 0 && index < size && cluster_head_list[index].status != cluster_head_state) {
         cluster_head_list[index].status = cluster_head_state;
         return 1;
@@ -257,7 +267,6 @@ static chaos_state_t process_cluster_head(uint16_t round_count, uint16_t slot,
     chaos_state_t next_state = CHAOS_RX;
 
     delta |= merge_lists(tx_payload, rx_payload);
-    set_best_available_hop_count(tx_payload, &local_cluster_data);
 
     if(!cluster_head_exists(tx_payload->cluster_head_list, tx_payload->cluster_head_count, node_id) && tx_payload->cluster_head_count < NODE_LIST_LEN) {
         tx_payload->cluster_head_count = insert(tx_payload->cluster_head_list, tx_payload->cluster_head_count, create_cluster_head(node_id, cluster_head_state));
@@ -266,7 +275,6 @@ static chaos_state_t process_cluster_head(uint16_t round_count, uint16_t slot,
 
     delta |= update_cluster_head_status(tx_payload->cluster_head_list, tx_payload->cluster_head_count, node_id);;
 
-    merge_lists(&local_cluster_data, tx_payload);
     if (delta && got_valid_rx) {
         next_state = CHAOS_TX;
     }
@@ -281,8 +289,6 @@ static chaos_state_t process_cluster_node(uint16_t round_count, uint16_t slot,
     chaos_state_t next_state = CHAOS_RX;
 
     delta |= merge_lists(tx_payload, rx_payload);
-    set_best_available_hop_count(tx_payload, &local_cluster_data);
-    merge_lists(&local_cluster_data, tx_payload);
     if (delta && got_valid_rx) {
         next_state = CHAOS_TX;
     }
@@ -321,46 +327,6 @@ ALWAYS_INLINE static int is_pending(const uint16_t round_count) {
     return round_count <= CLUSTER_SERVICE_PENDING_THRESHOLD;
 }
 
-ALWAYS_INLINE static uint8_t calculate_smallest_hop_count(const cluster_head_information_t *cluster_head_list, uint8_t size) {
-    uint8_t i;
-    uint8_t smallest_hop_count = 255;
-    for(i = 0; i < size; ++i) {
-        if(cluster_head_list[i].hop_count < smallest_hop_count) {
-            smallest_hop_count = cluster_head_list[i].hop_count;
-        }
-    }
-    return smallest_hop_count;
-}
-
-static node_id_t pick_best_cluster(const cluster_head_information_t *cluster_head_list, uint8_t size) {
-    cluster_head_information_t valid_cluster_heads[NODE_LIST_LEN];
-    uint8_t smallest_hop_count = calculate_smallest_hop_count(cluster_head_list, size);
-    const uint8_t valid_cluster_head_count = filter_valid_cluster_heads(cluster_head_list, size, valid_cluster_heads, smallest_hop_count);;
-
-    uint8_t i;
-    uint16_t biggest_rx_count = 0;
-    node_id_t biggest_rx_id = 0;
-    for(i = 0; i < valid_cluster_head_count; ++i) {
-        const node_id_t node_id = valid_cluster_heads[i].id;
-        const uint16_t curent_rx_count = neighbour_list[node_id];
-        if(curent_rx_count > biggest_rx_count) {
-            biggest_rx_count = curent_rx_count;
-            biggest_rx_id = node_id;
-        }
-    }
-    return biggest_rx_id;
-}
-
-ALWAYS_ACTUALLY_INLINE static int index_of(const cluster_head_information_t *array, uint8_t size, node_id_t value) {
-    uint8_t i;
-    for(i = 0; i < size; ++i) {
-        if (array[i].id == value) {
-            return i;
-        }
-    }
-    return -1;
-}
-
 static void round_begin_sniffer(chaos_header_t* header){
     unsigned long all_cpu = energest_type_time(ENERGEST_TYPE_CPU);
     unsigned long all_lpm = energest_type_time(ENERGEST_TYPE_LPM);
@@ -371,40 +337,41 @@ static void round_begin_sniffer(chaos_header_t* header){
     total_energy_used += all_cpu + all_lpm + all_transmit + all_listen + all_idle_transmit + all_idle_listen;
 }
 
-ALWAYS_ACTUALLY_INLINE static void log_cluster_heads(cluster_head_information_t *cluster_head_list, uint8_t cluster_head_count) {
-    char str[600];
-    cluster_head_information_t valid_cluster_heads[NODE_LIST_LEN];
-    const uint8_t valid_cluster_head_count = filter_valid_cluster_heads(cluster_head_list, cluster_head_count, valid_cluster_heads, CLUSTER_COMPETITION_RADIUS);
-    char res[20];
-    ftoa(CH_probability(local_cluster_data.consecutive_cluster_round_count), res, 4);
-    sprintf(str, "cluster: rd: %u, CH election probability: %s, cluster_head_count: %u, valid_cluster_head_count: %u, picked_cluster: %u, cluster_index: %u.\n available_clusters: [ ",
-     chaos_get_round_number(),
-     res,
-     cluster_head_count,
-     valid_cluster_head_count,
-     cluster_id,
-     cluster_index);
+static void log_cluster_heads(cluster_head_information_t *cluster_head_list, uint8_t cluster_head_count) {
+    char cluster_head_list_str[350];
+    strcat(cluster_head_list_str, "available_clusters: (hop_count, rx_count) [ ");
 
     uint8_t i;
     for(i = 0; i < cluster_head_count; i++) {
-        char tmp[35];
-        sprintf(tmp, (i == cluster_head_count-1 ? "%u -> (d: %u, rx_count: %u) ":"%u -> (d: %u, rx_count: %u), "),
+        char tmp[15];
+        sprintf(tmp, (i == cluster_head_count-1 ? "%u (%u, %u) ":"%u (%u, %u), "),
             cluster_head_list[i].id,
             cluster_head_list[i].hop_count,
             neighbour_list[cluster_head_list[i].id]);
 
-        strcat(str, tmp);
+        strcat(cluster_head_list_str, tmp);
     }
 
-    strcat(str, "]\n");
-    PRINTF(str);
+    char ch_prob_str[20];
+    ftoa(CH_probability(local_cluster_data.consecutive_cluster_round_count), ch_prob_str, 4);
+
+    cluster_head_information_t valid_cluster_heads[NODE_LIST_LEN];
+    const uint8_t valid_cluster_head_count = filter_valid_cluster_heads(cluster_head_list, cluster_head_count, valid_cluster_heads, CLUSTER_COMPETITION_RADIUS);
+    strcat(cluster_head_list_str, "]\n");
+
+    PRINTF("cluster: rd: %u, prob: %s, CH_count: %u, valid_CH_count: %u, picked: %u, cluster_index: %u\n",
+        chaos_get_round_number(),
+        ch_prob_str,
+        cluster_head_count,
+        valid_cluster_head_count,
+        cluster_id,
+        cluster_index);
+    PRINTF(cluster_head_list_str);
 }
 
-ALWAYS_ACTUALLY_INLINE static void log_rx_count() {
-    char str[900];
-    sprintf(str, "rx_count [ ");
-
-    const uint8_t number_of_nodes = count_filled_slots(neighbour_list, MAX_NODE_COUNT);
+static void log_rx_count() {
+    char rx_counts_str[300];
+    sprintf(rx_counts_str, "rx_count [");
 
     const uint16_t rx_sum = sum(neighbour_list, MAX_NODE_COUNT);
     const uint16_t rx_min = min(neighbour_list, MAX_NODE_COUNT);
@@ -416,28 +383,16 @@ ALWAYS_ACTUALLY_INLINE static void log_rx_count() {
     ftoa(standard_deviation(neighbour_list, MAX_NODE_COUNT), rx_sd_string, 4);
 
     uint8_t largest_id_in_network = last_filled_index(neighbour_list, MAX_NODE_COUNT);
-    char tmp[35];
+    char tmp[5];
     uint8_t i;
     for(i = 0; i <= largest_id_in_network; i++) {
         sprintf(tmp, (i == largest_id_in_network ? "%u ":"%u, "), neighbour_list[i]);
-        strcat(str, tmp);
+        strcat(rx_counts_str, tmp);
     }
 
-    char end_line[80];
-    sprintf(end_line, "total: %u, mean: %s, min: %u, max: %u, sd: %s]\n", rx_sum, rx_average_string, rx_min, rx_max, rx_sd_string);
-    strcat(str, end_line);
-
-    PRINTF(str);
-}
-
-static uint8_t filter_valid_cluster_heads(const cluster_head_information_t* cluster_head_list, uint8_t cluster_head_count, cluster_head_information_t* const output, uint8_t threshold) {
-    uint8_t i, j = 0;
-    for(i = 0; i < cluster_head_count; ++i) {
-        if(cluster_head_list[i].hop_count <= threshold) {
-            output[j++] = cluster_head_list[i];
-        }
-    }
-    return j;
+    strcat(rx_counts_str, "]\n");
+    PRINTF(rx_counts_str);
+    PRINTF("total: %u, mean: %s, min: %u, max: %u, sd: %s]\n", rx_sum, rx_average_string, rx_min, rx_max, rx_sd_string);
 }
 
 static float CH_probability(int8_t doubling_count) {
@@ -448,19 +403,19 @@ static float CH_probability(int8_t doubling_count) {
     return prob < 1.0f ? prob : 1.0f;
 }
 
-static void set_global_cluster_variables(const cluster_head_information_t* cluster_head_list, uint8_t cluster_head_count) {
+void set_global_cluster_variables(const cluster_head_information_t* cluster_head_list, uint8_t cluster_head_count) {
     cluster_head_information_t valid_cluster_heads[NODE_LIST_LEN];
     const uint8_t valid_cluster_head_count = filter_valid_cluster_heads(cluster_head_list, cluster_head_count, valid_cluster_heads, CLUSTER_COMPETITION_RADIUS);
     cluster_id = is_cluster_head() ? node_id : pick_best_cluster(valid_cluster_heads, valid_cluster_head_count);
     cluster_index = index_of(cluster_head_list, cluster_head_count, cluster_id);
 }
 
-static void heed_repeat(const cluster_head_information_t* cluster_head_list, uint8_t cluster_head_count, uint8_t consecutive_cluster_round_count) {
+static void heed_repeat(const cluster_head_information_t* cluster_head_list, uint8_t cluster_head_count, int8_t consecutive_cluster_round_count) {
     float current_CH_prob = CH_probability(consecutive_cluster_round_count);
 
     char res[20];
     ftoa(current_CH_prob, res, 4);
-    COOJA_DEBUG_PRINTF("cluster heed_repeat CH_prob: %s", res);
+    COOJA_DEBUG_PRINTF("cluster heed_repeat CH_prob: %s\n", res);
 
     cluster_head_information_t valid_cluster_heads[NODE_LIST_LEN];
     uint8_t valid_cluster_head_count = filter_valid_cluster_heads(cluster_head_list, cluster_head_count, valid_cluster_heads, CLUSTER_COMPETITION_RADIUS);

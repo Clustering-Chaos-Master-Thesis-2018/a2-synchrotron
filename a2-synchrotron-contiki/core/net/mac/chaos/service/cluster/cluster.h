@@ -2,9 +2,15 @@
 #define _CLUSTER_H
 
 #include "chaos-control.h"
+#include "node.h"
+
+#ifndef MAX_NODE_COUNT
+#define MAX_NODE_COUNT 254
+#endif
 
 extern const chaos_app_t cluster;
-extern uint8_t is_cluster_service_running;
+extern const chaos_app_t demote;
+
 
 #ifndef NODE_LIST_LEN
 #define NODE_LIST_LEN 30  //describes how many nodes can become clusterheads.
@@ -39,5 +45,19 @@ typedef struct __attribute__((packed)) {
     int8_t consecutive_cluster_round_count;
     cluster_head_information_t cluster_head_list[NODE_LIST_LEN];
 } cluster_t;
+
+typedef struct __attribute__((packed)) {
+    uint8_t node_count;
+    node_id_t demoted_cluster_heads[NODE_LIST_LEN];
+} demote_cluster_t;
+
+ALWAYS_INLINE uint32_t generate_restart_threshold();
+void set_global_cluster_variables(const cluster_head_information_t* cluster_head_list, uint8_t cluster_head_count);
+
+extern uint8_t is_cluster_service_running;
+extern uint16_t neighbour_list[MAX_NODE_COUNT];
+extern cluster_t local_cluster_data;
+extern CHState cluster_head_state;
+
 
 #endif /* CHAOS_CLUSTER_H */
