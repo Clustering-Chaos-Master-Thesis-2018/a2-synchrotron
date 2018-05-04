@@ -44,23 +44,33 @@ generateLocationPlotsForTestSuite <- function(testSuitePath) {
   colnames(df) <- c("testName", "simulationFile", "testDirectory")
   
   apply(df, 1, function(row) {
+    tryCatch({
+        loadAndPlot(row)
+      }, error = function(e) {
+        message(e)
+        return(NA)
+      }
+    )  
     
-    print(row["testName"])
-    roundData <- load_all_nodes_round_data(row["testDirectory"])
-    clusters <- clusterHeadIds(roundData)
-    
-    # Create node to cluster map
-    a <- !duplicated(roundData[c("node_id")])
-    roundDataSub <- subset(roundData, a)
-    node_cluster_map <- roundDataSub[c("node_id","cluster_id")]
-    
-    pdf(file = file.path(row["testDirectory"], "locations.pdf"))
-    plotNodeLocations(row["simulationFile"], clusters, node_cluster_map)
-    dev.off()
     
   })
   
   return(1)
 }
 
-
+loadAndPlot <- function(row) {
+  print(row["testName"])
+  
+  roundData <- load_all_nodes_round_data(row["testDirectory"])
+  
+  clusters <- clusterHeadIds(roundData)
+  
+  # Create node to cluster map
+  a <- !duplicated(roundData[c("node_id")])
+  roundDataSub <- subset(roundData, a)
+  node_cluster_map <- roundDataSub[c("node_id","cluster_id")]
+  
+  pdf(file = file.path(row["testDirectory"], "locations.pdf"))
+  plotNodeLocations(row["simulationFile"], clusters, node_cluster_map)
+  dev.off()
+}
