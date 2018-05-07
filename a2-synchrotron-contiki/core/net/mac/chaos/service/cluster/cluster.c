@@ -179,8 +179,9 @@ static chaos_state_t process(uint16_t round_count, uint16_t slot,
         invalid_rx_count = 0;
         update_rx_statistics(cluster_rx->source_id, sum(neighbour_list, MAX_NODE_COUNT));
 
-        if (local_cluster_data.consecutive_cluster_round_count == -1) {
+        if (local_cluster_data.consecutive_cluster_round_count == -1 || local_cluster_data.consecutive_cluster_round_count < cluster_rx->consecutive_cluster_round_count) {
             local_cluster_data.consecutive_cluster_round_count = cluster_rx->consecutive_cluster_round_count;
+            set_next_state(&next_state, CHAOS_TX);
         }
 
         if(is_cluster_head()) {
