@@ -82,7 +82,22 @@ PROCESS_THREAD(chaos_max_app_process, ev, data)
 	while( 1 ){
 		PROCESS_YIELD();
 		if(chaos_get_has_node_index()){
-      printf("cluster_res: rd: %u, max: %u, fin: %i/%i, node_id: %u, n: %u, cluster_id: %u\n", round_count_local, max_value, complete, off_slot, node_id, chaos_get_node_count(), chaos_get_cluster_id());
+      printf("cluster_res: "
+        "rd: %u, "
+        "max: %u, "
+        "complete_slot: %i, "
+        "off_slot: %i, "
+        "node_id: %u, "
+        "n: %u, "
+        "cluster_id: %u\n",
+        round_count_local,
+        max_value,
+        complete,
+        off_slot,
+        node_id,
+        chaos_get_node_count(),
+        chaos_get_cluster_id()
+      );
 
       if(complete == 0){
         int i;
