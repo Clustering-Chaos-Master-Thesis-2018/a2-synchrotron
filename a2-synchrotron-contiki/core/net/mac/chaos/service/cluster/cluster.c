@@ -45,8 +45,8 @@ static inline int merge_lists(cluster_t* cluster_tx, cluster_t* cluster_rx);
 #define LAST_FLAGS(node_count)  ((1 << ((((node_count) - 1) % 8) + 1)) - 1)
 #define FLAG_SUM(node_count)  ((((node_count) - 1) / 8 * 0xFF) + LAST_FLAGS(node_count))
 
-#define CHAOS_RESTART_MAX 10
-#define CHAOS_RESTART_MIN 4
+#define CLUSTER_RESTART_MAX 7
+#define CLUSTER_RESTART_MIN 3
 
 CHAOS_SERVICE(cluster, CLUSTER_SLOT_LEN, CLUSTER_ROUND_MAX_SLOTS, 0, is_pending, round_begin, round_begin_sniffer, round_end_sniffer);
 
@@ -55,7 +55,7 @@ ALWAYS_INLINE static int get_flags_length(){
 }
 
 ALWAYS_INLINE uint32_t generate_restart_threshold() {
-    return chaos_random_generator_fast_range(CHAOS_RESTART_MIN, CHAOS_RESTART_MAX);
+    return chaos_random_generator_fast_range(CLUSTER_RESTART_MIN, CLUSTER_RESTART_MAX);
 }
 
 cluster_t local_cluster_data = {
