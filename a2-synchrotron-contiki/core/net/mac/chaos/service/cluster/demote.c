@@ -31,6 +31,7 @@ static uint32_t invalid_rx_count = 0;
 static uint8_t got_valid_rx = 0;
 static uint8_t demote_service_running = 0;
 
+static demote_cluster_t local_demote_data;
 
 #define DEMOTE_SERVICE_PENDING_THRESHOLD 18
 
