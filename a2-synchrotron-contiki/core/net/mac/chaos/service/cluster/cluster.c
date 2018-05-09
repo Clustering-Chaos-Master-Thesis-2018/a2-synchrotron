@@ -114,7 +114,7 @@ ALWAYS_INLINE static void prepare_tx(cluster_t* const cluster_tx) {
     cluster_tx->source_id = node_id;
     update_hop_count(cluster_tx);
     cluster_tx->consecutive_cluster_round_count = local_cluster_data.consecutive_cluster_round_count;
-    cluster_tx->total_rx_count = sum(neighbour_list, MAX_NODE_COUNT);
+    cluster_tx->total_rx_count = sum(neighbour_list);
 }
 
 static chaos_state_t handle_invalid_rx(cluster_t* const cluster_tx) {
@@ -177,7 +177,7 @@ static chaos_state_t process(uint16_t round_count, uint16_t slot,
         }
         got_valid_rx = 1;
         invalid_rx_count = 0;
-        update_rx_statistics(cluster_rx->source_id, sum(neighbour_list, MAX_NODE_COUNT));
+        update_rx_statistics(cluster_rx->source_id, sum(neighbour_list));
 
         if (local_cluster_data.consecutive_cluster_round_count == -1 || local_cluster_data.consecutive_cluster_round_count < cluster_rx->consecutive_cluster_round_count) {
             local_cluster_data.consecutive_cluster_round_count = cluster_rx->consecutive_cluster_round_count;
@@ -273,8 +273,6 @@ static chaos_state_t process_cluster_head(uint16_t round_count, uint16_t slot,
         tx_payload->cluster_head_count = insert(tx_payload->cluster_head_list, tx_payload->cluster_head_count, create_cluster_head(node_id, cluster_head_state));
         delta |= 1;
     }
-
-    delta |= update_cluster_head_status(tx_payload->cluster_head_list, tx_payload->cluster_head_count, node_id);;
 
     if (delta && got_valid_rx) {
         next_state = CHAOS_TX;
@@ -374,7 +372,7 @@ static void log_rx_count() {
     char rx_counts_str[300];
     sprintf(rx_counts_str, "rx_count [");
 
-    const uint16_t rx_sum = sum(neighbour_list, MAX_NODE_COUNT);
+    const uint16_t rx_sum = sum(neighbour_list);
     const uint16_t rx_min = min(neighbour_list, MAX_NODE_COUNT);
     const uint16_t rx_max = max(neighbour_list, MAX_NODE_COUNT);
 
@@ -460,7 +458,6 @@ static void round_end_sniffer(const chaos_header_t* header){
         if(cluster_head_state == FINAL) {
             chaos_cluster_node_count = local_cluster_data.cluster_head_count;
             chaos_cluster_node_index = cluster_index;
-            COOJA_DEBUG_PRINTF("setting chaos cluster node index %d", chaos_cluster_node_index);
         } else {
             chaos_cluster_node_count = local_cluster_data.cluster_head_count;
         }

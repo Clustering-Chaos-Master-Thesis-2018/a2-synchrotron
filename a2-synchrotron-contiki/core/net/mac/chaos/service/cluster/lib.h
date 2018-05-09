@@ -2,7 +2,7 @@
 #define _CHAOS_LIB_H_
 #include "cluster.h"
 
-uint16_t sum(const uint16_t* const array, uint8_t size);
+uint16_t sum(const uint16_t* const array);
 uint16_t max(const uint16_t* const array, uint8_t size);
 uint16_t min(const uint16_t* const array, uint8_t size);
 float mean(const uint16_t* const array, uint8_t size);
