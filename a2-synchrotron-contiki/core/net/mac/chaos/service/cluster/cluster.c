@@ -195,7 +195,11 @@ static chaos_state_t process(uint16_t round_count, uint16_t slot,
     merge_lists(&local_cluster_data, cluster_tx);
 
     if(next_state == CHAOS_TX) {
-        prepare_tx(cluster_tx);
+        if(!got_valid_rx) {
+            next_state = CHAOS_RX;
+        } else {
+            prepare_tx(cluster_tx);
+        }
     }
     return next_state;
 }
@@ -274,7 +278,7 @@ static chaos_state_t process_cluster_head(uint16_t round_count, uint16_t slot,
         delta |= 1;
     }
 
-    if (delta && got_valid_rx) {
+    if (delta) {
         next_state = CHAOS_TX;
     }
 
@@ -288,7 +292,7 @@ static chaos_state_t process_cluster_node(uint16_t round_count, uint16_t slot,
     chaos_state_t next_state = CHAOS_RX;
 
     delta |= merge_lists(tx_payload, rx_payload);
-    if (delta && got_valid_rx) {
+    if (delta) {
         next_state = CHAOS_TX;
     }
     return next_state;
