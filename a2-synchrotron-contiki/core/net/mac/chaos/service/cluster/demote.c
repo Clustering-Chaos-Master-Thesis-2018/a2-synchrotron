@@ -33,7 +33,8 @@ static uint8_t demote_service_running = 0;
 
 static demote_cluster_t local_demote_data;
 
-#define DEMOTE_SERVICE_PENDING_THRESHOLD 18
+#define DEMOTE_SERVICE_PENDING_THRESHOLD_MIN 20
+#define DEMOTE_SERVICE_PENDING_THRESHOLD_MAX 25
 
 #define CLUSTER_SLOT_LEN          (7*(RTIMER_SECOND/1000)+0*(RTIMER_SECOND/1000)/2)
 #define CLUSTER_SLOT_LEN_DCO      (CLUSTER_SLOT_LEN*CLOCK_PHI)
@@ -144,7 +145,7 @@ static void round_begin(const uint16_t round_count, const uint8_t app_id) {
 }
 
 ALWAYS_INLINE static int is_pending(const uint16_t round_count) {
-    return round_count <= DEMOTE_SERVICE_PENDING_THRESHOLD;
+    return round_count <= DEMOTE_SERVICE_PENDING_THRESHOLD_MAX && round_count >= DEMOTE_SERVICE_PENDING_THRESHOLD_MIN;
 }
 
 static void round_begin_sniffer(chaos_header_t* header){
