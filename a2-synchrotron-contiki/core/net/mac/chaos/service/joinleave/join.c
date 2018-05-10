@@ -562,7 +562,7 @@ static int get_flags_length(){
 
 static int is_pending( const uint16_t round_count ){
   //TODO: optimiziation, enable this after testing and bug fixing
-  if( round_count <= JOIN_ROUNDS_AFTER_BOOTUP )
+  if( round_count <= 30 )
   {
     pending = 1;
   }
