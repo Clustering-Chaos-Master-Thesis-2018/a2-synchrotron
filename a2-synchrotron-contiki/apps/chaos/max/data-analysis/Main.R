@@ -75,10 +75,10 @@ generateLocationPlotsForTestSuite <- function(testSuitePath) {
   }
   tests <- testNames(testSuitePath)
   rows <- lapply(tests, Curry(createTestInfoRow, testSuitePath))
-  
+
   df <- as.data.frame( do.call(rbind, rows), stringsAsFactors=F )
   colnames(df) <- c("testName", "simulationFile", "testDirectory")
-  
+
   apply(df, 1, function(row) {
     tryCatch({
         loadAndPlot(row)
@@ -86,29 +86,35 @@ generateLocationPlotsForTestSuite <- function(testSuitePath) {
         message(e)
         return(NA)
       }
-    )  
-    
-    
+    )
+
+
   })
-  
+
   return(1)
 }
 
 loadAndPlot <- function(row) {
   print(row["testName"])
-  
+
   roundData <- load_all_nodes_round_data(row["testDirectory"])
 
-  #roundData <- roundData[roundData$rd>60,] 
-  clusters <- clusterHeadIds(roundData)
-  
-  # Create node to cluster map
-  a <- !duplicated(roundData[c("node_id")])
-  roundDataSub <- subset(roundData, a)
-  node_cluster_map <- roundDataSub[c("node_id","cluster_id")]
-  
+  max_round <- max(roundData$rd, na.rm = TRUE)
   pdf(file = file.path(row["testDirectory"], "locations.pdf"))
-  plotNodeLocations(row["simulationFile"], clusters, node_cluster_map)
+  for (round in 19:max_round){
+    if(round %% 10) {
+      next
+    }
+    filteredRoundData <- roundData[roundData$rd > round,]
+    clusters <- clusterHeadIds(filteredRoundData)
+
+    # Create node to cluster map
+    a <- !duplicated(filteredRoundData[c("node_id")])
+    roundDataSub <- subset(filteredRoundData, a)
+    node_cluster_map <- roundDataSub[c("node_id","cluster_id")]
+    plotNodeLocations(row["simulationFile"], clusters, node_cluster_map)
+
+  }
   dev.off()
 }
 
