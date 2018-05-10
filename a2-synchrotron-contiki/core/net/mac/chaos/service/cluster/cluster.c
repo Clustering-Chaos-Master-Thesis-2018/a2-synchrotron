@@ -341,26 +341,22 @@ static void round_begin_sniffer(chaos_header_t* header){
 }
 
 static void log_cluster_heads(cluster_head_information_t *cluster_head_list, uint8_t cluster_head_count) {
-    char cluster_head_list_str[350];
-    strcat(cluster_head_list_str, "available_clusters: (hop_count, rx_count) [ ");
+    PRINTF("available_clusters: (hop_count, rx_count) [ ");
 
     uint8_t i;
     for(i = 0; i < cluster_head_count; i++) {
-        char tmp[15];
-        sprintf(tmp, (i == cluster_head_count-1 ? "%u (%u, %u) ":"%u (%u, %u), "),
+        PRINTF(i == cluster_head_count-1 ? "%u (%u, %u) ":"%u (%u, %u), ",
             cluster_head_list[i].id,
             cluster_head_list[i].hop_count,
             neighbour_list[cluster_head_list[i].id]);
-
-        strcat(cluster_head_list_str, tmp);
     }
+    PRINTF("]\n");
 
     char ch_prob_str[20];
     ftoa(CH_probability(local_cluster_data.consecutive_cluster_round_count), ch_prob_str, 4);
 
     cluster_head_information_t valid_cluster_heads[NODE_LIST_LEN];
     const uint8_t valid_cluster_head_count = filter_valid_cluster_heads(cluster_head_list, cluster_head_count, valid_cluster_heads, CLUSTER_COMPETITION_RADIUS);
-    strcat(cluster_head_list_str, "]\n");
 
     PRINTF("cluster: rd: %u, prob: %s, CH_count: %u, valid_CH_count: %u, picked: %u, cluster_index: %u\n",
         chaos_get_round_number(),
@@ -369,12 +365,10 @@ static void log_cluster_heads(cluster_head_information_t *cluster_head_list, uin
         valid_cluster_head_count,
         cluster_id,
         cluster_index);
-    PRINTF(cluster_head_list_str);
 }
 
 static void log_rx_count() {
-    char rx_counts_str[300];
-    sprintf(rx_counts_str, "rx_count [");
+    PRINTF("rx_count [");
 
     const uint16_t rx_sum = sum(neighbour_list);
     const uint16_t rx_min = min(neighbour_list, MAX_NODE_COUNT);
@@ -385,17 +379,13 @@ static void log_rx_count() {
     char rx_sd_string[20];
     ftoa(standard_deviation(neighbour_list, MAX_NODE_COUNT), rx_sd_string, 4);
 
-    uint8_t largest_id_in_network = last_filled_index(neighbour_list, MAX_NODE_COUNT);
-    char tmp[5];
+    const uint8_t largest_id_in_network = last_filled_index(neighbour_list, MAX_NODE_COUNT);
     uint8_t i;
     for(i = 0; i <= largest_id_in_network; i++) {
-        sprintf(tmp, (i == largest_id_in_network ? "%u ":"%u, "), neighbour_list[i]);
-        strcat(rx_counts_str, tmp);
+        PRINTF(i == largest_id_in_network ? "%u ":"%u, ", neighbour_list[i]);
     }
 
-    strcat(rx_counts_str, "]\n");
-    PRINTF(rx_counts_str);
-    PRINTF("total: %u, mean: %s, min: %u, max: %u, sd: %s]\n", rx_sum, rx_average_string, rx_min, rx_max, rx_sd_string);
+    PRINTF("]\ntotal: %u, mean: %s, min: %u, max: %u, sd: %s]\n", rx_sum, rx_average_string, rx_min, rx_max, rx_sd_string);
 }
 
 static float CH_probability(int8_t doubling_count) {
