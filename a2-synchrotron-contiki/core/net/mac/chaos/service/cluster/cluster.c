@@ -128,14 +128,10 @@ static chaos_state_t handle_invalid_rx(cluster_t* const cluster_tx) {
     return CHAOS_RX;
 }
 
-uint8_t another_announced_CH_noticed(cluster_head_information_t* cluster_head_list, uint8_t cluster_head_count) {
-    int i;
-    for (i = 0; i < cluster_head_count; ++i) {
-        if (cluster_head_list[i].status == TENTATIVE || cluster_head_list[i].status == FINAL) {
-            return 1;
-        }
-    }
-    return 0;
+uint8_t allowed_to_announce_myself(const cluster_head_information_t* const cluster_head_list, uint8_t cluster_head_count) {
+    const uint8_t valid_cluster_head_count = count_valid_cluster_heads(cluster_head_list, cluster_head_count, CLUSTER_COMPETITION_RADIUS);
+    const uint8_t neighbour_count = count_filled_slots(neighbour_list, NODE_LIST_LEN);
+    return (valid_cluster_head_count == 0 || neighbour_count / valid_cluster_head_count > CLUSTER_NODES_PER_CLUSTER);
 }
 
 // Cannot be demoted to RX if TX has ever been decided
@@ -161,12 +157,12 @@ static chaos_state_t process(uint16_t round_count, uint16_t slot,
 
 
     if (tentativeAnnouncementSlot != -1) {
-        uint8_t demote = another_announced_CH_noticed(cluster_rx->cluster_head_list, cluster_rx->cluster_head_count);
-        if (demote) {
+        if (!allowed_to_announce_myself(local_cluster_data.cluster_head_list, local_cluster_data.cluster_head_count)) {
             tentativeAnnouncementSlot = -1; // Demote
         } else if (slot >= tentativeAnnouncementSlot) {
             tentativeAnnouncementSlot = -1;
             cluster_head_state = TENTATIVE;
+            COOJA_DEBUG_PRINTF("cluster announced myself as tentative in slot: %u", slot);
             set_next_state(&next_state, CHAOS_TX);
         }
     }
@@ -418,8 +414,8 @@ static void heed_repeat(const cluster_head_information_t* cluster_head_list, uin
         }
         return;
     }
-    const uint8_t neighbour_count = count_filled_slots(neighbour_list, NODE_LIST_LEN);
-    if(valid_cluster_head_count > 0 && neighbour_count / valid_cluster_head_count < CLUSTER_NODES_PER_CLUSTER) {
+
+    if(!allowed_to_announce_myself(cluster_head_list, cluster_head_count) || is_cluster_head()) {
         set_global_cluster_variables(cluster_head_list, cluster_head_count);
 
         if(cluster_id == node_id) {
