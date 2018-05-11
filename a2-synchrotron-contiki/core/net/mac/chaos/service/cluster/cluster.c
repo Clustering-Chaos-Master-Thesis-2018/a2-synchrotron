@@ -410,12 +410,10 @@ static void heed_repeat(const cluster_head_information_t* cluster_head_list, uin
     ftoa(current_CH_prob, res, 4);
     COOJA_DEBUG_PRINTF("cluster heed_repeat CH_prob: %s\n", res);
 
-    cluster_head_information_t valid_cluster_heads[NODE_LIST_LEN];
-    uint8_t valid_cluster_head_count = filter_valid_cluster_heads(cluster_head_list, cluster_head_count, valid_cluster_heads, CLUSTER_COMPETITION_RADIUS);
 
     float previous_CH_probability = CH_probability(consecutive_cluster_round_count - 1);
     if(previous_CH_probability >= 1.0f) {
-        if(valid_cluster_head_count > 0) {
+        if(count_valid_cluster_heads(cluster_head_list, cluster_head_count, CLUSTER_COMPETITION_RADIUS) > 0) {
             set_global_cluster_variables(cluster_head_list, cluster_head_count);
         }
         return;

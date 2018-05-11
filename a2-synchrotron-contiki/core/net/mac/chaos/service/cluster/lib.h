@@ -13,7 +13,10 @@ uint8_t count_filled_slots(const uint16_t* const array, uint8_t size);
 
 uint8_t calculate_smallest_hop_count(const cluster_head_information_t const *cluster_head_list, uint8_t size);
 uint8_t filter_valid_cluster_heads(const cluster_head_information_t* const cluster_head_list, uint8_t cluster_head_count, cluster_head_information_t* const output, uint8_t threshold);
+uint8_t count_valid_cluster_heads(const cluster_head_information_t* const cluster_head_list, uint8_t cluster_head_count, uint8_t threshold);
 node_id_t pick_best_cluster(const cluster_head_information_t *cluster_head_list, uint8_t size);
+
+ALWAYS_INLINE uint8_t is_valid_cluster_head(const cluster_head_information_t* const cluster_head, uint8_t hop_count_threshold);
 
 int ipow(int base, int exp);
 void reverse(char *str, int len);

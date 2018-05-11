@@ -343,20 +343,32 @@ uint8_t calculate_smallest_hop_count(const cluster_head_information_t const *clu
     return smallest_hop_count;
 }
 
+ALWAYS_INLINE uint8_t is_valid_cluster_head(const cluster_head_information_t* const cluster_head, uint8_t hop_count_threshold) {
+    return cluster_head->hop_count <= hop_count_threshold;
+}
+
 uint8_t filter_valid_cluster_heads(const cluster_head_information_t* const cluster_head_list, uint8_t cluster_head_count, cluster_head_information_t* const output, uint8_t threshold) {
     uint8_t i, output_size = 0;
     for(i = 0; i < cluster_head_count; ++i) {
-        if(cluster_head_list[i].hop_count <= threshold) {
+        if(is_valid_cluster_head(&cluster_head_list[i], threshold)) {
             output[output_size++] = cluster_head_list[i];
         }
     }
     return output_size;
 }
 
+uint8_t count_valid_cluster_heads(const cluster_head_information_t* const cluster_head_list, uint8_t cluster_head_count, uint8_t threshold) {
+    uint8_t i, count = 0;
+    for(i = 0; i < cluster_head_count; ++i) {
+        count += is_valid_cluster_head(&cluster_head_list[i], threshold);
+    }
+    return count;
+}
+
 node_id_t pick_best_cluster(const cluster_head_information_t *cluster_head_list, uint8_t size) {
     cluster_head_information_t valid_cluster_heads[NODE_LIST_LEN];
     uint8_t smallest_hop_count = calculate_smallest_hop_count(cluster_head_list, size);
-    const uint8_t valid_cluster_head_count = filter_valid_cluster_heads(cluster_head_list, size, valid_cluster_heads, smallest_hop_count);;
+    const uint8_t valid_cluster_head_count = filter_valid_cluster_heads(cluster_head_list, size, valid_cluster_heads, smallest_hop_count);
 
     uint8_t i;
     uint16_t biggest_rx_count = 0;
