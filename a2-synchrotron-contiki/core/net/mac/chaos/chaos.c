@@ -500,6 +500,9 @@ print_chaos_status_line(uint16_t round_number, uint8_t app_id) {
     " round: %d,"
   #if CHAOS_CLUSTER
     " is_cluster_head_round: %d,"
+    " node_id: %d,"
+    " n: %d"
+    " cluster_id: %d"
   #endif /* CHAOS_CLUSTER */
     " app: %s,"
     " all_cpu: %lu,"
@@ -514,6 +517,9 @@ print_chaos_status_line(uint16_t round_number, uint8_t app_id) {
     round_number,
   #if CHAOS_CLUSTER
     IS_CLUSTER_HEAD_ROUND(),
+    node_id,
+    chaos_get_node_count(),
+    chaos_get_cluster_id(),
   #endif /* CHAOS_CLUSTER */
     chaos_apps[app_id]->name,
     all_cpu,
