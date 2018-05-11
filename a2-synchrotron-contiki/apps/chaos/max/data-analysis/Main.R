@@ -101,10 +101,7 @@ loadAndPlot <- function(row) {
 
   max_round <- max(roundData$rd, na.rm = TRUE)
   pdf(file = file.path(row["testDirectory"], "locations.pdf"))
-  for (round in 19:max_round){
-    if(round %% 10) {
-      next
-    }
+  for (round in 1:max_round){
     filteredRoundData <- roundData[roundData$rd > round,]
     clusters <- clusterHeadIds(filteredRoundData)
 
