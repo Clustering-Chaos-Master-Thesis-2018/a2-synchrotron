@@ -3,7 +3,7 @@ plotLatency <- function(testResults) {
   
   # Extract plot data
   testNames <- sapply(testResults, function(res) {res@testName})
-  testDataFields <- lapply(testResults, function(res) {res@data})
+  testDataFields <- lapply(testResults, function(res) {res@max_data})
   testMeans <- sapply(testDataFields, function(df) {mean(df$complete_slot)})
   testSds <- sapply(testDataFields, function(df) {sd(df$complete_slot)})
   

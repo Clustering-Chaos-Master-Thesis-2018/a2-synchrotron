@@ -1,8 +1,7 @@
 library(jsonlite)
 
-load_all_nodes_round_data <- function(test_path) {
-  round_files_path <- paste(c(test_path,"log/round"), collapse = "/")
-  log_files <- list.files(path=round_files_path, pattern="*.txt", full.names=T, recursive=FALSE)
+load_all_nodes_round_data <- function(log_folder_path) {
+  log_files <- list.files(path=log_folder_path, pattern="*.txt", full.names=T, recursive=FALSE)
   info <- file.info(log_files)
   log_files <- rownames(info[info$size != 0, ])
   

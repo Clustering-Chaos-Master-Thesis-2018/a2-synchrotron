@@ -2,6 +2,7 @@
 
 #source("Completion.R")
 library(functional)
+source("TestResult.R")
 source("utils.R")
 source("LocationsMap.R")
 source("Latency.R")
@@ -22,7 +23,8 @@ main <- function(testSuitePath) {
         testName = row[1],
         simulationFile = row[2],
         testDirectory = row[3],
-        data = load_all_nodes_round_data(row[3]),
+        data = load_all_nodes_round_data(file.path(row[3],"log/round")),
+        max_data = load_all_nodes_round_data(file.path(row[3],"log/max")),
         location_data = load_location_data(row[2])
       )
     }, error = function(e) {
@@ -114,26 +116,3 @@ loadAndPlot <- function(row) {
   }
   dev.off()
 }
-
-TestResult <- setClass(
-  "TestResult",
-  
-  slots = c(
-    testName = "character",
-    simulationFile = "character",
-    testDirectory = "character",
-    data = "data.frame",
-    location_data = "data.frame"
-    )
-)
-
-
-
-setGeneric(name="calculateSpread", def=function(theObject) {standardGeneric("calculateSpread")})
-
-setMethod(f="calculateSpread", signature = "TestResult", definition = function(theObject) {
-  loc <- theObject@location_data
-  dist(cbind(loc$x,loc$y))
-  coord <- cbind(loc$x, loc$y)
-  return(max(as.matrix(dist(coord))))
-})
