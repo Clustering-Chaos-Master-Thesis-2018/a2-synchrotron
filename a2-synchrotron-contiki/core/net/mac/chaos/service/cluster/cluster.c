@@ -420,7 +420,8 @@ static void heed_repeat(const cluster_head_information_t* cluster_head_list, uin
         }
         return;
     }
-    if(valid_cluster_head_count > 0) {
+    const uint8_t neighbour_count = count_filled_slots(neighbour_list, NODE_LIST_LEN);
+    if(valid_cluster_head_count > 0 && neighbour_count / valid_cluster_head_count < CLUSTER_NODES_PER_CLUSTER) {
         set_global_cluster_variables(cluster_head_list, cluster_head_count);
 
         if(cluster_id == node_id) {

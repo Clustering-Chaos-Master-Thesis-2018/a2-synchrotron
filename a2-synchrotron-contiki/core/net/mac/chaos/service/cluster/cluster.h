@@ -29,6 +29,9 @@ typedef enum {
 #undef CLUSTER_RANDOMIZE_STARTING_ENERGY
 #define CLUSTER_RANDOMIZE_STARTING_ENERGY _param_randomize_starting_energy
 
+#undef CLUSTER_NODES_PER_CLUSTER
+#define CLUSTER_NODES_PER_CLUSTER _param_nodes_per_cluster
+
 typedef struct __attribute__((packed)) {
     node_id_t id;
     struct __attribute__((packed)) {

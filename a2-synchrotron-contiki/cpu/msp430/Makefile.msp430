@@ -309,6 +309,7 @@ CFLAGS += -D_param_max_node_count=$(max_node_count)
 CFLAGS += -D_param_cluster=$(cluster)
 CFLAGS += -D_param_cluster_competition_radius=$(cluster_competition_radius)
 CFLAGS += -D_param_randomize_starting_energy=$(randomize_starting_energy)
+CFLAGS += -D_param_nodes_per_cluster=$(nodes_per_cluster)
 
 empty:=
 space:=$(empty) $(empty)
