@@ -501,8 +501,8 @@ print_chaos_status_line(uint16_t round_number, uint8_t app_id) {
   #if CHAOS_CLUSTER
     " is_cluster_head_round: %d,"
     " node_id: %d,"
-    " n: %d"
-    " cluster_id: %d"
+    " n: %d,"
+    " cluster_id: %d,"
   #endif /* CHAOS_CLUSTER */
     " app: %s,"
     " all_cpu: %lu,"
@@ -512,7 +512,7 @@ print_chaos_status_line(uint16_t round_number, uint8_t app_id) {
     " cpu: %lu,"
     " lpm: %lu,"
     " transmit: %lu,"
-    " listen: %lu,"
+    " listen: %lu"
     "\n",
     round_number,
   #if CHAOS_CLUSTER

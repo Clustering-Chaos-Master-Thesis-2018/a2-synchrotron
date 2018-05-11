@@ -304,8 +304,8 @@ TIMEOUT(120000);
   logpath = "log/"
 // }
 
-powerLogPath = logpath + "power/"
 roundLogPath = logpath + "round/"
+maxLogPath   = logpath + "max/"
 errorLogPath = logpath + "error/"
 rawLogPath   = logpath + "raw/"
 
@@ -343,12 +343,11 @@ with (imports) {
       if(! outputs[id.toString()]){
         outputs[id.toString()] = new Object();
 
-        outputs[id.toString()].power = new FileWriter(powerLogPath + "log_" + id +".txt");
-        outputs[id.toString()].power.write("[" + "\n");
-        outputs[id.toString()].isFirstPowerPrint = true;
-
         outputs[id.toString()].round = new FileWriter(roundLogPath + "log_" + id +".txt");
         outputs[id.toString()].isFirstRoundPrint = true;
+
+        outputs[id.toString()].max = new FileWriter(maxLogPath   + "log_" + id +".txt");
+        outputs[id.toString()].isFirstMaxPrint = true;
 
         outputs[id.toString()].error = new FileWriter(errorLogPath + "log_" + id +".txt");
 
@@ -361,6 +360,16 @@ with (imports) {
       var raw = msg.substring(msg.indexOf(' ')+1);
 
       if (topic == "cluster_res:") {
+        if (outputs[id.toString()].isFirstMaxPrint) {
+          outputs[id.toString()].isFirstMaxPrint = false;
+          formatted_header = csv_format_header_round_log(raw);
+          outputs[id.toString()].max.write(formatted_header + "\n");
+        }
+
+        formatted_row = csv_format_round_log(raw);
+        outputs[id.toString()].max.write(formatted_row + "\n");
+        outputs[id.toString()].max.flush();
+      } else if (topic == "chaos_round_report:") {
         if (outputs[id.toString()].isFirstRoundPrint) {
           outputs[id.toString()].isFirstRoundPrint = false;
           formatted_header = csv_format_header_round_log(raw);
@@ -370,38 +379,21 @@ with (imports) {
         formatted_row = csv_format_round_log(raw);
         outputs[id.toString()].round.write(formatted_row + "\n");
         outputs[id.toString()].round.flush();
-      } else if (topic == "power:") {
-
-        try {
-          var parsed = JSON.parse(raw);
-          parsed.nodeid = id
-
-          if (outputs[id.toString()].isFirstPowerPrint) {
-            outputs[id.toString()].power.write(JSON.stringify(parsed) + "\n");
-            outputs[id.toString()].isFirstPowerPrint = false;
-          }
-          outputs[id.toString()].power.write("," + JSON.stringify(parsed) + "\n");
-
-          outputs[id.toString()].power.flush();
-        } catch (e) {
-          outputs[id.toString()].error.write(e + "\n");
-        }
-
       }
 
       try{
         //This is the tricky part. The Script is terminated using
         // an exception. This needs to be caught.
-        //YIELD_THEN_WAIT_UNTIL(msg.startsWith("power:") || msg.startsWith("cluster_res:"));
+        //YIELD_THEN_WAIT_UNTIL(msg.startsWith("round:") || msg.startsWith("cluster_res:"));
         YIELD(); // Always yield to write raw message.
       } catch (e) {
         //Close files.
 
         for (var ids in outputs){
-          outputs[ids].power.write("]" + "\n");
+          outputs[ids].max.close();
           outputs[ids].round.close();
-          outputs[ids].power.close();
           outputs[ids].error.close();
+          outputs[ids].raw.close();
         }
         //Rethrow exception again, to end the script.
         throw('test script killed');
@@ -409,6 +401,7 @@ with (imports) {
      }
 
 }
+
 
 
 
