@@ -22,3 +22,15 @@ load_all_nodes_round_data <- function(test_path) {
 clusterHeadIds <- function(roundData) {
   as.vector(unique(roundData[["cluster_id"]]))
 }
+
+load_location_data <- function(simulationFilePath) {
+  root <- read_xml(simulationFilePath)
+  motes <- xml_find_all(root, ".//mote")
+  
+  # Fetch data from xml file
+  node_id <- as.numeric(xml_text(xml_find_all(root, ".//id")))
+  x  <- as.double(xml_text(xml_find_all(root, ".//x")))
+  y  <- as.double(xml_text(xml_find_all(root, ".//y")))
+  nodes <- data.frame(node_id,x,y)
+  return(nodes)
+}

@@ -22,7 +22,8 @@ main <- function(testSuitePath) {
         testName = row[1],
         simulationFile = row[2],
         testDirectory = row[3],
-        data = load_all_nodes_round_data(row[3])
+        data = load_all_nodes_round_data(row[3]),
+        location_data = load_location_data(row[2])
       )
     }, error = function(e) {
       message(paste(e, row[1], sep=""))
@@ -33,6 +34,10 @@ main <- function(testSuitePath) {
 
   #Remove NAs, errors of badly read tests should already have been logged above.
   testResults <- testResults[!is.na(testResults)]
+
+  # Order by spread. 
+  testResults <- testResults[order(sapply(testResults, calculateSpread))]
+
   
   pdf(file = file.path(testSuitePath, "latency.pdf"))
   plotLatency(testResults)
@@ -114,7 +119,18 @@ TestResult <- setClass(
     testName = "character",
     simulationFile = "character",
     testDirectory = "character",
-    data = "data.frame"
+    data = "data.frame",
+    location_data = "data.frame"
     )
 )
 
+
+
+setGeneric(name="calculateSpread", def=function(theObject) {standardGeneric("calculateSpread")})
+
+setMethod(f="calculateSpread", signature = "TestResult", definition = function(theObject) {
+  loc <- theObject@location_data
+  dist(cbind(loc$x,loc$y))
+  coord <- cbind(loc$x, loc$y)
+  return(max(as.matrix(dist(coord))))
+})
