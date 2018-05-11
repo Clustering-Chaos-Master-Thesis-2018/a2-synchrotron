@@ -4,9 +4,40 @@
 library(functional)
 source("utils.R")
 source("LocationsMap.R")
+source("Latency.R")
 
 
 working_directory <- "~/tests"
+
+main <- function(testSuitePath) {
+  if (!dir.exists(testSuitePath)) {
+    stop("Bad path, testsuite does not exists.")
+  }
+  tests <- testNames(testSuitePath)
+  rows <- lapply(tests, Curry(createTestInfoRow, testSuitePath))
+
+  testResults <- lapply(rows, function(row) {
+    tryCatch({
+      TestResult(
+        testName = row[1],
+        simulationFile = row[2],
+        testDirectory = row[3],
+        data = load_all_nodes_round_data(row[3])
+      )
+    }, error = function(e) {
+      message(paste(e, row[1], sep=""))
+      return(NA)
+    }
+    )
+  })
+
+  #Remove NAs, errors of badly read tests should already have been logged above.
+  testResults <- testResults[!is.na(testResults)]
+  
+  pdf(file = file.path(testSuitePath, "latency.pdf"))
+  plotLatency(testResults)
+  dev.off()
+}
 
 test_suite_path <-
   paste(working_directory,
@@ -62,7 +93,8 @@ loadAndPlot <- function(row) {
   print(row["testName"])
   
   roundData <- load_all_nodes_round_data(row["testDirectory"])
-  
+
+  #roundData <- roundData[roundData$rd>60,] 
   clusters <- clusterHeadIds(roundData)
   
   # Create node to cluster map
@@ -74,3 +106,15 @@ loadAndPlot <- function(row) {
   plotNodeLocations(row["simulationFile"], clusters, node_cluster_map)
   dev.off()
 }
+
+TestResult <- setClass(
+  "TestResult",
+  
+  slots = c(
+    testName = "character",
+    simulationFile = "character",
+    testDirectory = "character",
+    data = "data.frame"
+    )
+)
+
