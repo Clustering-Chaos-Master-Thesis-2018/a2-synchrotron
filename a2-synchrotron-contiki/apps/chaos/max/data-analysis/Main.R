@@ -41,9 +41,15 @@ main <- function(testSuitePath) {
   testResults <- testResults[order(sapply(testResults, calculateSpread))]
 
   
+  
   pdf(file = file.path(testSuitePath, "latency.pdf"))
   plotLatency(testResults)
   dev.off()
+  
+  
+  for (result in testResults) {
+    prepareAndPlotNodeLocations(result)  
+  }
 }
 
 test_suite_path <-
@@ -66,53 +72,4 @@ createTestInfoRow <- function(testSuitePath, testName) {
     tools::file_path_as_absolute(file.path(testSuitePath, "simulation_files", paste(testName,"csc", sep = "."))),
     tools::file_path_as_absolute(file.path(testSuitePath, testName))
   )
-}
-
-#' Loads paths of a test suite
-#' @param testSuitePath The path to a test suite.
-#' @return a data field with columns testName, simulationFile and the test directory path.
-generateLocationPlotsForTestSuite <- function(testSuitePath) {
-  if (!dir.exists(testSuitePath)) {
-    stop("Bad path, testsuite does not exists.")
-  }
-  tests <- testNames(testSuitePath)
-  rows <- lapply(tests, Curry(createTestInfoRow, testSuitePath))
-
-  df <- as.data.frame( do.call(rbind, rows), stringsAsFactors=F )
-  colnames(df) <- c("testName", "simulationFile", "testDirectory")
-
-  apply(df, 1, function(row) {
-    tryCatch({
-        loadAndPlot(row)
-      }, error = function(e) {
-        message(e)
-        return(NA)
-      }
-    )
-
-
-  })
-
-  return(1)
-}
-
-loadAndPlot <- function(row) {
-  print(row["testName"])
-
-  roundData <- load_all_nodes_round_data(row["testDirectory"])
-
-  max_round <- max(roundData$rd, na.rm = TRUE)
-  pdf(file = file.path(row["testDirectory"], "locations.pdf"))
-  for (round in 1:max_round){
-    filteredRoundData <- roundData[roundData$rd > round,]
-    clusters <- clusterHeadIds(filteredRoundData)
-
-    # Create node to cluster map
-    a <- !duplicated(filteredRoundData[c("node_id")])
-    roundDataSub <- subset(filteredRoundData, a)
-    node_cluster_map <- roundDataSub[c("node_id","cluster_id")]
-    plotNodeLocations(row["simulationFile"], clusters, node_cluster_map)
-
-  }
-  dev.off()
 }

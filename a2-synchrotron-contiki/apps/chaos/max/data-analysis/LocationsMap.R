@@ -3,6 +3,28 @@ library(RColorBrewer) # For unique colors
 library(plyr)
 
 
+prepareAndPlotNodeLocations <- function(testResult) {
+  #print(row["testName"])
+  
+  #roundData <- load_all_nodes_round_data(row["testDirectory"])
+  roundData <- testResult@max_data
+  max_round <- max(roundData$rd, na.rm = TRUE)
+  pdf(file = file.path(testResult@testDirectory, "locations.pdf"))
+  for (round in 1:max_round){
+    filteredRoundData <- roundData[roundData$rd > round,]
+    clusters <- clusterHeadIds(filteredRoundData)
+    
+    # Create node to cluster map
+    a <- !duplicated(filteredRoundData[c("node_id")])
+    roundDataSub <- subset(filteredRoundData, a)
+    node_cluster_map <- roundDataSub[c("node_id","cluster_id")]
+    plotNodeLocations(testResult@simulationFile, clusters, node_cluster_map)
+    
+  }
+  dev.off()
+}
+
+
 #' Plots a tests mote locations and marks the cluster heads
 #'
 #' @param testPath Absolute path to a single test
