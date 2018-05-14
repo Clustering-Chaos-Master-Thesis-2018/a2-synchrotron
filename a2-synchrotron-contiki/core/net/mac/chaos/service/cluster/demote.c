@@ -49,7 +49,7 @@ ALWAYS_INLINE static int get_flags_length(){
   return FLAGS_LEN(MAX_NODE_COUNT);
 }
 
-static int16_t index_of(const node_id_t const *array, uint8_t size, node_id_t value) {
+__attribute__((always_inline)) static int16_t index_of(const node_id_t const *array, uint8_t size, node_id_t value) {
     uint8_t i;
     for(i = 0; i < size; ++i) {
         if (array[i] == value) {
@@ -59,7 +59,7 @@ static int16_t index_of(const node_id_t const *array, uint8_t size, node_id_t va
     return -1;
 }
 
-static uint8_t merge(node_id_t* src, uint8_t src_size, node_id_t* dst, uint8_t dst_size, uint8_t* delta) {
+__attribute__((always_inline)) static uint8_t merge(node_id_t* src, uint8_t src_size, node_id_t* dst, uint8_t dst_size, uint8_t* delta) {
     uint8_t i, j = 0;
     uint8_t found = 0;
     *delta |= src_size != dst_size;
@@ -102,7 +102,7 @@ static chaos_state_t process(uint16_t round_count, uint16_t slot,
         cluster_tx->node_count = merge(cluster_rx->demoted_cluster_heads, cluster_rx->node_count, cluster_tx->demoted_cluster_heads, cluster_tx->node_count, &delta);
 
         if(demoted) {
-            int16_t node_in_list = index_of(cluster_tx->demoted_cluster_heads, cluster_tx->node_count, node_id);
+            const int16_t node_in_list = index_of(cluster_tx->demoted_cluster_heads, cluster_tx->node_count, node_id);
             if(node_in_list == -1) {
                 cluster_tx->demoted_cluster_heads[cluster_tx->node_count++] = node_id;
                 delta |= 1;
@@ -148,8 +148,7 @@ ALWAYS_INLINE static int is_pending(const uint16_t round_count) {
     return round_count <= DEMOTE_SERVICE_PENDING_THRESHOLD_MAX && round_count >= DEMOTE_SERVICE_PENDING_THRESHOLD_MIN;
 }
 
-static void round_begin_sniffer(chaos_header_t* header){
-}
+static void round_begin_sniffer(chaos_header_t* header){}
 
 
 uint8_t filter_demoted_cluster_heads(const cluster_head_information_t* const cluster_head_list, uint8_t cluster_head_count, cluster_head_information_t* const output, const demote_cluster_t* const demoted_packet) {
