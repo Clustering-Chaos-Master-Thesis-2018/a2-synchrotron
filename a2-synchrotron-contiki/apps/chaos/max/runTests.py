@@ -10,9 +10,9 @@ import xml.etree.ElementTree as ET
 import shutil
 import argparse
 
-RUN_TEST_COMMAND = ["./runTest"]
+RUN_TEST_COMMAND = ["sh", "runTest"]
 TEST_DIRECTORY = "tests"
-GLOBAL_SIMULATION_DIRECTORY = TEST_DIRECTORY + "/Simulations"
+GLOBAL_SIMULATION_DIRECTORY = os.path.join(TEST_DIRECTORY, "Simulations")
 
 TEST_FILE_EXTENSION = ".csc"
 SCRIPT_TAG = ".//script"
@@ -21,7 +21,7 @@ SCRIPT_FILE = os.path.join(TEST_DIRECTORY, "simulationScript.js")
 LOCAL_SIMULATION_DIRECTORY = "simulation_files"
 
 TEST_DIRECTORY_STRUCTURE = {
-    "outputs": ["log/error", "log/round", "log/max", "log/raw"]
+    "outputs": [os.path.join("", "log", "error"), os.path.join("", "log", "round"), os.path.join("", "log", "power"), os.path.join("", "log", "raw")]
 }
 
 LOCAL_LOG_DIRECTORY = "log"
@@ -96,8 +96,7 @@ def create_local_simulation_files(test_suite_folder, output_folder, simulation_t
 
 
     for simulation_file in simulation_files:
-        output_file_path = os.path.join(
-            output_folder, os.path.basename(simulation_file))
+        output_file_path = os.path.join(output_folder, os.path.basename(simulation_file))
         tree = ET.parse(simulation_file)
         root = tree.getroot()
 
