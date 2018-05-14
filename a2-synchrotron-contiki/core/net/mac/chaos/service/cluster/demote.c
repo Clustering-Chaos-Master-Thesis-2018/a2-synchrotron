@@ -176,7 +176,7 @@ static void round_end_sniffer(const chaos_header_t* header){
 
     demote_cluster_t* payload = (demote_cluster_t*)header->payload;
     uint8_t delta = 0;
-    local_demote_data.node_count = merge(local_demote_data.demoted_cluster_heads, local_demote_data.node_count, payload->demoted_cluster_heads, payload->node_count, &delta);
+    local_demote_data.node_count = merge(payload->demoted_cluster_heads, payload->node_count, local_demote_data.demoted_cluster_heads, local_demote_data.node_count, &delta);
 
     demote_service_running = is_pending(header->round_number + 1);
     if(!demote_service_running) {
