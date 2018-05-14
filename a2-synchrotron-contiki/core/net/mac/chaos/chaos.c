@@ -496,6 +496,13 @@ print_chaos_status_line(uint16_t round_number, uint8_t app_id) {
   last_transmit = energest_type_time(ENERGEST_TYPE_TRANSMIT);
   last_listen = energest_type_time(ENERGEST_TYPE_LISTEN);
 
+  const char* app_name = 0;
+  if(app_id == 254) {
+    app_name = "association";
+  } else {
+    app_name = chaos_apps[app_id]->name;
+  }
+
   PRINTF("chaos_round_report:"
     " round: %d,"
   #if CHAOS_CLUSTER
@@ -521,7 +528,7 @@ print_chaos_status_line(uint16_t round_number, uint8_t app_id) {
     chaos_get_node_count(),
     chaos_get_cluster_id(),
   #endif /* CHAOS_CLUSTER */
-    chaos_apps[app_id]->name,
+    app_name,
     all_cpu,
     all_lpm,
     all_transmit,
@@ -940,6 +947,7 @@ ALWAYS_INLINE void busywait_until_end_of_slot(vht_clock_t t_sfd_goal, chaos_stat
 uint8_t chaos_associate(rtimer_clock_t* t_sfd_actual_rtimer_ptr, uint16_t *round_number_ptr, uint16_t* slot_number_ptr, uint8_t* app_id_ptr)
 {
   COOJA_DEBUG_STR("Association...");
+  print_chaos_status_line(*round_number_ptr, 254);
   chaos_multichannel_init();
   int associated = 0;
   volatile uint8_t rx_status = CHAOS_TXRX_UNKOWN;
