@@ -64,13 +64,14 @@ __attribute__((always_inline)) static uint8_t merge(node_id_t* src, uint8_t src_
     uint8_t found = 0;
     *delta |= src_size != dst_size;
     for(i = 0; i < src_size; ++i) {
+        found = 0;
         for(j = 0; j < dst_size; ++j) {
             if(src[i] == dst[j]) {
                 found = 1;
                 break;
             }
         }
-        if(!found) {
+        if(!found && dst_size < NODE_LIST_LEN) {
             dst[dst_size++] = src[i];
             *delta |= 1;
         }
