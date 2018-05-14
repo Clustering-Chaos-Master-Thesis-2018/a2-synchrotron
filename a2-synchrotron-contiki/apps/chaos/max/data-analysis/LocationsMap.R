@@ -73,4 +73,5 @@ plotNodeLocations <- function(testResult, clusterHeads=c(), node_cluster_map, ro
 
 
   text(nodes$y~nodes$x, labels=nodes$node_id, col="black") # Write node_id on top of the nodes
+  text(0, 0, labels=round_id, col="black")
 }
