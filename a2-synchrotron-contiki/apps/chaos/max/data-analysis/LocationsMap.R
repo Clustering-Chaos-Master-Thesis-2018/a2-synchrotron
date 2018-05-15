@@ -17,7 +17,15 @@ prepareAndPlotNodeLocations <- function(testResult) {
     # Create node to cluster map
     a <- !duplicated(filteredRoundData[c("node_id")])
     roundDataSub <- subset(filteredRoundData, a)
-    node_cluster_map <- roundDataSub[c("node_id","cluster_id")]
+    
+    node_id <- 1:max(roundDataSub$node_id)
+    cluster_id <- 0
+    node_cluster_map <- data.frame(node_id, cluster_id)
+    
+    if("cluster_id" %in% colnames(roundDataSub)) {
+      node_cluster_map <- roundDataSub[c("node_id","cluster_id")]
+    }
+  
     plotNodeLocations(testResult, clusters, node_cluster_map, round)
 
   }
