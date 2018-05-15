@@ -5,7 +5,7 @@ library(reshape2)
 plotHeatmap <- function(testRestult) {
   
   print(testRestult@testName)
-  app <- c("association", "sleeping", "cluster", "chaos_max_app", "join", "demote")
+  app <- c("association", "sleeping", "cluster", "join", "demote", "chaos_max_app")
   color <- 1:length(app)
 
   appToColorTable <- data.frame(app, color, stringsAsFactors = F)
@@ -25,17 +25,24 @@ plotHeatmap <- function(testRestult) {
       
     }
   }
-  print("helo")
-  #browser()
-  p <- ggplot(melt(heatData), aes(Var1,Var2, fill=value)) +
+
+  roundData <- testRestult@data
+  roundData <- roundData[c("round", "node_id", "app")]
+  appToColorTable[appToColorTable$app==dataRow$app,]$color
+  roundData <- merge(roundData, appToColorTable, by="app")
+  
+  ySteps <- 1:max(roundData$node_id)
+  xSteps <- 1:max(roundData$round)
+  
+  p <- ggplot(roundData, aes(round, node_id, fill=app)) +
     geom_raster() +
     geom_tile(colour="white",size=0.25) +
-    scale_y_discrete(expand=c(0,0), breaks=1:50) +
-    scale_x_discrete(expand=c(0,0), breaks=1:50) +
+    scale_y_discrete(expand=c(0,0), limits=ySteps, labels=ySteps, breaks=ySteps) +
+    scale_x_discrete(expand=c(0,0), limits=xSteps, labels=xSteps ,breaks=xSteps) +
     coord_fixed()+
-    labs(x="Round",y="Node ID")
-  print(p)
-  browser()
-  #ggplot(nba.m, aes(variable, Name)) + geom_tile(aes(fill = rescale), colour = "white") + scale_fill_gradient(low = "white", high = "steelblue")
+    labs(x="Round",y="Node ID") +
+    scale_color_brewer()
+  
+  ggsave(file.path(testRestult@testDirectory,"applications.pdf"), plot=p)
   
 }
