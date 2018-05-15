@@ -947,7 +947,7 @@ ALWAYS_INLINE void busywait_until_end_of_slot(vht_clock_t t_sfd_goal, chaos_stat
 uint8_t chaos_associate(rtimer_clock_t* t_sfd_actual_rtimer_ptr, uint16_t *round_number_ptr, uint16_t* slot_number_ptr, uint8_t* app_id_ptr)
 {
   COOJA_DEBUG_STR("Association...");
-  print_chaos_status_line(*round_number_ptr, 254);
+  print_chaos_status_line((*round_number_ptr) + 1, 254);
   chaos_multichannel_init();
   int associated = 0;
   volatile uint8_t rx_status = CHAOS_TXRX_UNKOWN;
