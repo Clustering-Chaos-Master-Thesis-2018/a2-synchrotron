@@ -18,7 +18,7 @@ load_all_nodes_round_data <- function(log_folder_path) {
 }
 
 clusterHeadIds <- function(roundData) {
-  as.vector(unique(roundData[["cluster_id"]]))
+  roundData[roundData$cluster_id == roundData$node_id,]$cluster_id
 }
 
 load_location_data <- function(simulationFilePath) {
