@@ -15,6 +15,10 @@ main <- function(testSuitePath) {
     stop("Bad path, testsuite does not exists.")
   }
   tests <- testNames(testSuitePath)
+  if(length(tests) == 0) {
+    stop("No tests found. Are the simulation files present?")
+  }
+  
   rows <- lapply(tests, Curry(createTestInfoRow, testSuitePath))
 
   testResults <- lapply(rows, function(row) {
@@ -48,7 +52,11 @@ main <- function(testSuitePath) {
   
   
   for (result in testResults) {
-    prepareAndPlotNodeLocations(result)  
+    prepareAndPlotNodeLocations(result)
+  }
+  
+  for (result in testResults) {
+    plotHeatmap(result)
   }
 }
 
