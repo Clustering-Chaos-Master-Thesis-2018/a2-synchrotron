@@ -63,7 +63,11 @@ volatile join_debug_t join_debug_var = {0,0,0,0,0};
 #endif
 
 #ifndef JOIN_ROUNDS_AFTER_BOOTUP
+#if CHAOS_CLUSTER
 #define JOIN_ROUNDS_AFTER_BOOTUP (30)
+#else
+#define JOIN_ROUNDS_AFTER_BOOTUP (10)
+#endif
 #endif
 
 #define JOIN_SLOT_LEN          (7*(RTIMER_SECOND/1000)+0*(RTIMER_SECOND/1000)/2)    //TODO needs calibration
@@ -562,7 +566,7 @@ static int get_flags_length(){
 
 static int is_pending( const uint16_t round_count ){
   //TODO: optimiziation, enable this after testing and bug fixing
-  if( round_count <= 30 )
+  if( round_count <= JOIN_ROUNDS_AFTER_BOOTUP )
   {
     pending = 1;
   }
