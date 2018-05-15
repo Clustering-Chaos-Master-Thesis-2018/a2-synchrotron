@@ -62,6 +62,7 @@ ALWAYS_INLINE uint32_t generate_restart_threshold();
 void set_global_cluster_variables(const cluster_head_information_t* cluster_head_list, uint8_t cluster_head_count);
 
 extern uint8_t is_cluster_service_running;
+extern uint8_t is_demote_service_running;
 extern uint16_t neighbour_list[MAX_NODE_COUNT];
 extern cluster_t local_cluster_data;
 extern CHState cluster_head_state;

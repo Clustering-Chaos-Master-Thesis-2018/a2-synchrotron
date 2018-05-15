@@ -29,7 +29,7 @@ static uint8_t demoted = 0;
 static uint32_t restart_threshold = 0;
 static uint32_t invalid_rx_count = 0;
 static uint8_t got_valid_rx = 0;
-static uint8_t demote_service_running = 0;
+uint8_t is_demote_service_running = 0;
 
 static demote_cluster_t local_demote_data;
 
@@ -126,7 +126,7 @@ ALWAYS_INLINE uint8_t should_demote(uint8_t neighbour_count, uint8_t joined_node
 static void round_begin(const uint16_t round_count, const uint8_t app_id) {
     got_valid_rx = 0;
     invalid_rx_count = 0;
-    demote_service_running = 1;
+    is_demote_service_running = 1;
     restart_threshold = generate_restart_threshold();
 
 
@@ -170,7 +170,7 @@ uint8_t filter_demoted_cluster_heads(const cluster_head_information_t* const clu
 }
 
 static void round_end_sniffer(const chaos_header_t* header){
-    if(!demote_service_running) {
+    if(!is_demote_service_running) {
         return;
     }
 
@@ -178,8 +178,8 @@ static void round_end_sniffer(const chaos_header_t* header){
     uint8_t delta = 0;
     local_demote_data.node_count = merge(payload->demoted_cluster_heads, payload->node_count, local_demote_data.demoted_cluster_heads, local_demote_data.node_count, &delta);
 
-    demote_service_running = is_pending(header->round_number + 1);
-    if(!demote_service_running) {
+    is_demote_service_running = is_pending(header->round_number + 1);
+    if(!is_demote_service_running) {
 
         cluster_head_information_t filtered_cluster_heads[NODE_LIST_LEN];
         cluster_head_information_t valid_cluster_heads[NODE_LIST_LEN];
