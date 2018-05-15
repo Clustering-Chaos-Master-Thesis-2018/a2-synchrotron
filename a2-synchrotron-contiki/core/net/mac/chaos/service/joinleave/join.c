@@ -63,11 +63,7 @@ volatile join_debug_t join_debug_var = {0,0,0,0,0};
 #endif
 
 #ifndef JOIN_ROUNDS_AFTER_BOOTUP
-#if CHAOS_CLUSTER
-#define JOIN_ROUNDS_AFTER_BOOTUP (30)
-#else
 #define JOIN_ROUNDS_AFTER_BOOTUP (10)
-#endif
 #endif
 
 #define JOIN_SLOT_LEN          (7*(RTIMER_SECOND/1000)+0*(RTIMER_SECOND/1000)/2)    //TODO needs calibration

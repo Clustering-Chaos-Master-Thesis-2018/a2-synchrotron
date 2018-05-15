@@ -44,20 +44,6 @@
 #define CHAOS_RESTART_MIN 4
 #define CHAOS_RESTART_MAX 10
 
-#if COOJA
-#define CLUSTER_ROUND_MAX_SLOTS (127)
-#define MAX_ROUND_MAX_SLOTS   (127)
-//join parameters
-#define JOIN_ROUND_MAX_SLOTS   (127)
-#define JOIN_ROUNDS_AFTER_BOOTUP (10)
-#else
-#define CLUSTER_ROUND_MAX_SLOTS (200)
-#define MAX_ROUND_MAX_SLOTS   (254)
-//join parameters
-#define JOIN_ROUND_MAX_SLOTS   (200)
-#define JOIN_ROUNDS_AFTER_BOOTUP (30)
-#endif
-
 #undef LLSEC802154_CONF_SECURITY_LEVEL
 #define LLSEC802154_CONF_SECURITY_LEVEL _param_sec //MIC
 
@@ -132,6 +118,24 @@
 /* no need to touch these */
 #undef RTIMER_CONF_SECOND
 #define RTIMER_CONF_SECOND (4096U*4)
+
+#if COOJA
+#define CLUSTER_ROUND_MAX_SLOTS (127)
+#define MAX_ROUND_MAX_SLOTS   (127)
+//join parameters
+#define JOIN_ROUND_MAX_SLOTS   (127)
+#if CHAOS_CLUSTER
+    #define JOIN_ROUNDS_AFTER_BOOTUP (30)
+  #else
+    #define JOIN_ROUNDS_AFTER_BOOTUP (10)
+#endif
+#else
+#define CLUSTER_ROUND_MAX_SLOTS (200)
+#define MAX_ROUND_MAX_SLOTS   (254)
+//join parameters
+#define JOIN_ROUND_MAX_SLOTS   (200)
+#define JOIN_ROUNDS_AFTER_BOOTUP (30)
+#endif
 
 /* how many failed rounds to allow before associating again? */
 #undef CHAOS_FAILED_ROUNDS_RESYNC_THRESHOLD
