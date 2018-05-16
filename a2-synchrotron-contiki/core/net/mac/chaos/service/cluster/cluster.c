@@ -76,7 +76,7 @@ uint8_t is_cluster_service_running = 0;
 
 float base_CH_probability = -1.0f;
 //Average energy used per round * some number of rounds
-const uint64_t MAX_ENERGY = (uint64_t)30000 * (uint64_t)1000;
+const uint64_t MAX_ENERGY = (uint64_t)30000 * (uint64_t)800;
 const float C_PROB = 0.005f;
 
 CHState cluster_head_state = NOT_INITIALIZED;
