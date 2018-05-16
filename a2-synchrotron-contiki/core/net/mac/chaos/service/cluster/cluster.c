@@ -10,6 +10,7 @@
 #include "cluster.h"
 #include "testbed.h"
 #include "chaos-config.h"
+#include "join.h"
 
 #define ENABLE_COOJA_DEBUG COOJA
 #include "dev/cooja-debug.h"
