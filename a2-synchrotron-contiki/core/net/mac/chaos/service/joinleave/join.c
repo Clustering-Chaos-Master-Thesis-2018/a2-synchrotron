@@ -650,10 +650,11 @@ static void round_begin_sniffer(chaos_header_t* header){
 static void round_end_sniffer(const chaos_header_t* header){
   #if CHAOS_CLUSTER
     pending |= IS_INITIATOR() && ((header->join && header->cluster_id == chaos_get_cluster_id()) || chaos_node_count < 2);
+    is_join_round = is_pending(header->round_number + 1);
   #else
     pending |= IS_INITIATOR() && ( header->join || chaos_node_count < 2);
+    is_join_round = 0;
   #endif
-  is_join_round = 0;
   //TODO remove me later
 #if JOIN_STRESS_TEST
 #warning "JOIN_STRESS_TEST"
