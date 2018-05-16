@@ -26,7 +26,7 @@ typedef uint8_t node_index_t;
     #define IS_CLUSTER_HEAD()                    (node_id == chaos_get_cluster_id())
     #define IS_FORWARDER()                       (IS_CLUSTER_HEAD_ROUND() && !IS_CLUSTER_HEAD())
 
-    #define IS_FIRST_CLUSTER_HEAD()              (chaos_get_cluster_index() == 0)
+    #define IS_FIRST_CLUSTER_HEAD()              (IS_CLUSTER_HEAD() && chaos_get_cluster_index() == 0)
 
     // During cluster service rounds, use no offset
     #define CLUSTER_HOP_CHANNEL_OFFSET() (SINGLE_INITIATOR_SERVICE_RUNNING() || IS_CLUSTER_HEAD_ROUND() ? 0 : chaos_get_cluster_index())

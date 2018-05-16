@@ -170,7 +170,7 @@ void join_print_nodes(void){
   }
 }
 
-void join_init(){
+void join_init(uint8_t is_initiator){
   //clear node information
   chaos_node_index = 0;
   chaos_node_count = 0;
@@ -191,7 +191,7 @@ void join_init(){
   //initiator management
   memset(&joined_nodes_map, 0, sizeof(joined_nodes_map));
   memset(&joined_nodes_map_tmp, 0, sizeof(joined_nodes_map_tmp));
-  if( IS_INITIATOR() ){
+  if( is_initiator ){
     chaos_has_node_index = 1;
     chaos_node_index = 0;
     joined_nodes[0] = node_id;

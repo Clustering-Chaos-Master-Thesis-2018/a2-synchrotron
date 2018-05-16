@@ -444,10 +444,11 @@ static void round_end_sniffer(const chaos_header_t* header){
         if(cluster_head_state == FINAL) {
             chaos_cluster_node_count = local_cluster_data.cluster_head_count;
             chaos_cluster_node_index = cluster_index;
+            join_init(1);
         } else {
             chaos_cluster_node_count = local_cluster_data.cluster_head_count;
+            join_init(0);
         }
-        init_node_index();
         log_cluster_heads(local_cluster_data.cluster_head_list, local_cluster_data.cluster_head_count);
         log_rx_count();
     } else {

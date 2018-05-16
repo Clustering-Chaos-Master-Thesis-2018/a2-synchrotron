@@ -47,7 +47,7 @@ typedef uint8_t node_index_t;
 
 extern const chaos_app_t join;
 
-void join_init( void );
+void join_init( uint8_t is_initiator );
 int join_last_round_is_complete( void );
 int join_get_joined_nodes_not_committed_num( void );
 int join_is_in_round( void );

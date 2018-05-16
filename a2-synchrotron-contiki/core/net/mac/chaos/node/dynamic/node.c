@@ -53,7 +53,7 @@ volatile uint8_t chaos_cluster_node_count = 0;
 const uint16_t mapping[] = (uint16_t[])TESTBED_MAPPING;
 
 void init_node_index(){
-  join_init();
+  join_init(IS_INITIATOR());
 }
 
 #if !CHAOS_CLUSTER
