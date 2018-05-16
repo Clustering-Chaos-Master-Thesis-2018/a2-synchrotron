@@ -14,7 +14,7 @@ typedef uint8_t node_index_t;
 
     #define CLUSTER_SERVICE_RUNNING()               (is_cluster_service_running)
     #define DEMOTE_SERVICE_RUNNING()                (is_demote_service_running)
-    #define SINGLE_INITIATOR_SERVICE_RUNNING()      (CLUSTER_SERVICE_RUNNING() || DEMOTE_SERVICE_RUNNING)
+    #define SINGLE_INITIATOR_SERVICE_RUNNING()      (CLUSTER_SERVICE_RUNNING() || DEMOTE_SERVICE_RUNNING())
 
 
     #define HAS_CLUSTER_ID()                        (chaos_get_cluster_id() != 0)

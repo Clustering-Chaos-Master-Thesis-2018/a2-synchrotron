@@ -752,7 +752,7 @@ void chaos_slot(uint16_t* sync_slot, int* chaos_slot_status, chaos_state_t* chao
 
   /* If we get a packet from someone not in our cluster, ignore it. */
   #if CHAOS_CLUSTER
-    if(*chaos_slot_status == CHAOS_TXRX_OK && !IS_SAME_CLUSTER(rx_header->cluster_id) && !IS_CLUSTER_HEAD_ROUND() && !CLUSTER_SERVICE_RUNNING()) {
+    if(*chaos_slot_status == CHAOS_TXRX_OK && !IS_SAME_CLUSTER(rx_header->cluster_id) && !IS_CLUSTER_HEAD_ROUND() && !CLUSTER_SERVICE_RUNNING() && !DEMOTE_SERVICE_RUNNING()) {
       my_cluster = 0;
     }
 
@@ -835,7 +835,7 @@ void chaos_slot(uint16_t* sync_slot, int* chaos_slot_status, chaos_state_t* chao
     }
 #if NETSTACK_CONF_WITH_CHAOS_NODE_DYNAMIC
     else if( *chaos_state == CHAOS_RX
-        && *chaos_slot_status == CHAOS_TXRX_OK ){
+        && *chaos_slot_status == CHAOS_TXRX_OK && IS_MY_CLUSTER()){
       /* work as a forwarder if not joined */
       flag_delta |= tx_header->length != rx_header->length;
       if( !flag_delta ){
