@@ -62,7 +62,6 @@ cluster_t local_cluster_data = {
     .consecutive_cluster_round_count = -1
 };
 
-uint16_t neighbour_total_rx_count[MAX_NODE_COUNT] = {0};
 uint16_t neighbour_list[MAX_NODE_COUNT] = {0};
 
 unsigned long total_energy_used = 0;
@@ -99,7 +98,6 @@ float calculate_initial_CH_prob(uint64_t total_energy_used) {
 ALWAYS_INLINE static void update_rx_statistics(node_id_t source_id, uint16_t total_rx) {
     if (source_id < MAX_NODE_COUNT) {
         neighbour_list[source_id]++;
-        neighbour_total_rx_count[source_id] = total_rx;
     }
 }
 
@@ -114,7 +112,6 @@ ALWAYS_INLINE static void prepare_tx(cluster_t* const cluster_tx) {
     cluster_tx->source_id = node_id;
     update_hop_count(cluster_tx);
     cluster_tx->consecutive_cluster_round_count = local_cluster_data.consecutive_cluster_round_count;
-    cluster_tx->total_rx_count = sum(neighbour_list);
 }
 
 static chaos_state_t handle_invalid_rx(cluster_t* const cluster_tx) {
