@@ -37,7 +37,8 @@ static inline int merge_lists(cluster_t* cluster_tx, cluster_t* cluster_rx);
 //The number of consecutive receive states we need to be in before forcing to send again.
 //In order to combat early termination. This should probably be changed to something more robust.
 #define CONSECUTIVE_RECEIVE_THRESHOLD 10
-#define CLUSTER_SERVICE_PENDING_THRESHOLD 14
+
+#define SHOULD_RUN_CLUSTERING_SERVICE(ROUND) (ROUND <= 14 || (ROUND >= 200 && ROUND <= 214) || (ROUND >= 400 && ROUND <= 414))
 
 #define CLUSTER_SLOT_LEN          (7*(RTIMER_SECOND/1000)+0*(RTIMER_SECOND/1000)/2)
 #define CLUSTER_SLOT_LEN_DCO      (CLUSTER_SLOT_LEN*CLOCK_PHI)
@@ -330,7 +331,7 @@ static void round_begin(const uint16_t round_count, const uint8_t app_id) {
 }
 
 ALWAYS_INLINE static int is_pending(const uint16_t round_count) {
-    return round_count <= CLUSTER_SERVICE_PENDING_THRESHOLD;
+    return SHOULD_RUN_CLUSTERING_SERVICE(round_count);
 }
 
 static void round_begin_sniffer(chaos_header_t* header){
