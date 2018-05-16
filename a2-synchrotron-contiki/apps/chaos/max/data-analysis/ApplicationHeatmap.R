@@ -12,7 +12,7 @@ plotHeatmap <- function(testRestult) {
   
   node_ids <- sort(unique(testRestult@data$node_id))
   
-  heatData <- matrix(ncol=length(node_ids), nrow=max(testRestult@data$round))
+  heatData <- matrix(ncol=max(node_ids), nrow=max(testRestult@data$round))
   
   dat <- testRestult@data
   for (round in unique(dat$round)) {
