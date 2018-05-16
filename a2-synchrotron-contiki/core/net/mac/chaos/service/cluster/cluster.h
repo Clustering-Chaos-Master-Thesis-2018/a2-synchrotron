@@ -36,6 +36,13 @@ typedef enum {
 #define CLUSTER_NODES_PER_CLUSTER MAX_NODE_COUNT
 #endif
 
+#undef CLUSTER_MIN_NODES_PER_CLUSTER
+#define CLUSTER_MIN_NODES_PER_CLUSTER _param_min_nodes_per_cluster
+
+#if CLUSTER_MIN_NODES_PER_CLUSTER < 2
+#define CLUSTER_MIN_NODES_PER_CLUSTER 2
+#endif
+
 typedef struct __attribute__((packed)) {
     node_id_t id;
     struct __attribute__((packed)) {

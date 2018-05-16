@@ -119,8 +119,8 @@ static chaos_state_t process(uint16_t round_count, uint16_t slot,
 }
 
 
-ALWAYS_INLINE uint8_t should_demote(uint8_t neighbour_count, uint8_t joined_nodes_count) {
-    return joined_nodes_count < 4 /*&& neighbour_count > 8*/;
+ALWAYS_INLINE uint8_t should_demote(uint8_t joined_nodes_count) {
+    return joined_nodes_count < CLUSTER_MIN_NODES_PER_CLUSTER;
 }
 
 static void round_begin(const uint16_t round_count, const uint8_t app_id) {
@@ -130,8 +130,7 @@ static void round_begin(const uint16_t round_count, const uint8_t app_id) {
     restart_threshold = generate_restart_threshold();
 
 
-    const uint8_t count = count_filled_slots(neighbour_list, MAX_NODE_COUNT);
-    if(IS_CLUSTER_HEAD() && should_demote(count, chaos_node_count)) {
+    if(IS_CLUSTER_HEAD() && should_demote(chaos_node_count)) {
         COOJA_DEBUG_PRINTF("cluster demoting myself, chaos_node_count: %u < 4", chaos_node_count);
         if(index_of(local_demote_data.demoted_cluster_heads, local_demote_data.node_count, node_id) == -1) {
             local_demote_data.demoted_cluster_heads[local_demote_data.node_count++] = node_id;
