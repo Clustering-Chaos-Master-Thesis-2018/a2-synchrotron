@@ -462,7 +462,6 @@ static uint8_t filter_final_cluster_heads(const cluster_head_information_t* cons
 }
 
 
-//static void heed_repeat(const cluster_head_information_t* cluster_head_list, uint8_t cluster_head_count, int8_t consecutive_cluster_round_count) {
 static void heed_final() {
     cluster_head_information_t final_cluster_heads[NODE_LIST_LEN];
     local_cluster_data.cluster_head_count = filter_final_cluster_heads(local_cluster_data.cluster_head_list, local_cluster_data.cluster_head_count, final_cluster_heads);
