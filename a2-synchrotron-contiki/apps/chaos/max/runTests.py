@@ -12,9 +12,8 @@ import argparse
 
 RUN_TEST_COMMAND = ["sh", "runTest"]
 TEST_DIRECTORY = "tests"
-GLOBAL_SIMULATION_DIRECTORY = os.path.join(TEST_DIRECTORY, "Simulations")
 
-TEST_FILE_EXTENSION = ".csc"
+SIMULATION_FILE_EXTENSION = ".csc"
 SCRIPT_TAG = ".//script"
 SCRIPT_FILE = os.path.join(TEST_DIRECTORY, "simulationScript.js")
 
@@ -33,8 +32,11 @@ LOCAL_TEST_INFORMATION_FILE = "information.txt"
 GET_COMMIT_HASH = ["git", "log", "-n 1", "--pretty=format:\"%h\""]
 
 
-def get_global_simulation_files(folder):
-    return [os.path.join(root, *directory, file) for root, directory, files in os.walk(folder) for file in files if file.endswith(TEST_FILE_EXTENSION)]
+def get_simulation_files(simulation_folder):
+    return [os.path.join(root, *directory, file)
+            for root, directory, files in os.walk(simulation_folder)
+            for file in files
+            if file.endswith(SIMULATION_FILE_EXTENSION)]
 
 
 def create_test_suite_folder_structure(test_suite_name):
@@ -79,27 +81,27 @@ def create_script_plugin_tree(root):
 def create_local_simulation_files(test_suite_folder, output_folder, simulation_timeout):
     """ Inserts the simulation script into the csc files and saves
         the new csc files to the output_folder."""
-    simulation_files = get_global_simulation_files(GLOBAL_SIMULATION_DIRECTORY)
+    simulation_files = get_simulation_files(SIMULATION_DIRECTORY)
+    simulation_files = sorted(simulation_files)
     simulation_script = ""
     local_files = []
 
     with open(SCRIPT_FILE) as file:
         simulation_script = file.read()
 
-    print("")
-    for i, sim_file in enumerate(simulation_files):
-        print(f"{i}: {sim_file}")
-    tests = input("Which simulations do you want to run? (e.g. '0,1,3', leave empty to run all)\n>")
-    if tests:
-        test_numbers = list(map(int, tests.split(",")))
-        simulation_files = [simulation_files[x] for x in test_numbers]
-
+    if not RUN_ALL_SIMULATIONS:
+        print("")
+        for i, sim_file in enumerate(simulation_files):
+            print(f"{i}: {sim_file}")
+        tests = input("Which simulations do you want to run? (e.g. '0,1,3', leave empty to run all)\n>")
+        if tests:
+            test_numbers = list(map(int, tests.split(",")))
+            simulation_files = [simulation_files[x] for x in test_numbers]
 
     for simulation_file in simulation_files:
         output_file_path = os.path.join(output_folder, os.path.basename(simulation_file))
         tree = ET.parse(simulation_file)
         root = tree.getroot()
-
 
         firmware_tag = root.find(".//firmware")
         if firmware_tag is None:
@@ -131,7 +133,7 @@ def run_test(test_suite_folder, file, simulation_timeout):
     # print("Running test: " + os.path.basename(file) + " for " + str(simulation_timeout) + " seconds... ", end="", flush=True)
     print(
         f"Running test: {os.path.basename(file)} for {str(simulation_timeout)} seconds... ",
-        end="", flush=True
+        flush=True
     )
 
     with open(os.path.join(path, LOCAL_COOJA_LOG_FILE), "w") as cooja_log:
@@ -169,17 +171,24 @@ def main(args):
     parser.add_argument('name', help='Name of the test, e.g. "50-nodes-comp-radius-1". A timestamp will be appended to this. If the name is "dev" no timestamp is appended.')
     parser.add_argument('build_command', help='Command used to build the .sky file. Make clean is run before building.')
     parser.add_argument('sim_time', help='How long time should be simulated. In seconds.')
+    parser.add_argument('--sim_folder', help='Path to folder with simulation files. Defaults to "tests/Simulations"', default=os.path.join(TEST_DIRECTORY, "Simulations"))
+    parser.add_argument('--run_all', help='Run all tests in folder. Default is off.', action="store_true", default=False)
     args=parser.parse_args()
+
+    global SIMULATION_DIRECTORY
+    SIMULATION_DIRECTORY = args.sim_folder
+    global RUN_ALL_SIMULATIONS
+    RUN_ALL_SIMULATIONS = args.run_all
 
     test_suite_name = 'dev' if args.name == 'dev' else format_test_suite_name(args.name)
 
     run_make_command(args.build_command)
     simulation_timeout = args.sim_time
 
-    test_suite_folder, simulation_folder = create_test_suite_folder_structure(
+    test_suite_folder, test_suite_simulation_folder = create_test_suite_folder_structure(
         test_suite_name)
     local_files = create_local_simulation_files(
-        test_suite_folder, simulation_folder, simulation_timeout)
+        test_suite_folder, test_suite_simulation_folder, simulation_timeout)
     shutil.copyfile("max-app.sky", os.path.join(test_suite_folder, "max-app.sky"))
     print("Running test suite: " + test_suite_name +
           " with " + str(len(local_files)) + " test(s)")
