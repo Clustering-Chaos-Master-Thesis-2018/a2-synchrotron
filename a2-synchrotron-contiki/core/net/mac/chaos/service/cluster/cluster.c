@@ -301,7 +301,11 @@ static void round_begin(const uint16_t round_count, const uint8_t app_id) {
 
     // If this is the first time the cluster service is scheduled this cycle, reset all local variables.
     if(!is_cluster_service_running) {
+        memset(neighbour_list, 0, sizeof(neighbour_list));
         memset(&local_cluster_data, 0, sizeof(cluster_t));
+        cluster_head_state = NOT_INITIALIZED;
+        tentativeAnnouncementSlot = -1;
+        base_CH_probability = -1.0f;
         local_cluster_data.consecutive_cluster_round_count = -1;
         cluster_id = 0;
         cluster_index = 0;
