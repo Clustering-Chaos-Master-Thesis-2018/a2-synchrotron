@@ -296,6 +296,15 @@ static void round_begin(const uint16_t round_count, const uint8_t app_id) {
     restart_threshold = generate_restart_threshold();
     invalid_rx_count = 0;
     got_valid_rx = 0;
+
+    // If this is the first time the cluster service is scheduled this cycle, reset all local variables.
+    if(!is_cluster_service_running) {
+        memset(&local_cluster_data, 0, sizeof(cluster_t));
+        local_cluster_data.consecutive_cluster_round_count = -1;
+        cluster_id = 0;
+        cluster_index = 0;
+    }
+
     is_cluster_service_running = 1;
 
     cluster_t initial_local_cluster_data;
