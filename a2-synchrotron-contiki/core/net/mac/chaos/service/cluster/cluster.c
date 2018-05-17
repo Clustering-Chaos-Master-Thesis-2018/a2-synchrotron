@@ -428,20 +428,20 @@ static void heed_repeat(const cluster_head_information_t* cluster_head_list, uin
         if(cluster_id == node_id) {
             if(current_CH_prob >= 1.0f) {
                 cluster_head_state = FINAL;
-                COOJA_DEBUG_PRINTF("cluster, I AM FINAL\n");
+                COOJA_DEBUG_PRINTF("Announcing myself as FINAL cluster head in round: %u\n", chaos_get_round_number());
             } else {
                 cluster_head_state = TENTATIVE;
             }
         }
     } else if(current_CH_prob >= 1.0f) {
         cluster_head_state = FINAL;
-        COOJA_DEBUG_PRINTF("cluster, I AM FINAL\n");
+        COOJA_DEBUG_PRINTF("Announcing myself as FINAL cluster head in round: %u\n", chaos_get_round_number());
     } else {
         uint32_t precision = 1000;
         uint32_t probability = current_CH_prob * precision;
         if(chaos_random_generator_fast_range(0, precision) <= probability) {
             tentativeAnnouncementSlot = chaos_random_generator_fast_range(0, CLUSTER_ROUND_MAX_SLOTS/2);
-            COOJA_DEBUG_PRINTF("cluster, I AM TENTATIVE, decided to become CH in slot %d\n", tentativeAnnouncementSlot);
+            COOJA_DEBUG_PRINTF("Will announce myself as TENTATIVE in round %d, slot %d \n", chaos_get_round_number() + 1, tentativeAnnouncementSlot);
         }
     }
 }
