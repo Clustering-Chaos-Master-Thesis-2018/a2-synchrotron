@@ -74,6 +74,7 @@ static uint32_t invalid_rx_count = 0;
 static uint8_t got_valid_rx = 0;
 
 uint8_t is_cluster_service_running = 0;
+uint8_t is_final_phase = 0;
 
 float base_CH_probability = -1.0f;
 //Average energy used per round * some number of rounds
@@ -304,6 +305,7 @@ static void round_begin(const uint16_t round_count, const uint8_t app_id) {
         local_cluster_data.consecutive_cluster_round_count = -1;
         cluster_id = 0;
         cluster_index = 0;
+        is_final_phase = 0;
     }
 
     is_cluster_service_running = 1;
@@ -447,18 +449,62 @@ static void heed_repeat(const cluster_head_information_t* cluster_head_list, uin
     }
 }
 
+
+
+static uint8_t filter_final_cluster_heads(const cluster_head_information_t* const cluster_head_list, uint8_t cluster_head_count, cluster_head_information_t* const output) {
+    uint8_t i, output_size = 0;
+    for(i = 0; i < cluster_head_count; ++i) {
+        if(cluster_head_list[i].status == FINAL) {
+            output[output_size++] = cluster_head_list[i];
+        }
+    }
+    return output_size;
+}
+
+
+//static void heed_repeat(const cluster_head_information_t* cluster_head_list, uint8_t cluster_head_count, int8_t consecutive_cluster_round_count) {
+static void heed_final() {
+    cluster_head_information_t final_cluster_heads[NODE_LIST_LEN];
+    local_cluster_data.cluster_head_count = filter_final_cluster_heads(local_cluster_data.cluster_head_list, local_cluster_data.cluster_head_count, final_cluster_heads);
+    memcpy(local_cluster_data.cluster_head_list, final_cluster_heads, sizeof(final_cluster_heads));
+
+    if (cluster_head_state != FINAL) {
+        cluster_head_state = NOT_CH;
+
+        cluster_head_information_t valid_cluster_heads[NODE_LIST_LEN];
+        const uint8_t valid_cluster_head_count = filter_valid_cluster_heads(local_cluster_data.cluster_head_list, local_cluster_data.cluster_head_count, valid_cluster_heads, CLUSTER_COMPETITION_RADIUS);
+
+        if (valid_cluster_head_count == 0) {
+            COOJA_DEBUG_PRINTF("cluster no valid cluster head. Announcing myself as final\n");
+            cluster_id = node_id;
+            cluster_head_state = FINAL;
+            local_cluster_data.cluster_head_count = insert(local_cluster_data.cluster_head_list, local_cluster_data.cluster_head_count, create_cluster_head(node_id, FINAL));
+        } else {
+            cluster_id = pick_best_cluster(valid_cluster_heads, valid_cluster_head_count);
+            COOJA_DEBUG_PRINTF("cluster picking cluster %d\n", cluster_id);
+        }
+
+    }
+    cluster_index = index_of(local_cluster_data.cluster_head_list, local_cluster_data.cluster_head_count, cluster_id);
+
+}
+
 static void round_end_sniffer(const chaos_header_t* header){
     if (is_cluster_service_running) {
         is_cluster_service_running = is_pending(header->round_number + 1);
-        heed_repeat(local_cluster_data.cluster_head_list, local_cluster_data.cluster_head_count, local_cluster_data.consecutive_cluster_round_count);
-
-        if(cluster_head_state == FINAL) {
-            chaos_cluster_node_count = local_cluster_data.cluster_head_count;
-            chaos_cluster_node_index = cluster_index;
-            join_init(1);
+        is_final_phase = !is_pending(header->round_number + 3);
+        if (is_final_phase) {
+            COOJA_DEBUG_PRINTF("cluster executing final phase\n");
+            heed_final();
         } else {
-            chaos_cluster_node_count = local_cluster_data.cluster_head_count;
-            join_init(0);
+            heed_repeat(local_cluster_data.cluster_head_list, local_cluster_data.cluster_head_count, local_cluster_data.consecutive_cluster_round_count);
+        }
+
+
+        chaos_cluster_node_count = local_cluster_data.cluster_head_count;
+        join_init(cluster_head_state == FINAL);
+        if(cluster_head_state == FINAL) {
+            chaos_cluster_node_index = cluster_index;
         }
         log_cluster_heads(local_cluster_data.cluster_head_list, local_cluster_data.cluster_head_count);
         log_rx_count();
