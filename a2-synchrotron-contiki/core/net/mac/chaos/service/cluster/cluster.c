@@ -93,6 +93,9 @@ ALWAYS_INLINE int8_t cluster_head_not_initialized(void) {
 
 float calculate_initial_CH_prob(uint64_t total_energy_used) {
     uint64_t residualEnergy = MAX_ENERGY - total_energy_used;
+    if(total_energy_used > MAX_ENERGY) {
+        residualEnergy = 0;
+    }
     float probability = C_PROB * ((float)residualEnergy / (float)MAX_ENERGY);
     float min = 0.00001f;
     return probability > min ? probability : min;
@@ -363,7 +366,7 @@ static void log_cluster_heads(cluster_head_information_t *cluster_head_list, uin
     PRINTF("]\n");
 
     char ch_prob_str[20];
-    ftoa(CH_probability(local_cluster_data.consecutive_cluster_round_count), ch_prob_str, 4);
+    ftoa(CH_probability(local_cluster_data.consecutive_cluster_round_count), ch_prob_str, 6);
 
     cluster_head_information_t valid_cluster_heads[NODE_LIST_LEN];
     const uint8_t valid_cluster_head_count = filter_valid_cluster_heads(cluster_head_list, cluster_head_count, valid_cluster_heads, CLUSTER_COMPETITION_RADIUS);
