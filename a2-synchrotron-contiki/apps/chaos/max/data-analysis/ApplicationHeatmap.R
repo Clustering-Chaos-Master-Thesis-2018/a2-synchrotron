@@ -31,9 +31,14 @@ plotHeatmap <- function(testRestult) {
   appToColorTable[appToColorTable$app==dataRow$app,]$color
   roundData <- merge(roundData, appToColorTable, by="app")
   
-  ySteps <- 1:max(roundData$node_id)
-  xSteps <- 1:max(roundData$round)
+  points <-  9
+  step <-  max(roundData$round)/points
   
+  
+  
+  ySteps <- c(1,seq(5,max(roundData$node_id),5), max(roundData$node_id))
+  xSteps <- floor(c(1, seq(step, max(roundData$round)-step, step), max(roundData$round)))
+  #browser()
   p <- ggplot(roundData, aes(round, node_id, fill=app)) +
     geom_raster() +
     geom_tile(colour="white",size=0.25) +

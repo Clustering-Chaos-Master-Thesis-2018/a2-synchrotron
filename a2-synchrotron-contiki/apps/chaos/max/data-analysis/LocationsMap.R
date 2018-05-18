@@ -46,10 +46,13 @@ plotNodeLocations <- function(testResult, clusterHeads=c(), node_cluster_map, ro
   x  <- as.double(xml_text(xml_find_all(root, ".//x")))
   y  <- as.double(xml_text(xml_find_all(root, ".//y")))
   nodes <- data.frame(node_id,x,y)
-
+  
   # Merge data from log files with data from xml file
   nodes <- merge(node_cluster_map, nodes, by = "node_id", all = TRUE)
 
+  # Remove nodes with no location.
+  nodes <- nodes[complete.cases(nodes),]
+  
   # Mapping from cluster_id to color index
   clusters <- unique(nodes[["cluster_id"]])
   minColors <- order(clusters)
