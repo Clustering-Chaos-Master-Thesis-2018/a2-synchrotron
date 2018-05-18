@@ -27,7 +27,7 @@ static void round_begin_sniffer(chaos_header_t* header);
 static void round_end_sniffer(const chaos_header_t* header);
 ALWAYS_ACTUALLY_INLINE static int16_t index_of(const cluster_head_information_t *array, uint8_t size, node_id_t value);
 static void log_cluster_heads(cluster_head_information_t *cluster_head_list, uint8_t cluster_head_count);
-static float CH_probability(int8_t doubling_count);
+static float CH_probability(long long int doubling_count);
 static void heed_repeat(const cluster_head_information_t* cluster_head_list, uint8_t cluster_head_count, int8_t consecutive_cluster_round_count);
 static void update_hop_count(cluster_t* tx_payload);
 
@@ -398,11 +398,12 @@ static void log_rx_count() {
     PRINTF("]\ntotal: %u, mean: %s, min: %u, max: %u, sd: %s]\n", rx_sum, rx_average_string, rx_min, rx_max, rx_sd_string);
 }
 
-static float CH_probability(int8_t doubling_count) {
+static float CH_probability(long long int doubling_count) {
     if (doubling_count < 0) {
         doubling_count = 0;
     }
-    float prob = 1.0f*(1 << doubling_count) * base_CH_probability;
+    const long long int factor = ((long long int)1 << doubling_count);
+    const float prob = 1.0f*factor * base_CH_probability;
     return prob < 1.0f ? prob : 1.0f;
 }
 
@@ -417,8 +418,8 @@ static void heed_repeat(const cluster_head_information_t* cluster_head_list, uin
     float current_CH_prob = CH_probability(consecutive_cluster_round_count);
 
     char res[20];
-    ftoa(current_CH_prob, res, 4);
-    COOJA_DEBUG_PRINTF("cluster heed_repeat CH_prob: %s\n", res);
+    ftoa(current_CH_prob, res, 6);
+    COOJA_DEBUG_PRINTF("cluster heed_repeat CH_prob: %s\n, consecutive_cluster_round_count: %u, total_energy_used: %lu", res, consecutive_cluster_round_count, total_energy_used);
 
 
     float previous_CH_probability = CH_probability(consecutive_cluster_round_count - 1);
