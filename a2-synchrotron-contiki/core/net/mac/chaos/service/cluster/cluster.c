@@ -341,13 +341,13 @@ ALWAYS_INLINE static int is_pending(const uint16_t round_count) {
 }
 
 static void round_begin_sniffer(chaos_header_t* header){
-    unsigned long all_cpu = energest_type_time(ENERGEST_TYPE_CPU);
-    unsigned long all_lpm = energest_type_time(ENERGEST_TYPE_LPM);
-    unsigned long all_transmit = energest_type_time(ENERGEST_TYPE_TRANSMIT);
-    unsigned long all_listen = energest_type_time(ENERGEST_TYPE_LISTEN);
-    unsigned long all_idle_transmit = compower_idle_activity.transmit;
-    unsigned long all_idle_listen = compower_idle_activity.listen;
-    total_energy_used += all_cpu + all_lpm + all_transmit + all_listen + all_idle_transmit + all_idle_listen;
+    const unsigned long all_cpu = energest_type_time(ENERGEST_TYPE_CPU);
+    const unsigned long all_lpm = energest_type_time(ENERGEST_TYPE_LPM);
+    const unsigned long all_transmit = energest_type_time(ENERGEST_TYPE_TRANSMIT);
+    const unsigned long all_listen = energest_type_time(ENERGEST_TYPE_LISTEN);
+    const unsigned long all_idle_transmit = compower_idle_activity.transmit;
+    const unsigned long all_idle_listen = compower_idle_activity.listen;
+    total_energy_used = all_cpu + all_lpm + all_transmit + all_listen + all_idle_transmit + all_idle_listen;
 }
 
 static void log_cluster_heads(cluster_head_information_t *cluster_head_list, uint8_t cluster_head_count) {
