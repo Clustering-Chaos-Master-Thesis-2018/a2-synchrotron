@@ -78,7 +78,7 @@ uint8_t is_final_phase = 0;
 
 float base_CH_probability = -1.0f;
 //Average energy used per round * some number of rounds
-const uint64_t MAX_ENERGY = (uint64_t)30000 * (uint64_t)800;
+const uint64_t MAX_ENERGY = (uint64_t)50000 * (uint64_t)800;
 const float C_PROB = 0.005f;
 
 CHState cluster_head_state = NOT_INITIALIZED;
@@ -366,7 +366,7 @@ static void log_cluster_heads(cluster_head_information_t *cluster_head_list, uin
     PRINTF("]\n");
 
     char ch_prob_str[20];
-    ftoa(CH_probability(local_cluster_data.consecutive_cluster_round_count), ch_prob_str, 6);
+    ftoa(CH_probability(local_cluster_data.consecutive_cluster_round_count), ch_prob_str, 4);
 
     cluster_head_information_t valid_cluster_heads[NODE_LIST_LEN];
     const uint8_t valid_cluster_head_count = filter_valid_cluster_heads(cluster_head_list, cluster_head_count, valid_cluster_heads, CLUSTER_COMPETITION_RADIUS);
@@ -421,7 +421,7 @@ static void heed_repeat(const cluster_head_information_t* cluster_head_list, uin
     float current_CH_prob = CH_probability(consecutive_cluster_round_count);
 
     char res[20];
-    ftoa(current_CH_prob, res, 6);
+    ftoa(current_CH_prob, res, 4);
     COOJA_DEBUG_PRINTF("cluster heed_repeat CH_prob: %s\n, consecutive_cluster_round_count: %u, total_energy_used: %lu", res, consecutive_cluster_round_count, total_energy_used);
 
 
