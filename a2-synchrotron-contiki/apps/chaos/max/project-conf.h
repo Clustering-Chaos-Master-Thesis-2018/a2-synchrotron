@@ -125,7 +125,7 @@
 //join parameters
 #define JOIN_ROUND_MAX_SLOTS   (127)
 #if CHAOS_CLUSTER
-    #define JOIN_ROUNDS_AFTER_BOOTUP (30)
+    #define JOIN_ROUNDS_AFTER_BOOTUP (35)
   #else
     #define JOIN_ROUNDS_AFTER_BOOTUP (10)
 #endif

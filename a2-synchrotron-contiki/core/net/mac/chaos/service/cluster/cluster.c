@@ -38,7 +38,7 @@ static inline int merge_lists(cluster_t* cluster_tx, cluster_t* cluster_rx);
 //In order to combat early termination. This should probably be changed to something more robust.
 #define CONSECUTIVE_RECEIVE_THRESHOLD 10
 
-#define SHOULD_RUN_CLUSTERING_SERVICE(ROUND) (ROUND <= 14 || (ROUND >= 200 && ROUND <= 214) || (ROUND >= 400 && ROUND <= 414))
+#define SHOULD_RUN_CLUSTERING_SERVICE(ROUND) (ROUND <= 20 || (ROUND >= 200 && ROUND <= 220) || (ROUND >= 400 && ROUND <= 420))
 
 #define CLUSTER_SLOT_LEN          (7*(RTIMER_SECOND/1000)+0*(RTIMER_SECOND/1000)/2)
 #define CLUSTER_SLOT_LEN_DCO      (CLUSTER_SLOT_LEN*CLOCK_PHI)

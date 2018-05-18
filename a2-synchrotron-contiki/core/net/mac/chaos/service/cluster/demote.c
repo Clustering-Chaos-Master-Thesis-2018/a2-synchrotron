@@ -142,7 +142,7 @@ static void round_begin(const uint16_t round_count, const uint8_t app_id) {
 }
 
 ALWAYS_INLINE static int is_pending(const uint16_t round_count) {
-    return (round_count >= 20 && round_count <= 25) || (round_count >= 220 && round_count <= 225) || (round_count >= 420 && round_count <= 425);
+    return (round_count >= 25 && round_count <= 30) || (round_count >= 225 && round_count <= 230) || (round_count >= 425 && round_count <= 430);
 }
 
 static void round_begin_sniffer(chaos_header_t* header){}
