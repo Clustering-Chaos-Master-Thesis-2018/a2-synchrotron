@@ -4,6 +4,7 @@
 library(functional)
 library(foreach)
 library(doMC)
+library(data.table)
 source("TestResult.R")
 source("utils.R")
 source("LocationsMap.R")
@@ -119,6 +120,40 @@ plotReliabilityForTestSuites <- function(testSuitePaths) {
   return(p)
 }
 
+# example
+# plotPowerUsageForTestSuites(c(
+#    "/Users/tejp/tests/Cluster Testing/2018-05-19 30 min MinClusterSize2 test 2/",
+#    "/Users/tejp/tests/Cluster Testing/2018-05-20 30 min MinClusterSize2 test 3/")
+# )
+plotPowerUsageForTestSuites <- function(testSuitePaths) {
+  # Load data
+  testResultss <- lapply(testSuitePaths, function(testSuitePath) loadResultsFromTestSuitePath(testSuitePath))
+  
+  powerStats <- mapply(function(testResult1, testResult2) {
+    
+    res <- c(testResult1, testResult2)
+    res <- res[!is.na(res)]
+    if(length(res[!is.na(res)]) == 0) {
+      return(NA)
+    }
+    
+    print(paste(lapply(res, function(r) {r@testName}), sep=" "))
+    total_power_usages <- sapply(res, function(r) totalPowerUsage(r))
+    data.frame(testName=res[[1]]@testName, mean=mean(total_power_usages), sd=sd(total_power_usages), spread=calculateSpread(testResult1))
+    
+  }, testResultss[[1]], testResultss[[2]])
+  
+  stats <- rbindlist(powerStats[!is.na(powerStats)])
+  
+  #order by spread
+  stats$testName <- factor(stats$testName, levels = stats$testName[order(stats$spread)])
+  
+  p <- ggplot(stats, aes(testName, mean, ymin=mean-sd, ymax=mean+sd)) +
+    geom_pointrange() +
+    coord_cartesian(ylim = c(0,stats$mean+stats$sd+(stats$mean+stats$sd)/10))
+  print(p)
+  return(p)
+}
 
 
 test_suite_path <-
