@@ -22,8 +22,8 @@ test_suite_path <- paste(working_directory, "50_nodes-comp_radius_2_2018-03-29_1
 
 #tables <- list(table100x100, table500x500, table1000x1000)
 
-completion_rate <- function(table, round, cluster) {
-  round_entries <- table[table$round == round,]
+completion_rate <- function(max_data, max_in_CH_round, round, cluster) {
+  round_entries <- max_data[max_data$rd == round,]
   
   if(round %% 2 == 0) {
     entries_in_cluster <- round_entries
@@ -37,7 +37,7 @@ completion_rate <- function(table, round, cluster) {
   }
   
   if(round %% 2 == 0) {
-    correct_max <- 50
+    correct_max <- max_in_CH_round
   } else {
     correct_max <- max(entries_in_cluster[["node_id"]])
   }
@@ -67,20 +67,22 @@ load_test_suite  <- function(test_suite_path) {
   
 }
 
-reliability_of_test <- function(table) {
+reliability_of_test <- function(testResult) {
   # All combinations of rounds and cluster ids
-  all_rounds <- unique(table["round"])
-  all_cluster_ids <- unique(table["cluster_id"])
+  all_rounds <- unique(testResult@max_data$rd)
+  all_cluster_ids <- unique(testResult@max_data$cluster_id)
   g <- expand.grid(t(all_rounds), t(all_cluster_ids))
   colnames(g) <- c("round","cluster")
-  
+   
   #calculate completion rate for each row
-  g <- mdply(g, Curry(completion_rate, table))
+  g <- mdply(g, Curry(completion_rate, testResult@max_data, max(testResult@location_data$node_id)))
   colnames(g)[3] <- "completion_rate"
   g <- g[complete.cases(g),] # remove NA values
   g <- arrange(g,round)
+   
+  reliability <- mean(t(g["completion_rate"]))
   
-  reliability <- mean(t(g["completion_rate"]))  
+  return(reliability)
 }
 
 cluster_count <- function(table) {
@@ -126,38 +128,38 @@ plot_test_suite_results <- function(tables) {
 }
 
 
-# test1 <- "50_nodes-comp_radius_1_2018-03-29_11:41:46"
+# # test1 <- "50_nodes-comp_radius_1_2018-03-29_11:41:46"
+# # test2 <- "50_nodes-comp_radius_2_2018-03-29_11:42:11"
+# # test3 <- "50_nodes-comp_radius_3_2018-03-29_11:42:29"
+# 
+# test1 <- "50_nodes-comp_radius_1_2018-04-03_22:03:08"
 # test2 <- "50_nodes-comp_radius_2_2018-03-29_11:42:11"
 # test3 <- "50_nodes-comp_radius_3_2018-03-29_11:42:29"
-
-test1 <- "50_nodes-comp_radius_1_2018-04-03_22:03:08"
-test2 <- "50_nodes-comp_radius_2_2018-03-29_11:42:11"
-test3 <- "50_nodes-comp_radius_3_2018-03-29_11:42:29"
-
-test_suite_path <- paste(working_directory, test1, sep="/")
-tables1 <- load_test_suite(test_suite_path)
-result1 <- sapply(tables1, create_status_row)
-
-
-test_suite_path <- paste(working_directory, test2, sep="/")
-tables2 <- load_test_suite(test_suite_path)
-result2 <- sapply(tables2, create_status_row)
-
-
-test_suite_path <- paste(working_directory, test3, sep="/")
-tables3 <- load_test_suite(test_suite_path)
-result3 <- sapply(tables3, create_status_row)
-
-# to find y bounds
-results <- c(result1[1,],result2[1,],result3[1,])
-
-plot_reliability_result(result1, max(results), min(results))
-line_reliability_result(result2, red)
-line_reliability_result(result3, blue)
-
-#plot_reliability_result(result)
-#print(result)
-
-#print(reliability_of_test(table100x100))
-#print(reliability_of_test(table500x500))
-#print(reliability_of_test(table1000x1000))
+# 
+# test_suite_path <- paste(working_directory, test1, sep="/")
+# tables1 <- load_test_suite(test_suite_path)
+# result1 <- sapply(tables1, create_status_row)
+# 
+# 
+# test_suite_path <- paste(working_directory, test2, sep="/")
+# tables2 <- load_test_suite(test_suite_path)
+# result2 <- sapply(tables2, create_status_row)
+# 
+# 
+# test_suite_path <- paste(working_directory, test3, sep="/")
+# tables3 <- load_test_suite(test_suite_path)
+# result3 <- sapply(tables3, create_status_row)
+# 
+# # to find y bounds
+# results <- c(result1[1,],result2[1,],result3[1,])
+# 
+# plot_reliability_result(result1, max(results), min(results))
+# line_reliability_result(result2, red)
+# line_reliability_result(result3, blue)
+# 
+# #plot_reliability_result(result)
+# #print(result)
+# 
+# #print(reliability_of_test(table100x100))
+# #print(reliability_of_test(table500x500))
+# #print(reliability_of_test(table1000x1000))

@@ -6,6 +6,7 @@ TestResult <- setClass(
     simulationFile = "character",
     testDirectory = "character",
     data = "data.frame",
+    reliability = "numeric",
     max_data = "data.frame",
     location_data = "data.frame"
   )
