@@ -112,7 +112,9 @@ plotReliabilityForTestSuites <- function(testSuitePaths) {
   #order by spread
   stats$testName <- factor(stats$testName, levels = stats$testName[order(stats$spread)])
   
-  p <- ggplot(stats, aes(testName, mean, ymin=mean-sd, ymax=mean+sd)) + geom_pointrange()
+  p <- ggplot(stats, aes(testName, mean, ymin=mean-sd, ymax=mean+sd)) +
+    geom_pointrange() +
+    coord_cartesian(ylim = c(0,1))
   print(p)
   return(p)
 }
