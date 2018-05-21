@@ -2,33 +2,20 @@
 library(ggplot2)
 library(reshape2)
 
-plotHeatmap <- function(testRestult) {
+plotHeatmap <- function(testResult, round_interval=range(testResult@data$round)) {
   
-  print(testRestult@testName)
+  
+  print(testResult@testName)
   app <- c("association", "sleeping", "cluster", "join", "demote", "chaos_max_app")
   color <- 1:length(app)
 
   appToColorTable <- data.frame(app, color, stringsAsFactors = F)
   
-  node_ids <- sort(unique(testRestult@data$node_id))
-  
-  heatData <- matrix(ncol=max(node_ids), nrow=max(testRestult@data$round))
-  
-  dat <- testRestult@data
-  for (round in unique(dat$round)) {
-    for (node_id in unique(dat$node_id)) {
-      
-      dataRow <- dat[dat$round==round & dat$node_id == node_id,]
-      if(nrow(dataRow) == 1) {
-        heatData[round,node_id] = appToColorTable[appToColorTable$app==dataRow$app,]$color
-      }
-      
-    }
-  }
+  node_ids <- sort(unique(testResult@data$node_id))
 
-  roundData <- testRestult@data
+  roundData <- testResult@data
+  roundData <- roundData[roundData$round %in% seq(round_interval[[1]],round_interval[[2]]),]
   roundData <- roundData[c("round", "node_id", "app")]
-  appToColorTable[appToColorTable$app==dataRow$app,]$color
   roundData <- merge(roundData, appToColorTable, by="app")
   
   points <-  9
@@ -48,6 +35,5 @@ plotHeatmap <- function(testRestult) {
     labs(x="Round",y="Node ID") +
     scale_color_brewer()
   
-  ggsave(file.path(testRestult@testDirectory,"applications.pdf"), plot=p)
-  
+  return(p)
 }

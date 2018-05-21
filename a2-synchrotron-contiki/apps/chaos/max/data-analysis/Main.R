@@ -2,13 +2,34 @@
 
 #source("Completion.R")
 library(functional)
+library(foreach)
+library(doMC)
 source("TestResult.R")
 source("utils.R")
 source("LocationsMap.R")
 source("Latency.R")
+source("ApplicationHeatmap.R")
+registerDoMC(4)
 
 
 working_directory <- "~/tests"
+
+loadResultFromTestInfoRow <- function(row) {
+  tryCatch({
+    TestResult(
+      testName = row[1],
+      simulationFile = row[2],
+      testDirectory = row[3],
+      data = load_all_nodes_round_data(file.path(row[3],"log/round")),
+      max_data = load_all_nodes_round_data(file.path(row[3],"log/max")),
+      location_data = load_location_data(row[2])
+    )
+  }, error = function(e) {
+    message(paste(e, row[1], sep=""))
+    return(NA)
+  }
+  )
+}
 
 main <- function(testSuitePath) {
   if (!dir.exists(testSuitePath)) {
@@ -21,22 +42,7 @@ main <- function(testSuitePath) {
   
   rows <- lapply(tests, Curry(createTestInfoRow, testSuitePath))
 
-  testResults <- lapply(rows, function(row) {
-    tryCatch({
-      TestResult(
-        testName = row[1],
-        simulationFile = row[2],
-        testDirectory = row[3],
-        data = load_all_nodes_round_data(file.path(row[3],"log/round")),
-        max_data = load_all_nodes_round_data(file.path(row[3],"log/max")),
-        location_data = load_location_data(row[2])
-      )
-    }, error = function(e) {
-      message(paste(e, row[1], sep=""))
-      return(NA)
-    }
-    )
-  })
+  testResults <- lapply(rows, loadResultFromTestInfoRow)
 
   #Remove NAs, errors of badly read tests should already have been logged above.
   testResults <- testResults[!is.na(testResults)]
@@ -52,11 +58,14 @@ main <- function(testSuitePath) {
   
   
   for (result in testResults) {
+    print(paste("Location: ", result@testName))
     prepareAndPlotNodeLocations(result)
   }
   
   for (result in testResults) {
-    plotHeatmap(result)
+    print(paste("Heatmap: ", result@testName))
+    p <- plotHeatmap(result)
+    ggsave(file.path(result@testDirectory,"applications.pdf"), plot=p)
   }
 }
 
