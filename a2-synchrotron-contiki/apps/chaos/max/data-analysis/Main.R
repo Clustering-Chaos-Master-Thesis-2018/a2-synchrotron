@@ -87,16 +87,17 @@ main <- function(testSuitePath) {
 
 # example:
 # plotReliabilityForTestSuites(c(
-#    "/Users/tejp/tests/Cluster Testing/2018-05-19 30 min MinClusterSize2 test 2/",
-#    "/Users/tejp/tests/Cluster Testing/2018-05-20 30 min MinClusterSize2 test 3/")
+#    "/Users/tejp/tests/evaluation-clustering-comp-1_2018-05-18_14:38:24/",
+#    "/Users/tejp/tests/evaluation-clustering-comp-1-second-run_2018-05-19_17:56:34/",
+#    "/Users/tejp/tests/evaluation-clustering-comp-1-third-run_2018-05-20_22:29:12")
 # )
 plotReliabilityForTestSuites <- function(testSuitePaths) {
   # Load data
   testResultss <- lapply(testSuitePaths, function(testSuitePath) loadResultsFromTestSuitePath(testSuitePath))
   
-  probabilityStats <- mapply(function(testResult1, testResult2) {
-    
-    res <- c(testResult1, testResult2)
+  probabilityStats <- mapply(function(testResult1, testResult2, testResult3) {
+
+    res <- c(testResult1, testResult2, testResult3)
     res <- res[!is.na(res)]
     if(length(res[!is.na(res)]) == 0) {
       return(NA)
@@ -104,9 +105,9 @@ plotReliabilityForTestSuites <- function(testSuitePaths) {
     
     print(paste(lapply(res, function(r) {r@testName}), sep=" "))
     reliabilities <- sapply(res, function(r) reliability_of_test(r))
-    data.frame(testName=res[[1]]@testName, mean=mean(reliabilities), sd=sd(reliabilities), spread=calculateSpread(testResult1))
+    data.frame(testName=res[[1]]@testName, mean=mean(reliabilities), sd=sd(reliabilities), spread=calculateSpread(res[[1]]))
     
-  }, testResultss[[1]], testResultss[[2]])
+  }, testResultss[[1]], testResultss[[2]], testResultss[[3]], SIMPLIFY = F)
   
   stats <- rbindlist(probabilityStats[!is.na(probabilityStats)])
   
@@ -115,7 +116,8 @@ plotReliabilityForTestSuites <- function(testSuitePaths) {
   
   p <- ggplot(stats, aes(testName, mean, ymin=mean-sd, ymax=mean+sd)) +
     geom_pointrange() +
-    coord_cartesian(ylim = c(0,1))
+    coord_cartesian(ylim = c(0,1)) +
+    theme(axis.text.x=element_text(angle=45, hjust=1))
   print(p)
   return(p)
 }
@@ -129,9 +131,9 @@ plotPowerUsageForTestSuites <- function(testSuitePaths) {
   # Load data
   testResultss <- lapply(testSuitePaths, function(testSuitePath) loadResultsFromTestSuitePath(testSuitePath))
   
-  powerStats <- mapply(function(testResult1, testResult2) {
+  powerStats <- mapply(function(testResult1, testResult2, testResult3) {
     
-    res <- c(testResult1, testResult2)
+    res <- c(testResult1, testResult2, testResult3)
     res <- res[!is.na(res)]
     if(length(res[!is.na(res)]) == 0) {
       return(NA)
@@ -139,9 +141,9 @@ plotPowerUsageForTestSuites <- function(testSuitePaths) {
     
     print(paste(lapply(res, function(r) {r@testName}), sep=" "))
     total_power_usages <- sapply(res, function(r) totalPowerUsage(r))
-    data.frame(testName=res[[1]]@testName, mean=mean(total_power_usages), sd=sd(total_power_usages), spread=calculateSpread(testResult1))
+    data.frame(testName=res[[1]]@testName, mean=mean(total_power_usages), sd=sd(total_power_usages), spread=calculateSpread(res[[1]]))
     
-  }, testResultss[[1]], testResultss[[2]])
+  }, testResultss[[1]], testResultss[[2]], testResultss[[3]], SIMPLIFY = F)
   
   stats <- rbindlist(powerStats[!is.na(powerStats)])
   
@@ -150,7 +152,8 @@ plotPowerUsageForTestSuites <- function(testSuitePaths) {
   
   p <- ggplot(stats, aes(testName, mean, ymin=mean-sd, ymax=mean+sd)) +
     geom_pointrange() +
-    coord_cartesian(ylim = c(0,stats$mean+stats$sd+(stats$mean+stats$sd)/10))
+    coord_cartesian(ylim = c(0,2.5*10^9)) + #max(stats$mean+stats$sd+(stats$mean+stats$sd)/10, na.rm = T)) ) +
+    theme(axis.text.x=element_text(angle=45, hjust=1))
   print(p)
   return(p)
 }
