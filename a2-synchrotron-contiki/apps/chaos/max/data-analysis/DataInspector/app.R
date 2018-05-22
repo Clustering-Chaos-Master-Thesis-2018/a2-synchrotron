@@ -1,5 +1,12 @@
 
 #source('../Main.R')
+library(memoise)
+
+load_data <- function(rows) {
+  lapply(rows, loadResultFromTestInfoRow)
+}
+
+load_data_m <- memoise(load_data)
 
 shinyApp(
   ui = tagList(
@@ -16,7 +23,9 @@ shinyApp(
       ),
       tabPanel("Navbar 2",
                  verticalLayout(
+                   textOutput("application_plot_name"),
                    plotOutput("application_plot"),
+                   numericInput("num", label = h3("Which plot?"), value = 1),
                    sliderInput("application_plot_range", label = h3("Rounds span"), min = 0, 
                                max = 700, value = c(1, 50))
                )
@@ -45,9 +54,9 @@ shinyApp(
         ouput$error <- "No tests found. Are the simulation files present?"
       } else {
         rows <- lapply(tests, Curry(createTestInfoRow, input$test_suite_path))
-        testResults <- lapply(rows, loadResultFromTestInfoRow)
-        
-        return(plotHeatmap(testResults[[1]], input$application_plot_range))
+        testResults <- load_data_m(rows)
+        output$application_plot_name <- renderText(testResults[[input$num]]@testName)
+        return(plotHeatmap(testResults[[input$num]], input$application_plot_range))
       }
       
       
