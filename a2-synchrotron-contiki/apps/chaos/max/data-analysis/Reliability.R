@@ -24,11 +24,7 @@ completion_rate <- function(max_data, max_in_CH_round, round, cluster) {
   correct_count = nrow(entries_in_cluster[entries_in_cluster$max == correct_max,])
   total_count = nrow(entries_in_cluster)
   
-  if (total_count == 0) {
-    return(NA)
-  } else {
-    return(correct_count==total_count)  
-  }
+  return(correct_count==total_count)
 }
 
 
