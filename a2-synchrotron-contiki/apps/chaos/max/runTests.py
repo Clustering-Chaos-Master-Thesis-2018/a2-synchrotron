@@ -159,7 +159,7 @@ def run_test(test_suite_folder, file, simulation_timeout):
 
 
 def format_test_suite_name(name):
-    return f"{name}_{datetime.datetime.now():%Y-%m-%d_%H:%M:%S}"
+    return f"{name}_{datetime.datetime.now():%Y-%m-%d_%H.%M.%S}"
 
 def run_make_command(make_command):
     if not make_command.startswith("make clean"):
