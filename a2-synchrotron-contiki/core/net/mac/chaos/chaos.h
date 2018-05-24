@@ -227,7 +227,7 @@ enum {
   // When max and join appliction is running and it is a CH round only the first CH in the list is initiator.
   // When max and join application is running and it is a normal round all CHs are initiators in their clusters.
   #define IS_INITIATOR()   (((SINGLE_INITIATOR_SERVICE_RUNNING() || !HAS_CLUSTER_ID()) && node_id == INITIATOR_NODE_ID)  || \
-                            (!SINGLE_INITIATOR_SERVICE_RUNNING() &&  IS_CLUSTER_HEAD_ROUND() && IS_FIRST_CLUSTER_HEAD()) || \
+                            (!SINGLE_INITIATOR_SERVICE_RUNNING() &&  IS_CLUSTER_HEAD_ROUND() && node_id == INITIATOR_NODE_ID) || \
                             (!SINGLE_INITIATOR_SERVICE_RUNNING() && !IS_CLUSTER_HEAD_ROUND() && IS_CLUSTER_HEAD()))
 #else
   #define IS_INITIATOR()    (node_id == INITIATOR_NODE_ID)
