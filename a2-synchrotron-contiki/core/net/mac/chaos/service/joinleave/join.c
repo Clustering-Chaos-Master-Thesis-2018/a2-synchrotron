@@ -562,7 +562,9 @@ static int get_flags_length(){
 
 static int is_pending( const uint16_t round_count ){
 #if CHAOS_CLUSTER
-  if(round_count <= JOIN_ROUNDS_AFTER_BOOTUP || (round_count >= 200 && round_count <= 200 + JOIN_ROUNDS_AFTER_BOOTUP) || (round_count >= 400 && round_count <= JOIN_ROUNDS_AFTER_BOOTUP)) {
+  if(round_count <= JOIN_ROUNDS_AFTER_BOOTUP ||
+    (round_count >= 200 && round_count <= 200 + JOIN_ROUNDS_AFTER_BOOTUP) ||
+    (round_count >= 400 && round_count <= 400 + JOIN_ROUNDS_AFTER_BOOTUP)) {
 #else
   if(round_count <= JOIN_ROUNDS_AFTER_BOOTUP) {
 #endif
