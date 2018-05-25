@@ -513,7 +513,7 @@ print_chaos_status_line(uint16_t round_number, uint8_t app_id) {
     " is_cluster_head_round: %d,"
     " cluster_id: %d,"
   #endif /* CHAOS_CLUSTER */
-    " app: %s,"
+    " app: %s"
     "\n",
     round_number,
     node_id,
