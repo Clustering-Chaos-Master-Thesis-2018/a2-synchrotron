@@ -383,10 +383,6 @@ static void log_cluster_heads(cluster_head_information_t *cluster_head_list, uin
 static void log_rx_count() {
     PRINTF("rx_count [");
 
-    const uint16_t rx_sum = sum(neighbour_list);
-    const uint16_t rx_min = min(neighbour_list, MAX_NODE_COUNT);
-    const uint16_t rx_max = max(neighbour_list, MAX_NODE_COUNT);
-
     char rx_average_string[20];
     ftoa(mean(neighbour_list, MAX_NODE_COUNT), rx_average_string, 4);
     char rx_sd_string[20];
@@ -398,7 +394,7 @@ static void log_rx_count() {
         PRINTF(i == largest_id_in_network ? "%u ":"%u, ", neighbour_list[i]);
     }
 
-    PRINTF("]\ntotal: %u, mean: %s, min: %u, max: %u, sd: %s]\n", rx_sum, rx_average_string, rx_min, rx_max, rx_sd_string);
+    PRINTF("]");
 }
 
 static float CH_probability(long long int doubling_count) {

@@ -474,27 +474,27 @@ chaos_do_rx( const uint8_t app_id ){
 
 void
 print_chaos_status_line(uint16_t round_number, uint8_t app_id) {
-  static unsigned long last_cpu, last_lpm, last_transmit, last_listen;
+  // static unsigned long last_cpu, last_lpm, last_transmit, last_listen;
 
-  unsigned long cpu, lpm, transmit, listen;
-  unsigned long all_cpu, all_lpm, all_transmit, all_listen;
+  // unsigned long cpu, lpm, transmit, listen;
+  // unsigned long all_cpu, all_lpm, all_transmit, all_listen;
 
-  /* Flush all energest times so we can read latest values */
-  energest_flush();
-  all_cpu = energest_type_time(ENERGEST_TYPE_CPU);
-  all_lpm = energest_type_time(ENERGEST_TYPE_LPM);
-  all_transmit = energest_type_time(ENERGEST_TYPE_TRANSMIT);
-  all_listen = energest_type_time(ENERGEST_TYPE_LISTEN);
+  // /* Flush all energest times so we can read latest values */
+  // energest_flush();
+  // all_cpu = energest_type_time(ENERGEST_TYPE_CPU);
+  // all_lpm = energest_type_time(ENERGEST_TYPE_LPM);
+  // all_transmit = energest_type_time(ENERGEST_TYPE_TRANSMIT);
+  // all_listen = energest_type_time(ENERGEST_TYPE_LISTEN);
 
-  cpu = all_cpu - last_cpu;
-  lpm = all_lpm - last_lpm;
-  transmit = all_transmit - last_transmit;
-  listen = all_listen - last_listen;
+  // cpu = all_cpu - last_cpu;
+  // lpm = all_lpm - last_lpm;
+  // transmit = all_transmit - last_transmit;
+  // listen = all_listen - last_listen;
 
-  last_cpu = energest_type_time(ENERGEST_TYPE_CPU);
-  last_lpm = energest_type_time(ENERGEST_TYPE_LPM);
-  last_transmit = energest_type_time(ENERGEST_TYPE_TRANSMIT);
-  last_listen = energest_type_time(ENERGEST_TYPE_LISTEN);
+  // last_cpu = energest_type_time(ENERGEST_TYPE_CPU);
+  // last_lpm = energest_type_time(ENERGEST_TYPE_LPM);
+  // last_transmit = energest_type_time(ENERGEST_TYPE_TRANSMIT);
+  // last_listen = energest_type_time(ENERGEST_TYPE_LISTEN);
 
   const char* app_name = 0;
   if(app_id == 254) {
@@ -514,14 +514,6 @@ print_chaos_status_line(uint16_t round_number, uint8_t app_id) {
     " cluster_id: %d,"
   #endif /* CHAOS_CLUSTER */
     " app: %s,"
-    " all_cpu: %lu,"
-    " all_lpm: %lu," // Low Power Mode, CPU does nothing. https://sourceforge.net/p/contiki/mailman/message/25957872/
-    " all_transmit: %lu,"
-    " all_listen: %lu,"
-    " cpu: %lu,"
-    " lpm: %lu,"
-    " transmit: %lu,"
-    " listen: %lu"
     "\n",
     round_number,
     node_id,
@@ -530,15 +522,7 @@ print_chaos_status_line(uint16_t round_number, uint8_t app_id) {
     IS_CLUSTER_HEAD_ROUND(),
     chaos_get_cluster_id(),
   #endif /* CHAOS_CLUSTER */
-    app_name,
-    all_cpu,
-    all_lpm,
-    all_transmit,
-    all_listen,
-    cpu,
-    lpm,
-    transmit,
-    listen
+    app_name
     );
 }
 
