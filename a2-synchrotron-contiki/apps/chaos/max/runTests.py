@@ -21,7 +21,7 @@ SCRIPT_FILE = os.path.join(TEST_DIRECTORY, "simulationScript.js")
 LOCAL_SIMULATION_DIRECTORY = "simulation_files"
 
 TEST_DIRECTORY_STRUCTURE = {
-    "outputs": [os.path.join("", "log", "error"), os.path.join("", "log", "round"), os.path.join("", "log", "max"), os.path.join("", "log", "raw")]
+    "outputs": [os.path.join("", "log", "error"), os.path.join("", "log", "round"), os.path.join("", "log", "max"), os.path.join("", "log", "raw"), os.path.join("", "log", "power")]
 }
 
 LOCAL_LOG_DIRECTORY = "log"
