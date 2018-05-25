@@ -83,7 +83,7 @@ powertrace_print(char *str)
   static unsigned long seqno;
 
   unsigned long time, all_time, radio, all_radio;
-  
+
   struct powertrace_sniff_stats *s;
 
   energest_flush();
@@ -115,31 +115,7 @@ powertrace_print(char *str)
   all_radio = energest_type_time(ENERGEST_TYPE_LISTEN) +
     energest_type_time(ENERGEST_TYPE_TRANSMIT);
 
-  printf("power: {"
-         "\"str\": \"%s\", "
-         "\"clock_time\": %lu, "
-         "\"rimeAddr\": %d.%d, "
-         "\"seqNr\": %lu, "
-         "\"all_cpu\": %lu, "
-         "\"all_lpm\": %lu, "
-         "\"all_transmit\": %lu, "
-         "\"all_listen\": %lu, "
-         "\"all_idle_transmit\": %lu, "
-         "\"all_idle_listen\": %lu, "
-         "\"cpu\": %lu, "
-         "\"lpm\": %lu, "
-         "\"transmit\": %lu, "
-         "\"listen\": %lu, "
-         "\"idle_transmit\": %lu, "
-         "\"idle_listen\": %lu, "
-         "\"percentages\": {"
-         "\"radio\": \"%d.%02d%%\", "
-         "\"radio_max\": \"%d.%02d%%\", "
-         "\"tx\": \"%d.%02d%%\", "
-         "\"tx_max\": \"%d.%02d%%\", "
-         "\"listen\": \"%d.%02d%%\", "
-         "\"listen_max:\": \"%d.%02d%%\"}"
-         "}\n",
+  printf("{power: clock_time: %s, rimeAddr: %lu P  seqNr: %d.%d all_cpu: %lu, all_lpm: %lu, all_transmit: %lu, all_listen: %lu, all_idle_transmit: %lu, all_idle_listen: %lu, cpu: %lu, lpm: %lu, transmit: %lu, listen: %lu, idle_transmit: %lu, idle_listen: %lu,  %lu (radio %d.%02d%% / %d.%02d%% tx %d.%02d%% / %d.%02d%% listen %d.%02d%% / %d.%02d%%)}\n",
          str,
          clock_time(), linkaddr_node_addr.u8[0], linkaddr_node_addr.u8[1], seqno,
          all_cpu, all_lpm, all_transmit, all_listen, all_idle_transmit, all_idle_listen,
@@ -210,7 +186,7 @@ powertrace_print(char *str)
     s->last_input_rxtime = s->input_rxtime;
     s->last_output_txtime = s->output_txtime;
     s->last_output_rxtime = s->output_rxtime;
-    
+
   }
   seqno++;
 }
@@ -328,7 +304,7 @@ sniffprint(char *prefix, int seqno)
 static void
 input_printsniffer(void)
 {
-  static int seqno = 0; 
+  static int seqno = 0;
   sniffprint("I", seqno++);
 
   if(packetbuf_attr(PACKETBUF_ATTR_CHANNEL) == 0) {
