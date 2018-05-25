@@ -9,6 +9,7 @@ import re
 import xml.etree.ElementTree as ET
 import shutil
 import argparse
+import csv
 
 RUN_TEST_COMMAND = ["sh", "runTest"]
 TEST_DIRECTORY = "tests"
@@ -26,6 +27,7 @@ TEST_DIRECTORY_STRUCTURE = {
 LOCAL_LOG_DIRECTORY = "log"
 LOCAL_COOJA_LOG_FILE = "cooja.log"
 LOCAL_TEST_INFORMATION_FILE = "information.txt"
+CSV_FILE_NAME = "parameters.csv"
 # Time is in seconds.
 #SIMULATION_TIMEOUT = sys.argv[2] if len(sys.argv) > 2 else 60
 
@@ -157,14 +159,37 @@ def run_test(test_suite_folder, file, simulation_timeout):
     else:
         return None
 
+def format_date(date):
+    return f"{date:%Y-%m-%d_%H.%M.%S}"
 
 def format_test_suite_name(name):
-    return f"{name}_{datetime.datetime.now():%Y-%m-%d_%H.%M.%S}"
+    return f"{name}_{format_date(datetime.datetime.now())}"
 
 def run_make_command(make_command):
     if not make_command.startswith("make clean"):
         subprocess.check_call("make clean".split())
     subprocess.check_call(make_command.split())
+
+
+def create_make_dictionary(make_command):
+    #Map all param=value to tuples: (param, value)
+    string_to_list = map(lambda param: tuple(param.split("=")), make_command.split())
+    #Filter out all tuples which hade no values
+    return dict(filter(lambda value: len(value) > 1, string_to_list))
+
+def create_csv_file(file_name, make_command, test_suite_name, start_time):
+    dictionary = {}
+    dictionary["name"] = test_suite_name
+    dictionary["start_time"] = start_time
+    dictionary["end_time"] = format_date(datetime.datetime.now())
+    dictionary = {**dictionary, **create_make_dictionary(make_command)}
+
+    with open(file_name, 'w') as csvfile:
+        writer = csv.DictWriter(csvfile, fieldnames=dictionary.keys(), delimiter= " ")
+
+        writer.writeheader()
+        writer.writerow(dictionary)
+
 
 def main(args):
     parser=argparse.ArgumentParser()
@@ -182,6 +207,7 @@ def main(args):
 
     test_suite_name = 'dev' if args.name == 'dev' else format_test_suite_name(args.name)
 
+    start_time = format_date(datetime.datetime.now())
     run_make_command(args.build_command)
     simulation_timeout = args.sim_time
 
@@ -194,7 +220,7 @@ def main(args):
           " with " + str(len(local_files)) + " test(s)")
 
     test_statistics = ""
-    # We can use a with statement to ensure threads are cleaned up promptly
+    #We can use a with statement to ensure threads are cleaned up promptly
     with concurrent.futures.ThreadPoolExecutor() as executor:
             # Start the load operations and mark each future with its URL
         future_to_test = {executor.submit(
@@ -226,6 +252,7 @@ def main(args):
             ) as info:
         info.write(information)
 
+    create_csv_file(os.path.join(test_suite_folder, CSV_FILE_NAME), args.build_command, test_suite_name, start_time)
 
 if __name__ == '__main__':
     main(sys.argv)
