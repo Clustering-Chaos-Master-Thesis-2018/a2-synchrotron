@@ -26,6 +26,7 @@ TEST_DIRECTORY_STRUCTURE = {
         os.path.join("", "log", "round"),
         os.path.join("", "log", "max"),
         os.path.join("", "log", "raw"),
+        os.path.join("", "log", "power"),
     ]
 }
 
