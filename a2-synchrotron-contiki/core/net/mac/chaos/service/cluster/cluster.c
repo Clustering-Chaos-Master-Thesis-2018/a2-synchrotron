@@ -394,7 +394,7 @@ static void log_rx_count() {
         PRINTF(i == largest_id_in_network ? "%u ":"%u, ", neighbour_list[i]);
     }
 
-    PRINTF("]");
+    PRINTF("]\n");
 }
 
 static float CH_probability(long long int doubling_count) {
@@ -418,7 +418,7 @@ static void heed_repeat(const cluster_head_information_t* cluster_head_list, uin
 
     char res[20];
     ftoa(current_CH_prob, res, 4);
-    COOJA_DEBUG_PRINTF("cluster heed_repeat CH_prob: %s\n, consecutive_cluster_round_count: %u, total_energy_used: %lu", res, consecutive_cluster_round_count, total_energy_used);
+    COOJA_DEBUG_PRINTF("cluster heed_repeat CH_prob: %s, consecutive_cluster_round_count: %u, total_energy_used: %lu", res, consecutive_cluster_round_count, total_energy_used);
 
 
     float previous_CH_probability = CH_probability(consecutive_cluster_round_count - 1);

@@ -46,6 +46,10 @@
 #include <stdio.h>
 #include <string.h>
 
+#define ENABLE_COOJA_DEBUG COOJA
+#include "dev/cooja-debug.h"
+
+
 struct powertrace_sniff_stats {
   struct powertrace_sniff_stats *next;
   unsigned long num_input, num_output;
@@ -113,8 +117,8 @@ powertrace_print(char *str)
   // all_radio = energest_type_time(ENERGEST_TYPE_LISTEN) +
   //   energest_type_time(ENERGEST_TYPE_TRANSMIT);
 
-  printf("power: str: %s clock_time: %lu, seqNr: %lu cpu: %lu, lpm: %lu, transmit: %lu, listen: %lu, idle_transmit: %lu, idle_listen: %lu\n",
-         str, clock_time(), seqno,
+  COOJA_DEBUG_PRINTF("power: clock_time: %lu, seqNr: %lu, cpu: %lu, lpm: %lu, transmit: %lu, listen: %lu, idle_transmit: %lu, idle_listen: %lu\n",
+         clock_time(), seqno,
          cpu, lpm, transmit, listen, idle_transmit, idle_listen);
 
   seqno++;
@@ -219,15 +223,15 @@ sniffprint(char *prefix, int seqno)
   const linkaddr_t *esender;
   esender = packetbuf_addr(PACKETBUF_ADDR_ESENDER);
 
-  printf("%lu %s %d %u %d %d %d.%d %u %u\n",
-         clock_time(),
-         prefix,
-         linkaddr_node_addr.u8[0], seqno,
-         packetbuf_attr(PACKETBUF_ATTR_CHANNEL),
-         packetbuf_attr(PACKETBUF_ATTR_PACKET_TYPE),
-         esender->u8[0], esender->u8[1],
-         packetbuf_attr(PACKETBUF_ATTR_TRANSMIT_TIME),
-         packetbuf_attr(PACKETBUF_ATTR_LISTEN_TIME));
+  // printf("%lu %s %d %u %d %d %d.%d %u %u\n",
+  //        clock_time(),
+  //        prefix,
+  //        linkaddr_node_addr.u8[0], seqno,
+  //        packetbuf_attr(PACKETBUF_ATTR_CHANNEL),
+  //        packetbuf_attr(PACKETBUF_ATTR_PACKET_TYPE),
+  //        esender->u8[0], esender->u8[1],
+  //        packetbuf_attr(PACKETBUF_ATTR_TRANSMIT_TIME),
+  //        packetbuf_attr(PACKETBUF_ATTR_LISTEN_TIME));
 }
 /*---------------------------------------------------------------------------*/
 static void

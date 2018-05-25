@@ -1,11 +1,9 @@
 
-if (!logpath) {
-  logpath = "log/"
-}
 roundLogPath = logpath + "round/"
 maxLogPath   = logpath + "max/"
 errorLogPath = logpath + "error/"
 rawLogPath   = logpath + "raw/"
+powerLogPath = logpath + "power/"
 
 function csv_format_header_round_log(raw) {
   cells = [];
@@ -50,12 +48,19 @@ with (imports) {
         outputs[id.toString()].error = new FileWriter(errorLogPath + "log_" + id +".txt");
 
         outputs[id.toString()].raw = new FileWriter(rawLogPath + "log_" + id +".txt");
+
+        outputs[id.toString()].power = new FileWriter(powerLogPath + "log_" + id +".txt");
+        outputs[id.toString()].isFirstPowerPrint = true;
       }
 
       outputs[id.toString()].raw.write(msg + "\n");
 
       var topic = msg.substring(0, msg.indexOf(' '));
       var raw = msg.substring(msg.indexOf(' ')+1);
+      if(msg.startsWith("DEBUG: power:")) {
+        topic = "power:";
+        raw = raw.substring(raw.indexOf(' ') + 1);
+      }
 
       if (topic == "cluster_res:") {
         if (outputs[id.toString()].isFirstMaxPrint) {
@@ -77,6 +82,16 @@ with (imports) {
         formatted_row = csv_format_round_log(raw);
         outputs[id.toString()].round.write(formatted_row + "\n");
         outputs[id.toString()].round.flush();
+      } else if(topic == "power:") {
+        if (outputs[id.toString()].isFirstPowerPrint) {
+          outputs[id.toString()].isFirstPowerPrint = false;
+          formatted_header = csv_format_header_round_log(raw);
+          outputs[id.toString()].power.write(formatted_header + "\n");
+        }
+
+        formatted_row = csv_format_round_log(raw);
+        outputs[id.toString()].power.write(formatted_row + "\n");
+        outputs[id.toString()].power.flush();
       }
 
       try{
@@ -92,6 +107,7 @@ with (imports) {
           outputs[ids].round.close();
           outputs[ids].error.close();
           outputs[ids].raw.close();
+          outputs[ids].power.close();
         }
         //Rethrow exception again, to end the script.
         throw('test script killed');
