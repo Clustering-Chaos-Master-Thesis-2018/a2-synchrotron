@@ -51,6 +51,7 @@
 #include "net/netstack.h"
 #include "sys/process.h"
 #include "sys/rtimer.h"
+#include "sys/compower.h"
 
 #include "chaos-platform-specific.h"
 #include "dev/watchdog.h"
@@ -473,6 +474,45 @@ chaos_do_rx( const uint8_t app_id ){
 }
 
 void
+print_power() {
+  static unsigned long last_cpu, last_lpm, last_transmit, last_listen, seqno;
+
+  unsigned long cpu, lpm, transmit, listen;
+  unsigned long all_cpu, all_lpm, all_transmit, all_listen;
+
+  static unsigned long last_idle_transmit, last_idle_listen;
+  unsigned long idle_transmit, idle_listen;
+
+  /* Flush all energest times so we can read latest values */
+  energest_flush();
+  all_cpu = energest_type_time(ENERGEST_TYPE_CPU);
+  all_lpm = energest_type_time(ENERGEST_TYPE_LPM);
+  all_transmit = energest_type_time(ENERGEST_TYPE_TRANSMIT);
+  all_listen = energest_type_time(ENERGEST_TYPE_LISTEN);
+
+  cpu = all_cpu - last_cpu;
+  lpm = all_lpm - last_lpm;
+  transmit = all_transmit - last_transmit;
+  listen = all_listen - last_listen;
+
+  last_cpu = energest_type_time(ENERGEST_TYPE_CPU);
+  last_lpm = energest_type_time(ENERGEST_TYPE_LPM);
+  last_transmit = energest_type_time(ENERGEST_TYPE_TRANSMIT);
+  last_listen = energest_type_time(ENERGEST_TYPE_LISTEN);
+
+  idle_transmit = compower_idle_activity.transmit - last_idle_transmit;
+  idle_listen = compower_idle_activity.listen - last_idle_listen;
+  last_idle_listen = compower_idle_activity.listen;
+  last_idle_transmit = compower_idle_activity.transmit;
+
+  PRINTF("power: clock_time: %lu, seqNr: %lu, cpu: %lu, lpm: %lu, transmit: %lu, listen: %lu, idle_transmit: %lu, idle_listen: %lu\n",
+         clock_time(), seqno,
+         cpu, lpm, transmit, listen, idle_transmit, idle_listen);
+
+  seqno++;
+}
+
+void
 print_chaos_status_line(uint16_t round_number, uint8_t app_id) {
   // static unsigned long last_cpu, last_lpm, last_transmit, last_listen;
 
@@ -524,6 +564,8 @@ print_chaos_status_line(uint16_t round_number, uint8_t app_id) {
   #endif /* CHAOS_CLUSTER */
     app_name
     );
+
+  print_power();
 }
 
 uint16_t
@@ -893,7 +935,7 @@ void chaos_slot(uint16_t* sync_slot, int* chaos_slot_status, chaos_state_t* chao
 
 #if BUSYWAIT_UNTIL_SLOT_END
     busywait_until_end_of_slot(t_sfd_goal, *chaos_state);
-#endif /* BUSYWAIT_UNTIL_SLOT_END */ 
+#endif /* BUSYWAIT_UNTIL_SLOT_END */
 
     LEDS_OFF(LEDS_RED);
     rtimer_clock_t t_slot_end = DCO_NOW();
@@ -911,7 +953,7 @@ void chaos_slot(uint16_t* sync_slot, int* chaos_slot_status, chaos_state_t* chao
         chaos_slot_timing_log_max[SLOTNUMBER] = *slot_number;
       }
     }
-  
+
 }
 
 ALWAYS_INLINE void busywait_until_end_of_slot(vht_clock_t t_sfd_goal, chaos_state_t chaos_state) {
@@ -972,6 +1014,7 @@ uint8_t chaos_associate(rtimer_clock_t* t_sfd_actual_rtimer_ptr, uint16_t *round
           association_counter = 0;
           round_number++;
           printf("{rd-%u st-%u ch-%u} ASC %s\n", round_number, slot_number, chaos_multichannel_get_current_channel(), CHAOS_RX_STATE_TO_STRING(rx_status));
+          print_power();
         }
       } while(associated < 1 /*&& association_counter < CHAOS_ASSOCIATION_HOP_CHANNEL_THERSHOLD */); //XXX
         if( associated ){

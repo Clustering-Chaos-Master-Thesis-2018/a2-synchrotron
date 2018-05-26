@@ -304,6 +304,7 @@ TIMEOUT(120000);
   logpath = "log/"
 // }
 
+
 roundLogPath = logpath + "round/"
 maxLogPath   = logpath + "max/"
 errorLogPath = logpath + "error/"
@@ -362,10 +363,6 @@ with (imports) {
 
       var topic = msg.substring(0, msg.indexOf(' '));
       var raw = msg.substring(msg.indexOf(' ')+1);
-      if(msg.startsWith("DEBUG: power:")) {
-        topic = "power:";
-        raw = raw.substring(raw.indexOf(' ') + 1);
-      }
 
       if (topic == "cluster_res:") {
         if (outputs[id.toString()].isFirstMaxPrint) {
@@ -420,9 +417,6 @@ with (imports) {
      }
 
 }
-
-
-
 
 
 
