@@ -1,5 +1,7 @@
 library(memoise)
 
+db <- cache_filesystem("~/.rcache")
+
 TestResult <- setClass(
   "TestResult",
   
@@ -48,8 +50,10 @@ setMethod(f="calculateReliability", signature = "TestResult", definition = funct
       cluster_head_done_max <- maxData[maxData$rd == round & maxData$node_id %in% cluster_heads$node_id,]
       return(all(cluster_head_done_max$max == networkwide_max, nrow(cluster_head_done_max) == nrow(cluster_heads)))
     } else {
+      if(nrow(cluster_heads) == 0){
+        return(FALSE)
+      }
       a <- all(apply(cluster_heads, 1, function(cluster_head) {
-        #browser()
         nodes_in_cluster <- roundData[roundData$round == round & roundData$cluster_id == cluster_head[["cluster_id"]],]
         clusterwide_max <- max(nodes_in_cluster$node_id)
         #nodes_in_cluster$max ==
@@ -60,7 +64,12 @@ setMethod(f="calculateReliability", signature = "TestResult", definition = funct
     }
 
   })
-  
+
+  expectedMaxRounds <- 599-105
+  if(expectedMaxRounds - length(round_result) > 0) {
+    round_result <- c(round_result,  rep(F, expectedMaxRounds - length(round_result)))
+  }
+
   return(mean(round_result))
   
   # counts cluster failures as partial failures for a round. e.g. 0.333 for a round where 1 cluster succeeds and 2 fails.
@@ -80,7 +89,7 @@ setMethod(f="calculateReliability", signature = "TestResult", definition = funct
   # return(reliability)
 })
 
-reliability <- memoise(calculateReliability)
+reliability <- memoise(calculateReliability, cache=db)
 
 max_count <- function(testResult) {
   testResult@
