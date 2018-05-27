@@ -5,6 +5,10 @@ library(functional)
 library(foreach)
 library(doMC)
 library(data.table)
+library(memoise)
+
+db <- cache_filesystem("~/.rcache")
+
 source("TestResult.R")
 source("utils.R")
 source("LocationsMap.R")
@@ -79,7 +83,8 @@ main <- function(testSuitePath) {
   
   # foreach(result = testResults) %dopar% {
   #   print(paste("Heatmap: ", result@testName))
-  #   plotHeatmap(result)
+  #   p <- plotHeatmap(result)
+  #   ggsave(file.path(result@testDirectory,"applications.pdf"), plot=p)
   # }
   
   
