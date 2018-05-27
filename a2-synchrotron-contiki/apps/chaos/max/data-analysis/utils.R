@@ -17,6 +17,8 @@ load_all_nodes_round_data <- function(log_folder_path) {
   #dfs_internally_sorted <- dfs[order(unlist(dfs_order))] # sort using the nodeid
 }
 
+load_all_nodes_round_data <- memoise(load_all_nodes_round_data, cache=db)
+
 clusterHeadIds <- function(roundData) {
   roundData[roundData$cluster_id == roundData$node_id,]$cluster_id
 }
