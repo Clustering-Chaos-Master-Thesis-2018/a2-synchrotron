@@ -12,6 +12,7 @@ TestResult <- setClass(
     reliability = "numeric",
     data = "data.frame",
     max_data = "data.frame",
+    energy_data = "data.frame",
     location_data = "data.frame"
   )
 )
@@ -31,11 +32,11 @@ setMethod(f="calculateSpread", signature = "TestResult", definition = function(t
 
 setMethod(f="totalPowerUsage", signature = "TestResult", definition = function(theObject) {
   #browser()
-  roundData <- theObject@data
+  energyData <- theObject@energy_data
   
-  dat <- as.data.table(roundData)
-  lastRoundForEachNode <- dat[,.SD[which.max(round)],by=node_id]
-  return(sum(c(lastRoundForEachNode$all_cpu, lastRoundForEachNode$all_listen, lastRoundForEachNode$all_lpm, lastRoundForEachNode$all_transmit)))
+  return(
+    sum(energyData$cpu) + sum(energyData$lpm) + sum(energyData$transmit) + sum(energyData$listen) + sum(energyData$idle_transmit) + sum(energyData$idle_listen)
+  )
 })
 
 setMethod(f="calculateReliability", signature = "TestResult", definition = function(theObject) {

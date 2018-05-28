@@ -29,6 +29,7 @@ loadResultFromTestInfoRow <- function(row) {
       reliability = -1,
       data = load_all_nodes_round_data(file.path(row[3],"log/round")),
       max_data = load_all_nodes_round_data(file.path(row[3],"log/max")),
+      energy_data = load_all_nodes_round_data(file.path(row[3],"log/power")),
       location_data = load_location_data(row[2])
     )
   }, error = function(e) {
