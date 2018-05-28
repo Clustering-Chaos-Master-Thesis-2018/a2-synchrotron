@@ -61,33 +61,10 @@ main <- function(testSuitePath) {
   # Order by spread. 
   testResults <- testResults[order(sapply(testResults, calculateSpread))]
 
-  pdf(file = file.path(testSuitePath, "latency.pdf"))
-  plotLatency(testResults)
-  dev.off()
-  
-  
-  # foreach(result = testResults)  %dopar% {
-  #   print(paste("Location: ", result@testName))
-  #   prepareAndPlotNodeLocations(result)
-  # }
-  for (result in testResults) {
+  foreach(result = testResults) %dopar% {
     print(paste("Location: ", result@testName))
     prepareAndPlotNodeLocations(result)
   }
-  
-  for (result in testResults) {
-    print(paste("Heatmap: ", result@testName))
-    p <- plotHeatmap(result)
-    ggsave(file.path(result@testDirectory,"applications.pdf"), plot=p)
-  }
-  
-  # foreach(result = testResults) %dopar% {
-  #   print(paste("Heatmap: ", result@testName))
-  #   p <- plotHeatmap(result)
-  #   ggsave(file.path(result@testDirectory,"applications.pdf"), plot=p)
-  # }
-  
-  
 }
 
 # example:
