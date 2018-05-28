@@ -1,8 +1,7 @@
-source("LoadCompetitionRadiusTests.R")
 
-
-run <- function(test_suites, group_labels) {
-  plot(loaded_test_suites, group_labels)
+run <- function(test_suites, group_labels, plot_name) {
+  the_plot <- plot(loaded_test_suites, group_labels)
+  ggsave(file.path(evaluation_directory, plot_name), plot=the_plot)
 }
 
 label_and_flatten_data <- function(test_suite_groups, group_labels) {

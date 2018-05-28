@@ -1,3 +1,5 @@
+source("PlotReliability.R")
+
 evaluation_directory <- "/home/kerp/Exjobb/Evaluation/"
 comp_1_test_suites <- c(
   file.path(evaluation_directory, "competition-radius/competition-radius-1_1_2018-05-26_17.05.14/"),
@@ -21,3 +23,6 @@ competition_radius_labels <- c("Competition Radius 1", "Competition Radius 2", "
 
 competition_radius_test_suites <- list(comp_1_test_suites, comp_2_test_suites, comp_3_test_suites)
 competition_radius_loaded <- lapply(competition_radius_test_suites, function(test_suite_vector) lapply(test_suite_vector, loadResultsFromTestSuitePath))
+
+
+run(competition_radius_loaded, competition_radius_labels, "CompetitionRadius.pdf")
