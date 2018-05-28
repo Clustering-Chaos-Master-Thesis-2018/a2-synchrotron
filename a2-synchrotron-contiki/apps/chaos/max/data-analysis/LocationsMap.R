@@ -39,8 +39,6 @@ prepareAndPlotNodeLocations <- function(testResult) {
 #' @param clusterHeads A vector of the cluster heads
 plotNodeLocations <- function(testResult, clusterHeads=c(), node_cluster_map, round_id) {
   root <- read_xml(testResult@simulationFile)
-  motes <- xml_find_all(root, ".//mote")
-
   # Fetch data from xml file
   node_id <- as.numeric(xml_text(xml_find_all(root, ".//id")))
   x  <- as.double(xml_text(xml_find_all(root, ".//x")))
@@ -50,6 +48,8 @@ plotNodeLocations <- function(testResult, clusterHeads=c(), node_cluster_map, ro
   # Merge data from log files with data from xml file
   nodes <- merge(node_cluster_map, nodes, by = "node_id", all = TRUE)
 
+  nodes_without_round_data <- nodes[is.na(nodes$cluster_id),]$node_id
+  nodes$cluster_id <- replace(nodes$cluster_id, nodes_without_round_data, 0)
   # Remove nodes with no location.
   nodes <- nodes[complete.cases(nodes),]
   
@@ -71,7 +71,7 @@ plotNodeLocations <- function(testResult, clusterHeads=c(), node_cluster_map, ro
   nodes$node_sizes <- rep(2,length(nodes[["node_id"]]))
   nodes$node_sizes <- replace(nodes$node_sizes, clusterHeads, 5)
   if(nrow(associatingNodes) > 0) {
-    assoc <- subset(nodes, node_id %in% associatingNodes)
+    assoc <- subset(nodes, node_id %in% associatingNodes$node_id)
     if(nrow(assoc) > 0) {
       plot(assoc$y~assoc$x, xlim = range(nodes$x), ylim = rev(range(nodes$y)), asp=1, col="orange", pch=16, cex=assoc$node_sizes + 2, xlab="x", ylab="y")
       points(nodes$y~nodes$x, ylim = rev(range(nodes$y)), asp=1, col=nodes$color, pch=16, cex=nodes$node_sizes, xlab="x", ylab="y")

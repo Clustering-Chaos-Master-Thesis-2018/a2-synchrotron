@@ -52,7 +52,6 @@ loadResultsFromTestSuitePath <- function(testSuitePath) {
 }
 
 main <- function(testSuitePath) {
-  
   testResults <- loadResultsFromTestSuitePath(testSuitePath)
 
   #Remove NAs, errors of badly read tests should already have been logged above.
