@@ -119,9 +119,10 @@ shinyApp(
           if(is.na(result)) {
             return(NA)
           }
-          data.frame(name=result@testName, reliability=reliability(result), test_suite=partialName)
+          data.frame(name=result@testName, reliability=reliability(result), test_suite=partialName, spread=calculateSpread(result))
         }))
       }, testSuites, partialNames, SIMPLIFY = F))
+      stats$name <- factor(stats$name, levels = unique(stats$name[order(stats$spread)]))
       
       return(
         ggplot(stats, aes(name, reliability, color=test_suite)) +
