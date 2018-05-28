@@ -18,6 +18,7 @@ source("Reliability.R")
 registerDoMC(4)
 
 
+evaluation_directory <- "/home/kerp/Exjobb/Evaluation/"
 working_directory <- "~/tests"
 
 loadResultFromTestInfoRow <- function(row) {

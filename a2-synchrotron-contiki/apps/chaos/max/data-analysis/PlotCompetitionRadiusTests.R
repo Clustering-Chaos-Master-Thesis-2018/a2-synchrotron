@@ -1,6 +1,6 @@
 source("PlotReliability.R")
 
-evaluation_directory <- "/home/kerp/Exjobb/Evaluation/"
+
 comp_1_test_suites <- c(
   file.path(evaluation_directory, "competition-radius/competition-radius-1_1_2018-05-26_17.05.14/"),
   file.path(evaluation_directory, "competition-radius/competition-radius-1_2_2018-05-27_03.07.25/"),
