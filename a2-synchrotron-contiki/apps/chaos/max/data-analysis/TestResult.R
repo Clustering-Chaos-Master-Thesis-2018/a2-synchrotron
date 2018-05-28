@@ -19,6 +19,8 @@ TestResult <- setClass(
 setGeneric(name="calculateSpread", def=function(theObject) {standardGeneric("calculateSpread")})
 setGeneric(name="totalPowerUsage", def=function(theObject) {standardGeneric("totalPowerUsage")})
 setGeneric(name="calculateReliability", def=function(theObject) {standardGeneric("calculateReliability")})
+setGeneric(name="meanOffSlot", def=function(theObject) {standardGeneric("meanOffSlot")})
+setGeneric(name="sdOffSlot", def=function(theObject) {standardGeneric("sdOffSlot")})
 
 setMethod(f="calculateSpread", signature = "TestResult", definition = function(theObject) {
   loc <- theObject@location_data
@@ -90,6 +92,14 @@ setMethod(f="calculateReliability", signature = "TestResult", definition = funct
 })
 
 reliability <- memoise(calculateReliability, cache=db)
+
+setMethod(f="meanOffSlot", signature = "TestResult", definition = function(theObject) {
+  return(mean(theObject@max_data$off_slot))
+})
+
+setMethod(f="sdOffSlot", signature = "TestResult", definition = function(theObject) {
+  return(sd(theObject@max_data$off_slot))
+})
 
 max_count <- function(testResult) {
   testResult@

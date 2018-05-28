@@ -45,7 +45,13 @@ shinyApp(
                verticalLayout(
                  plotOutput("reliability_plot"),
                  uiOutput("test_suites_check_boxes")
-               ))
+               )
+      ),
+      tabPanel("Latency", 
+               verticalLayout(
+                 plotOutput("latency_plot")
+               )
+      )
     )
   ),
   server = function(input, output) {
@@ -135,10 +141,46 @@ shinyApp(
           xlab("Test Name") +
           ylab("Reliability")
       )
-      
-      
+
     })
     
+    
+    output$latency_plot <- renderPlot({
+      
+      partialNames <- input$checkedTests
+      fullNames <- lookupFullNames(partialNames)
+      if (length(fullNames) == 0) {
+        return(plot(1,1))
+      }
+      
+      print(input$checkedTests)
+      
+      
+      
+      testSuites <- lapply(fullNames, loadResultsFromTestSuitePath)
+      stats <- do.call("rbind", mapply(function(testSuite, partialName) {
+        do.call("rbind", lapply(testSuite, function(result) {
+          if(is.na(result)) {
+            return(NA)
+          }
+          data.frame(name=result@testName, meanOffSlot=meanOffSlot(result), sdOffSlot=sdOffSlot(result), test_suite=partialName, spread=calculateSpread(result))
+        }))
+      }, testSuites, partialNames, SIMPLIFY = F))
+      stats$name <- factor(stats$name, levels = unique(stats$name[order(stats$spread)]))
+      
+      return(
+        ggplot(stats) +
+          geom_pointrange(aes(name, meanOffSlot, color=test_suite, ymax=meanOffSlot+sdOffSlot, ymin=meanOffSlot-sdOffSlot), size=1, position=position_dodge(width=0.3)) +
+          theme(
+            axis.text.x=element_text(angle=45, hjust=1),
+            plot.margin=unit(c(1,1,1,2),"cm"),
+            text = element_text(size=20)
+          ) +
+          xlab("Test Name") +
+          ylab("Latency")
+      )
+      
+    })
     
   }
 )
