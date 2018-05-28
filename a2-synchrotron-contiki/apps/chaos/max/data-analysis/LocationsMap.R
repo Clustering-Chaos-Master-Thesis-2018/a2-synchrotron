@@ -32,6 +32,9 @@ prepareAndPlotNodeLocations <- function(testResult) {
   dev.off()
 }
 
+lastAssociatingNodes <<- data.frame()
+lastClusterHeads <<- c()
+lastNodes <<- data.frame()
 
 #' Plots a tests mote locations and marks the cluster heads
 #'
@@ -60,6 +63,16 @@ plotNodeLocations <- function(testResult, clusterHeads=c(), node_cluster_map, ro
   roundData <- testResult@data
   associatingNodes <- roundData[roundData$round == round_id & roundData$app == "association",]
 
+  if(nrow(associatingNodes) == nrow(lastAssociatingNodes) && (nrow(associatingNodes) == 0 || all(associatingNodes == lastAssociatingNodes)) &&
+     nrow(lastNodes) == nrow(nodes) && (nrow(lastNodes) == 0 || all(lastNodes == nodes)) && 
+     all(lastClusterHeads == clusterHeads)) {
+    return()
+  }
+  
+  lastAssociatingNodes <<- associatingNodes
+  lastNodes <<- nodes
+  lastClusterHeads <<- clusterHeads
+  
   # Add color column
   # Get distinguishable colors
   qual_col_pals = brewer.pal.info[brewer.pal.info$category == 'qual',]
