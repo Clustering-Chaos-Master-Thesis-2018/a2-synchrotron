@@ -1,6 +1,6 @@
 
 run <- function(test_suites, group_labels, plot_name) {
-  the_plot <- plot(loaded_test_suites, group_labels)
+  the_plot <- plot_reliability(test_suites, group_labels)
   ggsave(file.path(evaluation_directory, plot_name), plot=the_plot)
 }
 
