@@ -1,5 +1,5 @@
 
-#source('../Main.R')
+source('Main.R')
 library(memoise)
 
 load_data <- function(rows) {
@@ -8,7 +8,7 @@ load_data <- function(rows) {
 
 load_data_m <- memoise(load_data)
 
-tests_path <- "/Users/tejp/tests"
+tests_path <- "/Users/tejp/tests/comp_rad_tests/"
 partial <- function() c(list.dirs(tests_path, recursive = F, full.names = F))
 full <- function() c(list.dirs(tests_path, recursive = F, full.names = T))
 
