@@ -21,7 +21,7 @@ label_and_flatten_data <- function(test_suite_groups, group_labels) {
   do.call("rbind", a)
 }
 
-plot <- function(test_suite_groups, group_labels) {
+plot_reliability <- function(test_suite_groups, group_labels) {
   
   if(length(test_suite_groups) != length(group_labels)) {
     stop("Requires same length on number of test suite groups and labels")
