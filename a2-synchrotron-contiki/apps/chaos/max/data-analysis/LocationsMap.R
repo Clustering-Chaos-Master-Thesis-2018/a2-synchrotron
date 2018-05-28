@@ -73,16 +73,14 @@ plotNodeLocations <- function(testResult, clusterHeads=c(), node_cluster_map, ro
   if(nrow(associatingNodes) > 0) {
     assoc <- subset(nodes, node_id %in% associatingNodes$node_id)
     if(nrow(assoc) > 0) {
-      plot(assoc$y~assoc$x, xlim = range(nodes$x), ylim = rev(range(nodes$y)), asp=1, col="orange", pch=16, cex=assoc$node_sizes + 2, xlab="x", ylab="y")
+      plot(assoc$y~assoc$x, xlim = range(nodes$x), ylim = rev(range(nodes$y)), asp=1, col="orange", pch=16, cex=assoc$node_sizes + 2, xlab="x", ylab="y", main = paste0("Round Number: ",round_id))
       points(nodes$y~nodes$x, ylim = rev(range(nodes$y)), asp=1, col=nodes$color, pch=16, cex=nodes$node_sizes, xlab="x", ylab="y")
     } else {
-      plot(nodes$y~nodes$x, ylim = rev(range(nodes$y)), asp=1, col=nodes$color, pch=16, cex=nodes$node_sizes, xlab="x", ylab="y")
+      plot(nodes$y~nodes$x, ylim = rev(range(nodes$y)), asp=1, col=nodes$color, pch=16, cex=nodes$node_sizes, xlab="x", ylab="y", main = paste0("Round Number: ",round_id))
     }
   } else {
-    plot(nodes$y~nodes$x, ylim = rev(range(nodes$y)), asp=1, col=nodes$color, pch=16, cex=nodes$node_sizes, xlab="x", ylab="y")
+    plot(nodes$y~nodes$x, ylim = rev(range(nodes$y)), asp=1, col=nodes$color, pch=16, cex=nodes$node_sizes, xlab="x", ylab="y", main = paste0("Round Number: ",round_id))
   }
 
-
-  #text(nodes$y~nodes$x, labels=nodes$node_id, col="black") # Write node_id on top of the nodes
-  #text(0, 0, labels=round_id, col="black")
+  text(nodes$y~nodes$x, labels=nodes$node_id, col="black") # Write node_id on top of the nodes
 }
