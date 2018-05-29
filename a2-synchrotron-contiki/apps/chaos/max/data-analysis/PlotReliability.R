@@ -54,5 +54,6 @@ plot_reliability <- function(test_suite_groups, group_labels) {
     ylab("Reliability (Mean & Sd)") + 
     xlab("Simulation Setup") +
     labs(color="") +
+    coord_cartesian(ylim = c(0,1)) +
     theme(axis.text.x=element_text(angle=45, hjust=1), plot.margin=unit(c(1,1,1,2),"cm"))
 }
