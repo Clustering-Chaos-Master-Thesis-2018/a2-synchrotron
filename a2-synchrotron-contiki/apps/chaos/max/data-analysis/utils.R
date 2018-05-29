@@ -6,7 +6,9 @@ load_all_nodes_round_data <- function(log_folder_path) {
   log_files <- rownames(info[info$size != 0, ])
   
   if (length(log_files) == 0) {
-    stop("No log files")
+    warning(paste("No log files in: ", log_folder_path))
+    return(data.frame())
+    
   }
   
   tables <- lapply(log_files, function(path) read.table(path, header = T))
