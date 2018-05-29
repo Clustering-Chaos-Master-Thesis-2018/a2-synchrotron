@@ -11,7 +11,9 @@ label_and_flatten_data <- function(test_suite_groups, group_labels) {
         if(is.na(test)) {
           return(NA)
         }
-        data.frame(simulation_name=test@testName, reliability=reliability(test), group=group_label, spread=calculateSpread(test))
+        #Only include the network spread in the plot.
+        testName <- sub(".+?-motes-(.+?)-random", "\\1", test@testName)
+        data.frame(simulation_name=testName, reliability=reliability(test), group=group_label, spread=calculateSpread(test))
       }))
       c
     }))
