@@ -26,9 +26,8 @@ plot_reliability <- function(test_suite_groups, group_labels) {
   if(length(test_suite_groups) != length(group_labels)) {
     stop("Requires same length on number of test suite groups and labels")
   }
-
+?r
   stats <- label_and_flatten_data(test_suite_groups, group_labels)
-  browser()
   #transform(stats)
   # Aggregate reliability for rows with same spread. Create mean and sd
   agg <- aggregate(reliability~simulation_name+group+spread, stats, function(a) c(mean=mean(a), sd=sd(a)))

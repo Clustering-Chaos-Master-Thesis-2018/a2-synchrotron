@@ -42,11 +42,11 @@ loadResultFromTestInfoRow <- function(row) {
 
 loadResultsFromTestSuitePath <- function(testSuitePath) {
   if (!dir.exists(testSuitePath)) {
-    stop("Bad path, testsuite does not exists.")
+    stop(paste("Bad path, testsuite does not exist: ", testSuitePath))
   }
   tests <- testNames(testSuitePath)
   if(length(tests) == 0) {
-    stop("No tests found. Are the simulation files present?")
+    stop(paste("No tests found. Are the simulation files present? Test: ", testSuitePath))
   }
   
   rows <- lapply(tests, Curry(createTestInfoRow, testSuitePath))
