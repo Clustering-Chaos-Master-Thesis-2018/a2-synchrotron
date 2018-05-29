@@ -28,13 +28,30 @@ plot_reliability <- function(test_suite_groups, group_labels) {
   }
 
   stats <- label_and_flatten_data(test_suite_groups, group_labels)
+  browser()
+  #transform(stats)
+  # Aggregate reliability for rows with same spread. Create mean and sd
+  agg <- aggregate(reliability~simulation_name+group+spread, stats, function(a) c(mean=mean(a), sd=sd(a)))
+  agg <- do.call(data.frame, agg)
+  
+  agg$simulation_name <- factor(agg$simulation_name, levels = unique(agg$simulation_name[order(agg$spread)]))
+  
   stats <- stats[complete.cases(stats),]
   #order by spread
   stats$simulation_name <- factor(stats$simulation_name, levels = stats$simulation_name[order(unique(stats$spread))])
   
-  
-  
-  ggplot(stats, aes(simulation_name, reliability, color=group)) +
-    geom_point() +
+  ggplot(agg) +
+    geom_pointrange(
+      aes(
+        simulation_name,
+        reliability.mean,
+        ymax=reliability.mean+reliability.sd,
+        ymin=reliability.mean-reliability.sd,
+        color=group
+        ),
+      position = position_dodge(width = 0.5)) +
+    ylab("Reliability (Mean & Sd)") + 
+    xlab("Simulation Setup") +
+    labs(color="") +
     theme(axis.text.x=element_text(angle=45, hjust=1), plot.margin=unit(c(1,1,1,2),"cm"))
 }
