@@ -20,8 +20,10 @@ TestResult <- setClass(
 setGeneric(name="calculateSpread", def=function(theObject) {standardGeneric("calculateSpread")})
 setGeneric(name="totalPowerUsage", def=function(theObject) {standardGeneric("totalPowerUsage")})
 setGeneric(name="calculateReliability", def=function(theObject) {standardGeneric("calculateReliability")})
+setGeneric(name="calculateWeakReliability", def=function(theObject) {standardGeneric("calculateWeakReliability")})
 setGeneric(name="meanOffSlot", def=function(theObject) {standardGeneric("meanOffSlot")})
 setGeneric(name="sdOffSlot", def=function(theObject) {standardGeneric("sdOffSlot")})
+
 
 setMethod(f="calculateSpread", signature = "TestResult", definition = function(theObject) {
   loc <- theObject@location_data
@@ -74,25 +76,31 @@ setMethod(f="calculateReliability", signature = "TestResult", definition = funct
   }
 
   return(mean(round_result))
-  
-  # counts cluster failures as partial failures for a round. e.g. 0.333 for a round where 1 cluster succeeds and 2 fails.
-  # 
-  # all_cluster_ids <- unique(theObject@max_data$cluster_id)
-  # g <- expand.grid(t(all_rounds), t(all_cluster_ids))
-  # colnames(g) <- c("round","cluster")
-  # 
-  # #calculate completion rate for each row
-  # g <- mdply(g, Curry(completion_rate, theObject@max_data, max(theObject@location_data$node_id)))
-  # colnames(g)[3] <- "completion_rate"
-  # g <- g[complete.cases(g),] # remove NA values
-  # g <- arrange(g,round)
-  # 
-  # reliability <- mean(t(g["completion_rate"]))
-  # 
-  # return(reliability)
 })
 
 reliability <- memoise(calculateReliability, cache=db)
+
+setMethod(f="calculateWeakReliability", signature = "TestResult", definition = function(theObject) {
+  # counts cluster failures as partial failures for a round. e.g. 0.333 for a round where 1 cluster succeeds and 2 fails.
+  
+  all_rounds <- unique(theObject@max_data$rd)
+  
+  all_cluster_ids <- unique(theObject@max_data$cluster_id)
+  g <- expand.grid(t(all_rounds), t(all_cluster_ids))
+  colnames(g) <- c("round","cluster")
+  
+  #calculate completion rate for each row
+  g <- mdply(g, Curry(completion_rate, theObject@max_data, max(theObject@location_data$node_id)))
+  colnames(g)[3] <- "completion_rate"
+  g <- g[complete.cases(g),] # remove NA values
+  g <- arrange(g,round)
+  
+  reliability <- mean(t(g["completion_rate"]))
+  
+  return(reliability)
+})
+
+weakReliability <- memoise(calculateWeakReliability, cache=db)
 
 setMethod(f="meanOffSlot", signature = "TestResult", definition = function(theObject) {
   return(mean(theObject@max_data$off_slot))

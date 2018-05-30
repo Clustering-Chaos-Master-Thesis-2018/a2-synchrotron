@@ -24,4 +24,5 @@ competition_radius_test_suites <- list(comp_1_test_suites, comp_2_test_suites, c
 competition_radius_loaded <- lapply(competition_radius_test_suites, function(test_suite_vector) lapply(test_suite_vector, loadResultsFromTestSuitePath))
 
 
-run(competition_radius_loaded, competition_radius_labels, "CompetitionRadius.pdf")
+run(competition_radius_loaded, competition_radius_labels, "CompetitionRadius.pdf", reliability)
+run(competition_radius_loaded, competition_radius_labels, "CompetitionRadius_WeakReliability.pdf", weakReliability)
