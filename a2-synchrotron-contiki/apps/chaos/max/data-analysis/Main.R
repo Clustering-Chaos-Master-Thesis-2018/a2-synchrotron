@@ -53,6 +53,31 @@ loadResultsFromTestSuitePath <- function(testSuitePath) {
   lapply(rows, loadResultFromTestInfoRow)
 }
 
+findAllTestsFromPath <- function(path) {
+  allTests <- list.files(path, recursive = T, full.names = T, pattern = "cooja.log")
+  allTestsWithLocations <- list.files(path, recursive = T, full.names = T, pattern = "locations.pdf")
+  
+  allTests <- unlist(lapply(allTests, dirname))
+  allTestsWithLocations <- unlist(lapply(allTestsWithLocations, dirname))
+  
+  allTests <- unlist(allTests, use.names=FALSE)
+  allTestsWithLocations <- unlist(allTestsWithLocations, use.names=FALSE)
+  
+  filteredTests <- setdiff(allTests, allTestsWithLocations)
+  unique(unlist(lapply(filteredTests, dirname)))
+}
+
+generateAllLocationPlots <- function(path) {
+  testSuites <- findAllTestsFromPath(evaluation_directory)
+  testResults <- unlist(lapply(testSuites, loadResultsFromTestSuitePath))
+  testResults <- testResults[!is.na(testResults)]
+  browser()
+  foreach(result = testResults) %dopar% {
+    prepareAndPlotNodeLocations(result)
+  }
+ 
+}
+
 main <- function(testSuitePath) {
   testResults <- loadResultsFromTestSuitePath(testSuitePath)
 
