@@ -1,7 +1,7 @@
-
-run <- function(test_suites, group_labels, plot_name, reliabilityFunction) {
+run <- function(test_suites, group_labels, plot_name, reliabilityFunction, label, position, width, height, xyratio) {
   the_plot <- plot_reliability(test_suites, group_labels, reliabilityFunction)
-  ggsave(file.path(evaluation_directory, plot_name), plot=the_plot)
+  the_plot <- plot_reliability(test_suites, group_labels, reliabilityFunction, label, position, xyratio)
+  ggsave(file.path(evaluation_directory, plot_name),  plot=the_plot, width=width, height = height)
 }
 
 label_and_flatten_data <- function(test_suite_groups, group_labels, reliabilityFunction) {
@@ -23,7 +23,7 @@ label_and_flatten_data <- function(test_suite_groups, group_labels, reliabilityF
   do.call("rbind", a)
 }
 
-plot_reliability <- function(test_suite_groups, group_labels, reliabilityFunction) {
+plot_reliability <- function(test_suite_groups, group_labels, reliabilityFunction, label, legend_position, xyratio) {
   if(length(test_suite_groups) != length(group_labels)) {
     stop("Requires same length on number of test suite groups and labels")
   }
@@ -39,7 +39,6 @@ plot_reliability <- function(test_suite_groups, group_labels, reliabilityFunctio
   stats <- stats[complete.cases(stats),]
   #order by spread
   stats$simulation_name <- factor(stats$simulation_name, levels = stats$simulation_name[order(unique(stats$spread))])
-
   ggplot(agg) +
     geom_pointrange(
       size=1.5,
@@ -53,14 +52,14 @@ plot_reliability <- function(test_suite_groups, group_labels, reliabilityFunctio
       position = position_dodge(width = 0.5)) +
     ylab("Reliability (Mean & Sd)") + 
     xlab("Network Size (Meters)") +
-    labs(color="Competition Radius") +
-    coord_cartesian(ylim = c(0,1)) +
-    coord_fixed(3) +
+    labs(color=label) +
+    coord_fixed(xyratio, ylim = c(0, 1)) +
+    guides(color=guide_legend(ncol=3)) +
     theme(
       text = element_text(size=24),
       axis.text.x=element_text(angle=45, hjust=1),
-      legend.justification = c(1, 1),
-      legend.position = c(0.995, 0.99),
+      legend.justification = c(0, 0),
+      legend.position = legend_position,
       plot.margin=grid::unit(c(0,0,0,0), "mm")
     )
 
