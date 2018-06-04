@@ -84,6 +84,10 @@ setMethod(f="calculateWeakReliability", signature = "TestResult", definition = f
   # counts cluster failures as partial failures for a round. e.g. 0.333 for a round where 1 cluster succeeds and 2 fails.
   
   all_rounds <- unique(theObject@max_data$rd)
+  if (is.null(all_rounds) ) {
+    warning(paste("All rounds is null. There is no max data for ", theObject@testDirectory))
+    return(0)
+  }
   
   all_cluster_ids <- unique(theObject@max_data$cluster_id)
   g <- expand.grid(t(all_rounds), t(all_cluster_ids))
