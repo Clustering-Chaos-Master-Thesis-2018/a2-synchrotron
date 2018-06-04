@@ -27,7 +27,8 @@ competition_radius_loaded <- lapply(competition_radius_test_suites, function(tes
 
 #pdf(file = file.path(evaluation_directory, "/plot.pdf"))
 
-run(competition_radius_loaded, competition_radius_labels, "ResyncThreshold1.pdf", "Competition Radius", c(0.735, 0.80), 13, 6, 3)
+run(competition_radius_loaded, competition_radius_labels, "ResyncThreshold1.pdf", reliability, "Competition Radius", c(0.735, 0.80), 13, 6, 3)
+run(competition_radius_loaded, competition_radius_labels, "ResyncThreshold1_WeakReliability.pdf", weakReliability, "Competition Radius", c(0.735, 0.80), 13, 6, 3)
 
 comp_1_test_suites <- c(
   file.path(evaluation_directory, "/resync-treshold/resync-treshold-2/competition-radius-1_resync-2_2018-05-24_1/"),
@@ -53,7 +54,8 @@ competition_radius_test_suites <- list(comp_1_test_suites, comp_2_test_suites, c
 competition_radius_loaded <- lapply(competition_radius_test_suites, function(test_suite_vector) lapply(test_suite_vector, loadResultsFromTestSuitePath))
 
 
-run(competition_radius_loaded, competition_radius_labels, "ResyncThreshold2.pdf", "Competition Radius", c(0.735, 0.80), 13, 6, 3)
+run(competition_radius_loaded, competition_radius_labels, "ResyncThreshold2.pdf", reliability, "Competition Radius", c(0.735, 0.80), 13, 6, 3)
+run(competition_radius_loaded, competition_radius_labels, "ResyncThreshold2_WeakReliability.pdf", weakReliability, "Competition Radius", c(0.735, 0.80), 13, 6, 3)
 
 
 comp_1_test_suites <- c(
@@ -82,6 +84,7 @@ competition_radius_test_suites <- list(comp_1_test_suites, comp_2_test_suites, c
 competition_radius_loaded <- lapply(competition_radius_test_suites, function(test_suite_vector) lapply(test_suite_vector, loadResultsFromTestSuitePath))
 
 
-run(competition_radius_loaded, competition_radius_labels, "ResyncThreshold3.pdf", "Competition Radius", c(0.735, 0.80), 13, 6, 3)
+run(competition_radius_loaded, competition_radius_labels, "ResyncThreshold3.pdf", reliability, "Competition Radius", c(0.735, 0.80), 13, 6, 3)
+run(competition_radius_loaded, competition_radius_labels, "ResyncThreshold3_WeakReliability.pdf", weakReliability, "Competition Radius", c(0.735, 0.80), 13, 6, 3)
 
 #dev.off()

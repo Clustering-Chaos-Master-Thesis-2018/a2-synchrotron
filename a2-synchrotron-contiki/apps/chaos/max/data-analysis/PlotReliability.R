@@ -1,5 +1,4 @@
 run <- function(test_suites, group_labels, plot_name, reliabilityFunction, label, position, width, height, xyratio) {
-  the_plot <- plot_reliability(test_suites, group_labels, reliabilityFunction)
   the_plot <- plot_reliability(test_suites, group_labels, reliabilityFunction, label, position, xyratio)
   ggsave(file.path(evaluation_directory, plot_name),  plot=the_plot, width=width, height = height)
 }
@@ -57,10 +56,12 @@ plot_reliability <- function(test_suite_groups, group_labels, reliabilityFunctio
     guides(color=guide_legend(ncol=3)) +
     theme(
       text = element_text(size=24),
-      axis.text.x=element_text(angle=45, hjust=1),
+      #axis.text.x=element_text(angle=45, hjust=1),
       legend.justification = c(0, 0),
       legend.position = legend_position,
       plot.margin=grid::unit(c(0,0,0,0), "mm")
     )
 
 }
+
+#run(competition_radius_loaded, competition_radius_labels, "ResyncThreshold2.pdf", "Competition Radius", c(0.735, 0.80), 13, 6, 3)

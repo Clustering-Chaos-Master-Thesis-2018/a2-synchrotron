@@ -18,11 +18,11 @@ comp_3_test_suites <- c(
   file.path(evaluation_directory, "competition-radius/competition-radius-3_3_2018-05-28_03.40.21/")
 )
 
-competition_radius_labels <- c("1", "2", "3")
+competition_radius_labels <- c("1  ", "2  ", "3  ")
 
 competition_radius_test_suites <- list(comp_1_test_suites, comp_2_test_suites, comp_3_test_suites)
 competition_radius_loaded <- lapply(competition_radius_test_suites, function(test_suite_vector) lapply(test_suite_vector, loadResultsFromTestSuitePath))
 
 
-run(competition_radius_loaded, competition_radius_labels, "CompetitionRadius.pdf", reliability)
-run(competition_radius_loaded, competition_radius_labels, "CompetitionRadius_WeakReliability.pdf", weakReliability)
+run(competition_radius_loaded, competition_radius_labels, "CompetitionRadius.pdf", reliability, "Competition Radius", c(0.735, 0.80), 13, 6, 3)
+run(competition_radius_loaded, competition_radius_labels, "CompetitionRadius_WeakReliability.pdf", weakReliability, "Competition Radius", c(0.735, 0.80), 13, 6, 3)
